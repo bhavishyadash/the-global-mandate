@@ -56,11 +56,17 @@ func advance_day() -> bool:
 	return false
 
 func election() -> void:
-	# Illustrative two-bloc vote share; not a real electoral model.
+	# Illustrative allocation, not a real electoral model. Preserve the relative
+	# prior representation of the other parties when distributing remaining seats.
 	var government_seats := clampi(roundi(approval()), 0, 100)
+	var remaining := 100 - government_seats
+	var previous_other: int = int(parties[1].seats) + int(parties[2].seats)
+	var reform_seats := roundi(remaining / 2.0)
+	if previous_other > 0:
+		reform_seats = roundi(float(remaining) * float(parties[1].seats) / previous_other)
 	parties[0].seats = government_seats
-	parties[1].seats = 0
-	parties[2].seats = 100 - government_seats
+	parties[1].seats = reform_seats
+	parties[2].seats = remaining - reform_seats
 	election_count += 1
 
 func export_state() -> Dictionary:

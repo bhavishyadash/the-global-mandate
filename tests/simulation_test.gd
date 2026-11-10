@@ -59,7 +59,21 @@ func _initialize() -> void:
 	government.advance_day()
 	assert(government.politics.election_count == 1)
 	assert(government.politics.parties[0].seats == 8)
-	assert(government.politics.parties[0].seats + government.politics.parties[2].seats == 100)
+	assert(government.politics.parties[1].seats > 0)
+	assert(government.politics.parties[0].seats + government.politics.parties[1].seats + government.politics.parties[2].seats == 100)
+	var election_edges = World.new()
+	for group in election_edges.politics.groups:
+		group.approval = 100.0
+		group.raw_approval = 100.0
+	election_edges.politics.election()
+	assert(election_edges.politics.parties[0].seats == 100)
+	for group in election_edges.politics.groups:
+		group.approval = 0.0
+		group.raw_approval = 0.0
+	election_edges.politics.election()
+	assert(election_edges.politics.parties[0].seats == 0)
+	assert(election_edges.politics.parties[1].seats == 50)
+	assert(election_edges.politics.parties[2].seats == 50)
 	var before_spending: Dictionary = high_tax_world.country.duplicate(true)
 	var spending_prediction: Dictionary = high_tax_world.preview_annual_spending(1500000000.0)
 	assert(high_tax_world.country == before_spending)

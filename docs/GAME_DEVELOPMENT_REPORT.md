@@ -381,6 +381,10 @@ Related to issues #12 and #45; PR #63. Added a read-only spending preview showin
 
 Related to issue #26; PR #64. Replaced the unrestricted election button with an automatic fictional four-year schedule starting in 2030, and display the next election year. The schedule derives from the existing saved date; older saves do not retroactively simulate missed elections. Local tests passed for scheduling, no duplicate, UI and save/load around election day. Seat calculation remains a placeholder; country-specific elections are not implemented.
 
+### Session 27 — procurement policy budget effect
+
+Related to issues #10 and #25; PR #65. The fictional procurement policy now discloses a $10 million annual cost, applied to the budget after its 100-day implementation completes. The expense is derived from policy state and is also applied when older saves already containing a completed policy are loaded. Local Godot simulation and UI tests passed for timing, budget, preview and restored state. No procurement benefit or realistic economic effect is modeled.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

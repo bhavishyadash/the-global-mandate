@@ -41,9 +41,14 @@ func _initialize() -> void:
 	var government = World.new()
 	assert(government.vote_procurement())
 	assert(not government.vote_procurement())
-	for i in range(100):
+	for i in range(99):
 		government.advance_day()
+	assert(is_equal_approx(government.policy_annual_cost(), 0.0))
+	government.advance_day()
 	assert(government.politics.procurement_progress == 100)
+	assert(is_equal_approx(government.policy_annual_cost(), 10000000.0))
+	assert(is_equal_approx(government.annual_balance(), 90000000.0))
+	assert(is_equal_approx(government.preview_annual_spending(1100000000.0).annual_balance, 90000000.0))
 	government.set_income_tax(0.60)
 	government.date = {"year": 2029, "month": 12, "day": 31}
 	assert(government.next_election_year() == 2030)
@@ -114,6 +119,7 @@ func _initialize() -> void:
 	assert(restored_politics.politics.procurement_progress == 100)
 	assert(restored_politics.politics.election_count == 1)
 	assert(restored_politics.politics.parties[0].seats == 8)
+	assert(is_equal_approx(restored_politics.policy_annual_cost(), 10000000.0))
 	assert(high_tax_world.save_game(save_path).is_empty())
 	var restored = World.new()
 	var load_error: String = restored.load_game(save_path)

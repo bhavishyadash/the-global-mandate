@@ -39,7 +39,7 @@ The UI accumulates real time at the selected speed and calls `advance_day` once 
 
 ## Persistence
 
-Version 2 JSON saves include date, country, events and political state. The loader validates expected fields and ranges before replacing live state. Version 1 migration initializes each group with the old national approval, because historical group differences are unavailable. A temporary file and previous-save backup are used; the UI exposes save, load and load backup, and pauses after loading. This is not a general transaction or full crash-recovery guarantee.
+Version 2 JSON saves include date, country, events and political state. The loader validates expected fields and ranges before replacing live state. Version 1 migration initializes each group with the old national approval, because historical group differences are unavailable. A temporary file and previous-save backup are used; the UI exposes save, load and load backup, and pauses after loading. An invalid primary is preserved as `.invalid` instead of replacing the good backup. This is not a general transaction or full crash-recovery guarantee.
 
 ## Quality and future contracts
 

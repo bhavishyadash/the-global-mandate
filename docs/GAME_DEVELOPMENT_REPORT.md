@@ -345,6 +345,10 @@ Issue #1; PR #54. Established the repository checkout as the preferred source-co
 
 Issue #2; PR #55. Documented existing simulation ownership, units, update ordering, decisions, persistence and known limitations in `SIMULATION_ARCHITECTURE.md`. The model remains a fictional prototype; documentation does not imply that future contracts have been implemented. Headless simulation and UI checks passed.
 
+### Session 18 — save recovery safeguard
+
+Related to issue #4; PR #56. Before backup rotation, validate the primary in a separate world instance. Preserve an invalid primary as `.invalid` rather than replacing a good backup with it; if that path is already occupied, stop and inform the player. Godot 4.7.2 simulation and UI checks passed, including a regression test for saving after primary corruption. Issue #4 remains open: interrupted-write testing and fully transactional rotation still need work.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

@@ -66,14 +66,24 @@ func save_game(path: String) -> String:
 	var absolute_path := ProjectSettings.globalize_path(path)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
 	var backup := absolute_path + ".bak"
+	var displaced := ""
 	if FileAccess.file_exists(path):
-		if FileAccess.file_exists(backup) and DirAccess.remove_absolute(backup) != OK:
-			return "Could not replace the previous backup."
-		if DirAccess.rename_absolute(absolute_path, backup) != OK:
-			return "Could not back up the existing save."
+		# Validate the existing primary without altering the current world. Never
+		# replace a usable backup with a corrupt or incompatible primary.
+		var probe = get_script().new()
+		if probe.load_game(path).is_empty():
+			if FileAccess.file_exists(backup) and DirAccess.remove_absolute(backup) != OK:
+				return "Could not replace the previous backup."
+			displaced = backup
+		else:
+			displaced = absolute_path + ".invalid"
+			if FileAccess.file_exists(displaced):
+				return "A previous invalid save already exists; move it before saving again."
+		if DirAccess.rename_absolute(absolute_path, displaced) != OK:
+			return "Could not preserve the existing save."
 	if DirAccess.rename_absolute(absolute_temp, absolute_path) != OK:
-		if FileAccess.file_exists(backup):
-			DirAccess.rename_absolute(backup, absolute_path)
+		if not displaced.is_empty() and FileAccess.file_exists(displaced):
+			DirAccess.rename_absolute(displaced, absolute_path)
 		return "Could not finish saving; the previous save was retained if possible."
 	return ""
 

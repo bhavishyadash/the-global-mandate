@@ -120,6 +120,10 @@ func _ready() -> void:
 	vote_button.text = "Vote on procurement policy"
 	vote_button.pressed.connect(_vote_policy)
 	political_controls.add_child(vote_button)
+	var repeal_button := Button.new()
+	repeal_button.text = "Vote to repeal procurement"
+	repeal_button.pressed.connect(_repeal_policy)
+	political_controls.add_child(repeal_button)
 	var heading := Label.new()
 	heading.text = "RECENT DECISIONS"
 	layout.add_child(heading)
@@ -159,6 +163,10 @@ func _vote_policy() -> void:
 	world.vote_procurement()
 	_refresh()
 
+func _repeal_policy() -> void:
+	world.vote_procurement_repeal()
+	_refresh()
+
 func _save_game() -> void:
 	var error: String = world.save_game(SAVE_PATH)
 	status.text = "Game saved." if error.is_empty() else error
@@ -192,6 +200,7 @@ func _refresh() -> void:
 	for party in world.politics.parties:
 		lines.append("%s: %d seats" % [party.name, party.seats])
 	lines.append("Procurement support: %d/100 seats | Implementation: %d%% | Elections: %d" % [world.politics.votes_for_policy(), world.politics.procurement_progress, world.politics.election_count])
+	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
 	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))

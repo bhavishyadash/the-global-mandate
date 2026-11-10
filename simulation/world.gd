@@ -38,6 +38,13 @@ func advance_day() -> void:
 		if date.month > 12:
 			date.month = 1
 			date.year += 1
+			if date.year >= 2030 and (date.year - 2030) % 4 == 0:
+				_conduct_election()
+
+func next_election_year() -> int:
+	if date.year < 2030:
+		return 2030
+	return date.year + 4 - ((date.year - 2030) % 4)
 
 func add_event(message: String) -> void:
 	events.push_front("%04d-%02d-%02d: %s" % [date.year, date.month, date.day, message])
@@ -194,7 +201,7 @@ func vote_procurement() -> bool:
 	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes)
 	return false
 
-func hold_election() -> void:
+func _conduct_election() -> void:
 	politics.election()
 	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats)
 

@@ -377,6 +377,10 @@ Related to issues #11 and #45; PR #62. Added a read-only preview of projected re
 
 Related to issues #12 and #45; PR #63. Added a read-only spending preview showing projected annual balance and daily treasury change, with clear disclosure that service and employment impacts are not modeled. Local Godot simulation and UI checks passed, including invalid input, leap-year calculation and preview/application agreement. The larger spending and dashboard issues remain open.
 
+### Session 26 — scheduled prototype elections
+
+Related to issue #26; PR #64. Replaced the unrestricted election button with an automatic fictional four-year schedule starting in 2030, and display the next election year. The schedule derives from the existing saved date; older saves do not retroactively simulate missed elections. Local tests passed for scheduling, no duplicate, UI and save/load around election day. Seat calculation remains a placeholder; country-specific elections are not implemented.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

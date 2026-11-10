@@ -201,7 +201,7 @@ func _refresh() -> void:
 		lines.append("%s: %d seats" % [party.name, party.seats])
 	lines.append("Procurement support: %d/100 seats | Implementation: %d%% | Elections: %d" % [world.politics.votes_for_policy(), world.politics.procurement_progress, world.politics.election_count])
 	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
-	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
+	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)

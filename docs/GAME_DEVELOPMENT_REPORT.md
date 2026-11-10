@@ -389,6 +389,10 @@ Related to issues #10 and #25; PR #65. The fictional procurement policy now disc
 
 Related to issues #22 and #25; PR #66. Added a majority vote to repeal the fictional procurement policy, clearing its implementation and ending its ongoing cost, with UI support and event history. Local tests passed for unsuccessful and successful votes, implementation cancellation, cost removal and save/load. Repeal behavior remains simplified and country-specific legislative procedures are not implemented.
 
+### Session 29 — test election party allocation
+
+Related to issue #26; PR #67. The fictional election splits non-government seats between both other parties in proportion to their previous seats, with an even fallback when both previously held none. Local tests cover normal and extreme results and seat totals. This is not a realistic electoral model, and a party at zero seats cannot recover unless both other parties were at zero.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

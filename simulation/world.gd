@@ -66,25 +66,37 @@ func save_game(path: String) -> String:
 	var absolute_path := ProjectSettings.globalize_path(path)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
 	var backup := absolute_path + ".bak"
+	var previous_backup := backup + ".previous"
 	var displaced := ""
+	var retained_backup := false
 	if FileAccess.file_exists(path):
 		# Validate the existing primary without altering the current world. Never
 		# replace a usable backup with a corrupt or incompatible primary.
 		var probe = get_script().new()
 		if probe.load_game(path).is_empty():
-			if FileAccess.file_exists(backup) and DirAccess.remove_absolute(backup) != OK:
-				return "Could not replace the previous backup."
+			if FileAccess.file_exists(previous_backup):
+				return "An interrupted backup rotation needs manual recovery before saving."
+			if FileAccess.file_exists(backup):
+				if DirAccess.rename_absolute(backup, previous_backup) != OK:
+					return "Could not preserve the previous backup."
+				retained_backup = true
 			displaced = backup
 		else:
 			displaced = absolute_path + ".invalid"
 			if FileAccess.file_exists(displaced):
 				return "A previous invalid save already exists; move it before saving again."
 		if DirAccess.rename_absolute(absolute_path, displaced) != OK:
+			if retained_backup:
+				DirAccess.rename_absolute(previous_backup, backup)
 			return "Could not preserve the existing save."
 	if DirAccess.rename_absolute(absolute_temp, absolute_path) != OK:
 		if not displaced.is_empty() and FileAccess.file_exists(displaced):
 			DirAccess.rename_absolute(displaced, absolute_path)
+		if retained_backup and not FileAccess.file_exists(backup):
+			DirAccess.rename_absolute(previous_backup, backup)
 		return "Could not finish saving; the previous save was retained if possible."
+	if retained_backup and DirAccess.remove_absolute(previous_backup) != OK:
+		return "Game saved, but the older backup could not be removed; manual cleanup is needed."
 	return ""
 
 func load_game(path: String) -> String:

@@ -41,6 +41,8 @@ The UI accumulates real time at the selected speed and calls `advance_day` once 
 
 Version 2 JSON saves include date, country, events and political state. The loader validates expected fields and ranges before replacing live state. Version 1 migration initializes each group with the old national approval, because historical group differences are unavailable. A temporary file and previous-save backup are used; the UI exposes save, load and load backup, and pauses after loading. An invalid primary is preserved as `.invalid` instead of replacing the good backup. This is not a general transaction or full crash-recovery guarantee.
 
+During valid-primary rotation, an older backup is temporarily retained as `.bak.previous`; the code attempts rollback if a rename fails. An existing `.bak.previous` blocks further rotation for manual recovery. Rename failure and crash scenarios are not yet exhaustively tested.
+
 ## Quality and future contracts
 
 Headless checks cover dates, accounting, tax reactions, spending, votes, policy progress, election seat totals, save migration and UI actions. They do not establish empirical accuracy. Future work should introduce typed/versioned scenario definitions, explicit command results and structured events, deterministic random state, clearer module interfaces, atomic migration tests and cross-system invariant checks. Any new model needs its own documented units, assumptions, data provenance and test scenarios.

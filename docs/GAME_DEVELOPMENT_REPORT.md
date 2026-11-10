@@ -353,6 +353,10 @@ Related to issue #4; PR #56. Before backup rotation, validate the primary in a s
 
 Related to issue #4; PR #57. The previous backup is retained as `.bak.previous` during rotation, with best-effort rollback on rename failure and a guard against overwriting an existing recovery artifact. Simulation and UI checks passed, including a simulated leftover backup; filesystem failure injection and actual crash-recovery tests remain outstanding. Rollback remains best effort, not a guarantee.
 
+### Session 20 — bounded simulation pacing
+
+Related to issue #6; PR #58. The UI processes at most 30 simulation days per frame and retains the backlog; pause and speed changes preserve it, while loading clears it. Godot headless simulation and UI tests passed, including a long-frame catch-up test. The cap alone does not guarantee frame rate; full-world benchmarking remains open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

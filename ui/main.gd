@@ -1,6 +1,7 @@
 extends Control
 
 const World = preload("res://simulation/world.gd")
+const MAX_DAYS_PER_FRAME := 30
 var world = World.new()
 var running := false
 var elapsed := 0.0
@@ -124,9 +125,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if running:
 		elapsed += delta * speed
-		while elapsed >= 1.0:
+		var processed := 0
+		while elapsed >= 1.0 and processed < MAX_DAYS_PER_FRAME:
 			elapsed -= 1.0
 			world.advance_day()
+			processed += 1
+		if processed > 0:
 			_refresh()
 
 func _toggle_pause() -> void:

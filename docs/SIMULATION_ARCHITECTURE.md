@@ -27,7 +27,7 @@ This documents implemented behavior as of session 17, not the final game design.
 
 `World.advance_day` adds annual revenue minus annual spending, divided by the number of days in the current year, to the treasury. If the balance crosses below zero, it records a warning. It then advances procurement implementation and records completion, if applicable. Finally it advances the Gregorian calendar. Events generated during the update use the starting date of that day.
 
-The UI accumulates real time at the selected speed and calls `advance_day` once per simulated day. It does not run the simulation while paused, though the single-day button deliberately advances it regardless of pause state.
+The UI accumulates real time at the selected speed and calls `advance_day` once per simulated day. It processes at most 30 days per frame, preserving any remaining backlog. It does not run the simulation while paused, though the single-day button deliberately advances it regardless of pause state. Loading clears the UI's elapsed backlog.
 
 ## Decisions and consequences
 

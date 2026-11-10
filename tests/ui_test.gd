@@ -6,6 +6,7 @@ func _initialize() -> void:
 func run_checks() -> void:
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
+	screen.set_process(false)
 	assert(screen.world.date.day == 1)
 	screen._advance_day()
 	assert(screen.world.date.day == 2)
@@ -23,6 +24,20 @@ func run_checks() -> void:
 	assert(screen.running)
 	screen._toggle_pause()
 	assert(not screen.running)
+	var before: Dictionary = screen.world.date.duplicate()
+	screen._process(5.0)
+	assert(screen.world.date == before)
+	screen._toggle_pause()
+	screen.speed = 30
+	screen._process(2.0)
+	assert(is_equal_approx(screen.elapsed, 30.0))
+	screen._toggle_pause()
+	screen._process(1.0)
+	assert(is_equal_approx(screen.elapsed, 30.0))
+	screen._toggle_pause()
+	screen.speed = 1
+	screen._process(0.0)
+	assert(is_equal_approx(screen.elapsed, 0.0))
 	screen.queue_free()
 	print("UI interaction checks passed")
 	quit(0)

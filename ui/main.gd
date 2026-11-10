@@ -101,7 +101,7 @@ func _ready() -> void:
 	layout.add_child(status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explanation.text = "Budget = annual revenue minus annual spending. The daily change divides this balance by the days in the year. Tax and approval effects are fictional placeholders; spending currently affects only the budget."
+	explanation.text = "Budget = annual revenue minus base spending and policy costs. The daily change divides this balance by the days in the year. All effects are fictional placeholders."
 	layout.add_child(explanation)
 	tax_preview = Label.new()
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -185,14 +185,14 @@ func _load_from(path: String) -> void:
 func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
-	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nTreasury: $%.0f\nAnnual revenue: $%.0f   |   Annual spending: $%.0f\nAnnual balance: $%.0f   |   Daily change: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.annual_revenue, c.annual_spending, world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nTreasury: $%.0f\nAnnual revenue: $%.0f   |   Base spending: $%.0f\nAnnual policy cost: $%.0f\nAnnual balance: $%.0f   |   Daily change: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.annual_revenue, c.annual_spending, world.policy_annual_cost(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
 	var lines := PackedStringArray(["POLITICS — fictional test model"])
 	for group in world.politics.groups:
 		lines.append("%s (%.0f%% of population): %.1f%% approval" % [group.name, group.share * 100, group.approval])
 	for party in world.politics.parties:
 		lines.append("%s: %d seats" % [party.name, party.seats])
 	lines.append("Procurement support: %d/100 seats | Implementation: %d%% | Elections: %d" % [world.politics.votes_for_policy(), world.politics.procurement_progress, world.politics.election_count])
-	lines.append("Test policy requires a majority and takes 100 days to implement. Next illustrative election: January 1, %d." % world.next_election_year())
+	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)

@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Politics = preload("res://simulation/politics.gd")
+const PROCUREMENT_ANNUAL_COST := 10000000.0
 var politics = Politics.new()
 
 # All values here are fictional test data; rates are annual USD.
@@ -19,7 +20,10 @@ var events: Array[String] = ["Scenario started. All figures are fictional test d
 const MAX_EVENTS := 200
 
 func annual_balance() -> float:
-	return country.annual_revenue - country.annual_spending
+	return country.annual_revenue - country.annual_spending - policy_annual_cost()
+
+func policy_annual_cost() -> float:
+	return PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -208,7 +212,7 @@ func _conduct_election() -> void:
 func preview_annual_spending(amount: float) -> Dictionary:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
 		return {}
-	var balance: float = country.annual_revenue - amount
+	var balance: float = country.annual_revenue - amount - policy_annual_cost()
 	var year_days := 366.0 if is_leap_year(date.year) else 365.0
 	return {"annual_balance": balance, "daily_balance": balance / year_days}
 

@@ -39,6 +39,16 @@ func vote_procurement() -> bool:
 	procurement_policy = true
 	return true
 
+func votes_for_repeal() -> int:
+	return 100 - votes_for_policy()
+
+func repeal_procurement() -> bool:
+	if not procurement_policy or votes_for_repeal() <= 50:
+		return false
+	procurement_policy = false
+	procurement_progress = 0
+	return true
+
 func advance_day() -> bool:
 	if procurement_policy and procurement_progress < 100:
 		procurement_progress = mini(100, procurement_progress + 1)

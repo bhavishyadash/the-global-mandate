@@ -385,6 +385,10 @@ Related to issue #26; PR #64. Replaced the unrestricted election button with an 
 
 Related to issues #10 and #25; PR #65. The fictional procurement policy now discloses a $10 million annual cost, applied to the budget after its 100-day implementation completes. The expense is derived from policy state and is also applied when older saves already containing a completed policy are loaded. Local Godot simulation and UI tests passed for timing, budget, preview and restored state. No procurement benefit or realistic economic effect is modeled.
 
+### Session 28 — repeal of the test policy
+
+Related to issues #22 and #25; PR #66. Added a majority vote to repeal the fictional procurement policy, clearing its implementation and ending its ongoing cost, with UI support and event history. Local tests passed for unsuccessful and successful votes, implementation cancellation, cost removal and save/load. Repeal behavior remains simplified and country-specific legislative procedures are not implemented.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

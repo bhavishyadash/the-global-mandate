@@ -205,6 +205,14 @@ func vote_procurement() -> bool:
 	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes)
 	return false
 
+func vote_procurement_repeal() -> bool:
+	var votes: int = politics.votes_for_repeal()
+	if politics.repeal_procurement():
+		add_event("Procurement repeal passed with %d of 100 seats; implementation and recurring costs stopped." % votes)
+		return true
+	add_event("Procurement repeal failed or policy not active (%d of 100 seats)." % votes)
+	return false
+
 func _conduct_election() -> void:
 	politics.election()
 	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats)

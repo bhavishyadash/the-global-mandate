@@ -158,6 +158,20 @@ func load_game(path: String) -> String:
 static func _is_whole_number(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value))
 
+func preview_income_tax(rate: float) -> Dictionary:
+	if not is_finite(rate) or rate < 0.0 or rate > 0.60:
+		return {}
+	var preview_politics = Politics.new()
+	if not preview_politics.import_state(politics.export_state()):
+		return {}
+	var delta: float = rate - country.income_tax_rate
+	preview_politics.apply_tax_change(delta)
+	return {
+		"annual_revenue": country.annual_revenue + delta * 2000000000.0,
+		"approval": preview_politics.approval(),
+		"groups": preview_politics.groups.duplicate(true),
+	}
+
 func set_income_tax(rate: float) -> bool:
 	if not is_finite(rate) or rate < 0.0 or rate > 0.60:
 		return false

@@ -369,6 +369,10 @@ Related to issue #8; PR #60. Added a bounded Linux GitHub Actions workflow with 
 
 Related to issue #20; PR #61. Track an unclamped internal group approval and display it within 0–100%, so reversing a tax change does not create drift after a boundary was reached. Version-3 saves retain the value; v1/v2 migrate from visible approval and cannot recover previously clipped history. The 20% to 60% example and headless simulation/UI tests passed locally; this remains a fictional, immediate linear model.
 
+### Session 24 — tax decision preview
+
+Related to issues #11 and #45; PR #62. Added a read-only preview of projected revenue and approval by group before applying the prototype tax decision. Local Godot simulation and UI tests verify no mutation, invalid input handling and agreement between preview and actual result. The effect is based on placeholder assumptions and the broader economic and dashboard work remains open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

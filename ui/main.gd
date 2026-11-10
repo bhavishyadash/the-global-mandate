@@ -14,6 +14,7 @@ var spending: SpinBox
 var speed := 1
 var explanation: Label
 var politics_summary: Label
+var tax_preview: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -101,6 +102,10 @@ func _ready() -> void:
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	explanation.text = "Budget = annual revenue minus annual spending. The daily change divides this balance by the days in the year. Tax and approval effects are fictional placeholders; spending currently affects only the budget."
 	layout.add_child(explanation)
+	tax_preview = Label.new()
+	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(tax_preview)
+	tax.value_changed.connect(_update_tax_preview)
 	politics_summary = Label.new()
 	politics_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(politics_summary)
@@ -193,3 +198,14 @@ func _refresh() -> void:
 	lines.append("Test policy requires a majority and takes 100 days to implement. Election is illustrative and may be called at any time.")
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))
+	_update_tax_preview(tax.value)
+
+func _update_tax_preview(value: float) -> void:
+	var preview: Dictionary = world.preview_income_tax(value / 100.0)
+	if preview.is_empty():
+		tax_preview.text = "Tax preview unavailable."
+		return
+	var lines := PackedStringArray(["TAX PREVIEW (fictional immediate model)", "Projected annual revenue: $%.0f | National approval: %.1f%%" % [preview.annual_revenue, preview.approval]])
+	for group in preview.groups:
+		lines.append("%s: %.1f%% approval" % [group.name, group.approval])
+	tax_preview.text = "\n".join(lines)

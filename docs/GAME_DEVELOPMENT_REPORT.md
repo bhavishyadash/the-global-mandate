@@ -357,6 +357,10 @@ Related to issue #4; PR #57. The previous backup is retained as `.bak.previous` 
 
 Related to issue #6; PR #58. The UI processes at most 30 simulation days per frame and retains the backlog; pause and speed changes preserve it, while loading clears it. Godot headless simulation and UI tests passed, including a long-frame catch-up test. The cap alone does not guarantee frame rate; full-world benchmarking remains open.
 
+### Session 21 — bounded test runner
+
+Related to issue #8; PR #59. Added a Python runner for the two headless Godot suites with per-test timeouts, completion markers and nonzero failure status. Runner unit tests cover success, failure and timeout, and both Godot suites passed via the runner. CI and cross-platform validation remain open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

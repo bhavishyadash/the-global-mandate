@@ -15,4 +15,6 @@ godot --headless --path . --script res://tests/simulation_test.gd
 godot --headless --path . --script res://tests/ui_test.gd
 ```
 
+For a timeout-protected run of both checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
+
 Save files are stored in Godot's user data directory, not in the repository.

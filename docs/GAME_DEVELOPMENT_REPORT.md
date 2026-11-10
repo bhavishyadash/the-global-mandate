@@ -349,4 +349,8 @@ After each substantive work session: update milestone status and feature rows; a
 
 ### Source-control workflow
 
-The director requests a GitHub commit and push after each completed development session. Review the exact changes, run relevant checks, update this report and commit with a descriptive message before pushing to the agreed repository. Do not claim a push succeeded until the remote confirms it. Keep Godot caches, build outputs, test logs and saves out of version control. Sessions 6–15 remain upcoming.
+The director requests a GitHub commit and push after each completed development session. Review the exact changes, run relevant checks, update this report and commit with a descriptive message before pushing to the agreed repository. Do not claim a push succeeded until the remote confirms it. Keep Godot caches, build outputs, test logs and saves out of version control.
+
+### GitHub development backlog
+
+On 2026-11-10, created 53 initial roadmap issues in the private repository: https://github.com/bhavishyadash/the-global-mandate/issues. Issues #1–#53 cover the technical foundation, economy, population, politics, diplomacy, AI, military, data, interface, modding, quality and release. These are broad planning issues, not a complete prediction of future defects or an approved release scope; split and refine them as development reveals the detailed work. No issues are marked complete by this planning step. Sessions 6–15 were subsequently completed as the focused prototype batch described above.

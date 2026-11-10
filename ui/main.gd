@@ -15,6 +15,7 @@ var speed := 1
 var explanation: Label
 var politics_summary: Label
 var tax_preview: Label
+var spending_preview: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -106,6 +107,10 @@ func _ready() -> void:
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(tax_preview)
 	tax.value_changed.connect(_update_tax_preview)
+	spending_preview = Label.new()
+	spending_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(spending_preview)
+	spending.value_changed.connect(_update_spending_preview)
 	politics_summary = Label.new()
 	politics_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(politics_summary)
@@ -199,6 +204,7 @@ func _refresh() -> void:
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)
+	_update_spending_preview(spending.value)
 
 func _update_tax_preview(value: float) -> void:
 	var preview: Dictionary = world.preview_income_tax(value / 100.0)
@@ -209,3 +215,10 @@ func _update_tax_preview(value: float) -> void:
 	for group in preview.groups:
 		lines.append("%s: %.1f%% approval" % [group.name, group.approval])
 	tax_preview.text = "\n".join(lines)
+
+func _update_spending_preview(value: float) -> void:
+	var preview: Dictionary = world.preview_annual_spending(value * 1000000.0)
+	if preview.is_empty():
+		spending_preview.text = "Spending preview unavailable."
+		return
+	spending_preview.text = "SPENDING PREVIEW (fictional budget model)\nAnnual balance: $%.0f | Daily treasury change: $%.2f\nServices, employment and public opinion are not yet modeled." % [preview.annual_balance, preview.daily_balance]

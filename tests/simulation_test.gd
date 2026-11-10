@@ -48,7 +48,17 @@ func _initialize() -> void:
 	government.hold_election()
 	assert(government.politics.parties[0].seats == 8)
 	assert(government.politics.parties[0].seats + government.politics.parties[2].seats == 100)
+	var before_spending: Dictionary = high_tax_world.country.duplicate(true)
+	var spending_prediction: Dictionary = high_tax_world.preview_annual_spending(1500000000.0)
+	assert(high_tax_world.country == before_spending)
+	assert(high_tax_world.preview_annual_spending(-1.0).is_empty())
+	assert(high_tax_world.preview_annual_spending(NAN).is_empty())
 	assert(high_tax_world.set_annual_spending(1500000000.0))
+	assert(is_equal_approx(spending_prediction.annual_balance, high_tax_world.annual_balance()))
+	assert(is_equal_approx(spending_prediction.daily_balance, high_tax_world.daily_balance()))
+	high_tax_world.date.year = 2028
+	assert(is_equal_approx(high_tax_world.preview_annual_spending(1500000000.0).daily_balance, 500000000.0 / 366.0))
+	high_tax_world.date.year = 2026
 	assert(is_equal_approx(high_tax_world.annual_balance(), 500000000.0))
 	assert(not high_tax_world.set_annual_spending(-1.0))
 	assert(not high_tax_world.set_annual_spending(NAN))

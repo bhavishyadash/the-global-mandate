@@ -373,6 +373,10 @@ Related to issue #20; PR #61. Track an unclamped internal group approval and dis
 
 Related to issues #11 and #45; PR #62. Added a read-only preview of projected revenue and approval by group before applying the prototype tax decision. Local Godot simulation and UI tests verify no mutation, invalid input handling and agreement between preview and actual result. The effect is based on placeholder assumptions and the broader economic and dashboard work remains open.
 
+### Session 25 — spending decision preview
+
+Related to issues #12 and #45; PR #63. Added a read-only spending preview showing projected annual balance and daily treasury change, with clear disclosure that service and employment impacts are not modeled. Local Godot simulation and UI checks passed, including invalid input, leap-year calculation and preview/application agreement. The larger spending and dashboard issues remain open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

@@ -1,0 +1,337 @@
+# Geopolitical Simulator — Living Development Report
+
+**Working title:** Geopolitical Simulator (final name undecided)  
+**Report started:** 10 November 2026  
+**Development stage:** Pre-production / discovery  
+**Current milestone:** M1 — Core technical framework (M0 hardware and scope decisions remain open)  
+**Report status:** Initial baseline; update throughout development  
+**Owner / creative director:** You  
+**Implementation and technical reporting:** Codex, working with your direction
+
+> This is a living, editable Markdown document. You can open and change it in any text editor, GitHub, VS Code or the Codex app. Tables and simple status bars make progress visible without requiring Excel or Word. Update this file after meaningful work; add dated history entries instead of rewriting the past. A proposed target is not a completed feature.
+
+## 1. At a glance
+
+| Area | Status | What we know / need |
+|---|---|---|
+| Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
+| Godot project | Located and updated | `C:\Users\Shadow\Documents\the-global-mandate`; Godot 4.7 project |
+| Simulation | Framework prototype in original project | Gregorian calendar, fictional budget, tax decision and single-slot save/load |
+| World data | Not started | Research sources, licensing, dates, gaps and uncertainty |
+| Political systems | Concept stage | Country-specific institutions, laws, population groups and reactions |
+| Economy | Concept stage | Budget, sectors, households, employment, prices and trade |
+| Diplomacy and military | Concept stage | Negotiations, escalation and strategic conflict; optional military models |
+| GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
+| Visual design | Not decided | Map style, UI references and low-end performance target needed |
+| Playable build | Early framework prototype in original project | Headless scene launch verified; visual interaction not yet verified |
+| Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
+
+**Progress by milestone** — bars show verified completion, not effort spent. Initial percentages are approximate tracking placeholders, not a schedule forecast.
+
+```text
+M0  Project foundation and scope       [######----]  60%  IN PROGRESS
+M1  Core technical framework           [####------]  40%  IN PROGRESS
+M2  World state and time               [----------]   0%  NOT STARTED
+M3  First playable policy loop         [----------]   0%  NOT STARTED
+M4  Economy and population foundation  [----------]   0%  NOT STARTED
+M5  Institutions and domestic politics[----------]   0%  NOT STARTED
+M6  Diplomacy and international system [----------]   0%  NOT STARTED
+M7  Military and conflict             [----------]   0%  NOT STARTED
+M8  Global content and country depth   [----------]   0%  NOT STARTED
+M9  Playtesting and release readiness  [----------]   0%  NOT STARTED
+```
+
+The order is a dependency guide, not a waterfall: data, UI, testing, performance and research continue throughout. Features can be expanded across milestones once their foundation is usable.
+
+## 2. Vision and design principles
+
+Create a modern geopolitical game centered on governing: politics, law, economic management, society and international relationships. The player should feel the consequences of decisions through people, institutions and a changing world.
+
+### Agreed direction
+
+- **Political simulation first.** War is one part of geopolitics, not the default activity. Countries should consider diplomacy, bargaining, pressure, alliances and escalation risks.
+- **Country-specific systems.** The same policy can encounter different authority, procedures, institutions and opposition depending on the country. US executive orders are one example.
+- **Distinct societies with internal diversity.** Population groups have different interests, values and political experiences; private beliefs and public expression can diverge. Starting assumptions should be sourced and updated over time.
+- **Realistic consequences with uncertainty.** Implemented policies affect the world through explainable mechanisms and delays; our models are approximations, not predictions or claims of perfect knowledge.
+- **Accessible performance.** Optional military 3D models and configurable detail; symbols/counters when 3D visuals are disabled. Simulation performance is measured separately from graphics.
+- **Original, moddable content.** Base-game people and portraits are fictional by current direction. Data-driven modding is planned. Legal implications of real-person content and promotion need independent review before distribution.
+- **Quality is part of each milestone.** A feature is not complete because a button exists: it must work, explain results, save correctly and be tested.
+
+### Open design decisions
+
+| Decision | Current assumption | Owner / next step |
+|---|---|---|
+| Game name | Undecided | Director chooses later |
+| Godot / C# | Recommended, not confirmed | Inspect actual project and tooling before committing |
+| Map | Undecided: flat, globe or hybrid | Director chooses after reviewing prototypes |
+| Initial playable geography | Fictional US-style test scenario proposed | Confirm during M0; world expansion follows |
+| Real-time scale and pause | Pausable simulation proposed | Prototype and test |
+| Military depth | Strategic-first; detailed mechanics undecided | Director defines desired control |
+| Target hardware | Not specified | Set baseline PC and acceptable frame / simulation speeds in M0–M1 |
+| Distribution, pricing, multiplayer | Not decided | Decide when supported by scope and testing |
+
+## 3. Development layers
+
+```text
+Project and tools
+       ↓
+Core framework: time, state, decisions, events, save/load, testing
+       ↓
+One playable loop: propose → resolve → implement → react → explain
+       ↓
+Economy + population + institutions
+       ↓
+Country variation + diplomacy + military + world data
+       ↓
+Content breadth + balancing + optimization + release
+```
+
+The graphical layer displays the world and sends player decisions. The simulation owns the rules and world state, and should be runnable without the graphical interface. Country data and policy definitions feed the simulation through versioned, documented formats. This separation is a design goal to validate in the actual project.
+
+## 4. Milestone targets
+
+### M0 — Establish the project and scope
+
+**Status:** IN PROGRESS  
+**Purpose:** Know exactly what we are building on and define the first playable target.
+
+- [ ] Locate and inspect the Godot project, its engine version, existing code, assets and instructions.
+- [ ] Verify local Godot, language runtime, build and test tools; document any installation needed.
+- [ ] Review the existing project structure and preserve existing work.
+- [ ] Decide initial engine/language and create a version-control and backup approach.
+- [ ] Agree on the first scenario, map presentation and target hardware.
+- [ ] Expand the GPS feature inventory using the game menus and clearly label observations versus ideas.
+- [ ] Establish a feature register with priorities, dependencies and acceptance criteria.
+
+**Done when:** The project builds or opens, its baseline is recorded, and the next milestone is agreed and measurable.  
+**Current limitation:** The original project is outside the normal writable roots; this session transferred the verified prototype with elevated access. Visual interaction remains untested.
+
+### M1 — Core technical framework
+
+**Status:** NOT STARTED
+
+- [ ] Set up a simulation module independent of rendering and interface.
+- [ ] Define world state, country IDs, game date, decisions, events and data validation.
+- [ ] Add a predictable tick/update loop, pause and speed controls.
+- [ ] Add versioned save/load, backup handling and reproducible scenario seeds.
+- [ ] Add logging, error reporting and a headless simulation test runner.
+- [ ] Establish automated build, test and performance baseline.
+
+**Done when:** A test world advances, accepts a simple decision, saves and reloads identically, and its behavior is reproducible. Record build instructions, test results and performance numbers.
+
+### M2 — World state, map and time
+
+**Status:** NOT STARTED
+
+- [ ] Add a selectable map or placeholder country view and a country information panel.
+- [ ] Load sample countries from sourced, versioned scenario data.
+- [ ] Show date, pause, speed, event history and selected national indicators.
+- [ ] Define initial country, institution, population and policy schemas; validate missing/invalid values.
+- [ ] Load a modest test world and a synthetic full-size world for performance testing.
+
+**Done when:** The player can select a country, advance time and inspect data without state corruption or UI stalls under the agreed test load.
+
+### M3 — First playable policy loop
+
+**Status:** NOT STARTED
+
+- [ ] Implement the initial fictional federal executive-action scenario described in `FIRST_MILESTONE.md`.
+- [ ] Model legal authority, decision lifecycle, agency capacity, implementation delays and budget impact.
+- [ ] Add varied stakeholder reactions, potential litigation, judicial review and political response.
+- [ ] Display an explanation and timeline for the outcome; allow amendment or revocation.
+- [ ] Test, save/reload and play through multiple outcomes.
+
+**Done when:** A player can make a decision, understand its consequences, continue playing and reproduce the outcome. The director reviews the loop for clarity and realism.
+
+### M4 — Economy and population foundation
+
+**Status:** NOT STARTED
+
+- [ ] Model government revenue, spending, deficit and debt with documented units and accounting.
+- [ ] Add a small initial set of production sectors, employment, wages, households and prices.
+- [ ] Add population cohorts and demographic changes; reconcile demographic totals.
+- [ ] Connect taxes and spending to budgets, groups and economic behavior over time.
+- [ ] Add initial trade and resource flows; document uncertainty and calibration.
+- [ ] Provide explanations and historical graphs for major indicators.
+
+**Done when:** A policy change produces traceable, bounded effects across budget, economy and population over multiple simulated years, with meaningful tests and director playtesting.
+
+### M5 — Domestic politics and country institutions
+
+**Status:** NOT STARTED
+
+- [ ] Add parties, legislatures, legislative votes, elections and transfers of power.
+- [ ] Model public and private attitudes, representation, political influence and organized groups.
+- [ ] Add constitutional and legal authority, court challenges and government implementation.
+- [ ] Add configurable federal/regional powers and a second substantially different institutional setup.
+- [ ] Add protests, negotiation, government responses and institutional safeguards.
+- [ ] Compare outcomes for equivalent proposals across the test countries.
+
+**Done when:** At least two institutional systems produce explainably different outcomes, including a functioning election or transfer of power and reproducible save/load.
+
+### M6 — Diplomacy and international systems
+
+**Status:** NOT STARTED
+
+- [ ] Add bilateral relations, national interests, negotiations and agreements.
+- [ ] Add trade agreements, sanctions, international organizations and treaty obligations.
+- [ ] Build AI that considers domestic interests, security, economy and uncertainty.
+- [ ] Add crises with diplomatic options, credibility, de-escalation and escalation.
+- [ ] Test cases for peaceful compromise, failed negotiation and unintended consequences.
+
+**Done when:** AI countries can pursue and resolve nonmilitary disputes, explain major decisions and maintain valid agreements over a long simulation.
+
+### M7 — Military, deterrence and conflict
+
+**Status:** NOT STARTED
+
+- [ ] Add military budgets, personnel, readiness, equipment, supplies and command structure.
+- [ ] Model crises, alliances, mobilization, war costs and peace negotiations.
+- [ ] Include nuclear deterrence and escalation risk as a geopolitical system; calibrate through research and scenario testing.
+- [ ] Add initial 3D military representations and low-detail symbols/counters; settings control visibility and detail.
+- [ ] Measure frame rate and simulation speed with 3D assets on and off.
+
+**Done when:** A bounded conflict can start, evolve and end, with diplomatic alternatives and material economic and political consequences. Visual settings function correctly on the target hardware.
+
+### M8 — Global content and country depth
+
+**Status:** NOT STARTED
+
+- [ ] Expand countries, laws, institutions, parties, population groups and economic sectors in prioritized batches.
+- [ ] Research and document starting conditions, sources, dates, licenses and uncertainty for each dataset.
+- [ ] Add scenario and policy authoring tools; validate data and mod compatibility.
+- [ ] Compare the implemented feature register against the verified GPS inventory and our own design priorities.
+- [ ] Run automated long-horizon simulations across diverse countries and scenarios.
+
+**Done when:** The agreed launch countries and feature set meet coverage, data quality and performance targets. Full GPS parity is not presumed.
+
+### M9 — Playtesting and release readiness
+
+**Status:** NOT STARTED
+
+- [ ] Complete usability testing, tutorials, accessibility, settings and localization plans.
+- [ ] Run structured internal and external playtests; record and prioritize feedback.
+- [ ] Test compatibility, long games, save migration, crashes and performance on target machines.
+- [ ] Resolve release-blocking issues and document known issues.
+- [ ] Verify asset and data rights; obtain appropriate legal review for release and mod policies.
+- [ ] Prepare store materials, distribution, support, backups and post-release update plans.
+
+**Done when:** Director approves a release candidate against explicit quality, coverage and performance targets. Exact release scope and date remain open.
+
+## 5. Feature register
+
+| ID | Feature | Current status | Depends on | Acceptance target / note |
+|---|---|---|---|---|
+| F001 | Simulation clock and pause | Prototype | M1 | Gregorian dates and leap years; pause UI needs continued testing |
+| F002 | World state and scenario data | Planned | M1 | Validated, versioned, reproducible state |
+| F003 | Save/load | Prototype | M1 | Single versioned slot; round-trip tested, manual UI test pending |
+| F004 | Executive orders | Designed at concept level | M1–M3 | Authority, implementation and institutional response |
+| F005 | Public and private opinion | Concept | M3–M5 | Groups react differently; visible explanation |
+| F006 | Government budget and debt | Concept | M4 | Revenues, expenses and financing reconcile |
+| F007 | Elections and parties | Concept | M5 | Configurable rules; traceable results |
+| F008 | Federal / regional authority | Concept | M5 | Powers differ by scenario and institution |
+| F009 | Negotiation and treaties | Concept | M6 | AI considers goals, trust and constraints |
+| F010 | Nuclear escalation risk | Concept | M6–M7 | Research-backed assumptions; uncertain outcomes |
+| F011 | Optional 3D military models | Concept | M7 | On/off and level-of-detail options with benchmark |
+| F012 | Modding and data tools | Concept | M1, M8 | Versioned definitions and validation |
+| F013 | GPS law and decision inventory | Partial | Research / game access | List verified options and unverified gaps |
+
+Add rows as features are proposed. Record whether each is an idea, designed, in progress, implemented, tested, accepted or deferred.
+
+## 6. Data register
+
+| Dataset / artifact | Status | Source / provenance | Next action |
+|---|---|---|---|
+| GPS 2026 manual survey | Partial | Installed game and modding manuals; `GPS_2026_inventory.md` | Compare with actual in-game menus |
+| Country boundaries / map | Not selected | Must document source, version, license and disputed-area policy | Evaluate sources |
+| Population and economy | Not imported | Candidate public datasets; source, reference year and license must be checked | Choose coverage and validation |
+| Governments, parties and institutions | Not imported | Country-specific sources required | Define schema and research process |
+| Laws, starting policies and authority | Not imported | Dated legal and policy sources needed | Research first scenario and countries |
+| Military, alliances and treaties | Not imported | Source and reliability vary | Select appropriate public datasets |
+| Fictional characters / art | Not created | Original or properly licensed | Establish art and content workflow |
+
+For each adopted dataset record: source URL, access date, reference period, license and attribution, transformation method, coverage, missing values, uncertainty and update process. No dataset should silently be presented as current or exact.
+
+## 7. Quality and performance dashboard
+
+| Measure | Target | Current result | Status |
+|---|---|---|---|
+| Project opens and builds | Successful on documented setup | Not measured | UNKNOWN |
+| Automated critical-rule tests | All required checks pass | No test suite yet | NOT STARTED |
+| Save/load round trip | State preserved and version recorded | Test scenario round trip passed; manual UI test pending | IN PROGRESS |
+| Reproducible simulation | Same inputs and seed reproduce outcomes | Not measured | NOT STARTED |
+| Long-run stability | No crashes or invalid state under agreed scenarios | Not measured | NOT STARTED |
+| Simulation speed | Set target after hardware and scope are agreed | Not measured | TARGET NEEDED |
+| Frame rate and memory | Set target for agreed baseline hardware | Not measured | TARGET NEEDED |
+| Player comprehension | Director can explain major policy effects after playtest | Not measured | NOT STARTED |
+
+**Definition of done for a feature:** behavior is implemented, documented, tested for meaningful outcomes and failure cases, compatible with save/load where relevant, and reviewed in a playable build when applicable. New defects are tracked; critical defects block milestone acceptance. Automated checks complement, rather than replace, playtesting.
+
+## 8. Risks, shortcomings and blockers
+
+| ID | Item | Effect | Current response | Status |
+|---|---|---|---|---|
+| R01 | Original Godot project is outside writable roots | Future changes there require appropriate access | Prototype transferred using elevated access; prepare and verify future changes safely | MANAGED |
+| R02 | Scope could expand faster than systems are validated | Delays and brittle features | Prioritize a working loop and accept features incrementally | OPEN |
+| R03 | GPS inventory is incomplete | Cannot claim feature parity | Inspect menus and test decisions; mark unknowns | OPEN |
+| R04 | Data may be missing, outdated or incompatible | Unrealistic starting scenarios | Track provenance, uncertainty and reference dates | OPEN |
+| R05 | Simulation can produce misleading or unstable outcomes | Poor realism and broken long games | Document assumptions, run invariants and playtest | OPEN |
+| R06 | Country and population models can oversimplify | Stereotypes and inaccurate outcomes | Model variation, institutions, uncertainty and change | OPEN |
+| R07 | Low-end performance target not defined | Cannot verify optimization | Agree hardware and benchmark representative workloads | OPEN |
+| R08 | Real-person likenesses and third-party assets | Possible legal and distribution issues | Fictional base content, provenance and legal review | OPEN |
+| R09 | AI-generated implementation may contain errors | Regressions and incorrect mechanics | Review, automated checks, reproducible tests and playtesting | OPEN |
+
+## 9. Research and insights
+
+| Date | Finding | Evidence / confidence | Implication |
+|---|---|---|---|
+| 2026-11-10 | GPS 2026 manual describes parliamentary voting, budgets, trade, elections and other systems. | Installed manuals; high confidence that manual describes them, runtime behavior not independently verified. | Use as a partial feature checklist, not as an exact formula reference. |
+| 2026-11-10 | A single country's executive, courts, legislature, agencies and regional governments can react differently to the same action. | Project design insight; exact rules require country-specific research. | Implement institutions and authority as explicit systems. |
+| 2026-11-10 | Public compliance may differ from private support. | Design principle, not an empirical reading of any specific population. | Track expression, belief and ability to organize separately where feasible. |
+| 2026-11-10 | Disabling 3D military assets may reduce rendering costs. | Design hypothesis; no benchmark yet. | Measure both rendering and simulation performance separately. |
+
+## 10. Decision log
+
+| Date | Decision | Status / reason |
+|---|---|---|
+| 2026-11-10 | Prioritize political simulation, diplomacy and realistic consequences. | Agreed direction from director. |
+| 2026-11-10 | Include optional military 3D visuals and lower-detail settings. | Agreed direction; implementation pending. |
+| 2026-11-10 | Use fictional likenesses in the base game and support modding. | Current direction; real-person distribution/promotion requires legal review. |
+| 2026-11-10 | Godot with separate C# simulation proposed. | Recommendation only; verify actual project before final choice. |
+| 2026-11-10 | Prototype a US-style executive-action loop. | Proposed first vertical slice; director can change priority. |
+
+## 11. Change history
+
+| Date | Change | Verification / evidence | Next step |
+|---|---|---|---|
+| 2026-11-10 | Established initial game vision and discussed architecture. | Conversation; no game implementation verified. | Inspect project and confirm first playable scope. |
+| 2026-11-10 | Inspected GPS 2026 installation read-only and created initial decision inventory. | Installed manuals; `GPS_2026_inventory.md`. | Examine game menus and conduct controlled tests. |
+| 2026-11-10 | Drafted executive-action first milestone. | `FIRST_MILESTONE.md`; design document, no implementation. | Reconcile with project setup and director priorities. |
+| 2026-11-10 | Created this living report and milestone plan. | Documentation only; no builds or tests run. | Keep updated after every substantive change. |
+| 2026-11-10 | Located `the-global-mandate`, an otherwise blank Godot 4.7 project, and copied its project files into the writable workspace. | Read-only source inspection; Godot 4.7.2 executable found locally. | Transfer changes to original only with appropriate write access. |
+| 2026-11-10 | Added a separate GDScript simulation, startup scene, prototype UI and headless simulation checks to the workspace copy. The test world advances through a temporary 360-day calendar and changes revenue and approval after an income tax decision. | Godot 4.7.2 headless scene startup passed; simulation checks passed for annual accounting, date rollover, policy effect and invalid inputs. The first test logged a sandbox-related user log write warning. | Add persistence, realistic calendar and stronger state validation in future work; visually test the UI. Values and formulas are fictional placeholders. |
+| 2026-11-10 | Copied the tested prototype into the original Godot project, preserving the existing icon and settings apart from registering the main scene. | Elevated Godot 4.7.2 headless simulation checks and scene startup both passed against the original project. Standard sandboxed Godot could not open the external project path. | Visually verify interaction and implement persistence. |
+| 2026-11-10 | Director played the prototype and requested a stronger public reaction to a 60% income tax. Adjusted the temporary approval sensitivity: raising tax from 20% to 60% reduces initial approval from 50% to 8%. | Automated checks passed in the workspace copy and original project, including the requested scenario and invalid tax inputs. | Replace this immediate, uniform placeholder with group-specific responses, institutions and delayed effects as the simulation develops. |
+| 2026-11-10 | Session 1 closed: original Godot project located, baseline simulation and interface created, director tested it, and tax approval sensitivity adjusted. | Godot 4.7.2 automated checks passed; director confirmed the prototype runs. | Continue core framework in session 2. |
+| 2026-11-10 | Session 2: replaced the 360-day placeholder with Gregorian month lengths and leap years; annual budget amounts accrue over the correct number of days in each year. Added versioned JSON single-slot saving/loading, a previous-save backup, input validation, error feedback and UI buttons. Load pauses the simulation. | Godot 4.7.2 checks passed in workspace and original project: year rollover, annual accounting, leap-year rules, policy response, save round trip and malformed-save rejection without mutating state. Both projects passed headless scene startup. UI save/load interaction not manually verified. | Manually exercise saving and loading; add more complete state validation, stronger save recovery and broader simulation systems. |
+| 2026-11-10 | Session 3: added 1, 5 and 30 days-per-second simulation speeds and displayed projected annual and daily budget balances. | Headless UI and simulation checks passed; manual visual review pending. | Expand time controls and performance testing as the world grows. |
+| 2026-11-10 | Session 4: added a government-spending control, validated spending inputs and recorded spending changes as dated events. The present model affects the treasury only; it does not yet model services, jobs or approval. | Automated checks verify the balance, invalid inputs and save/load of spending. | Add sector allocations and realistic consequences in later systems. |
+| 2026-11-10 | Session 5: added a load-previous-backup button, tightened save validation, added a warning when the treasury crosses below zero, bounded event history to 200 entries, and explained the current budget calculations in the interface. | Tests cover backup restoration, invalid saves, deficit warning, leap-day rollover, 20 simulated years and core UI actions. Both simulation and headless UI checks passed on the original project. | Manually check layout and save/backup buttons. Debt, group approval and realistic spending impacts remain unimplemented. |
+
+### Sessions 6–15 — upcoming, not completed
+
+The remaining sessions have not been carried out. Prioritize population groups and varied policy reactions; government institutions and authority; legislation; a simple election; country definitions; diplomacy; budget/service modeling; better save migration and recovery; performance profiling; and integrated playtesting. Refine the order and acceptance criteria as each layer is built and record each session here when completed. These are targets, not promises that an entire system will fit in one session.
+
+## 12. Immediate next actions
+
+1. Manually test the save/load buttons, including restarting the game; improve validation and save recovery.
+3. Agree the initial scenario and baseline hardware; convert M1/M3 acceptance criteria into concrete tasks.
+4. Continue the GPS menu inventory when game access permits.
+
+## 13. Maintenance protocol
+
+After each substantive work session: update milestone status and feature rows; append dated changes and test evidence; add issues, decisions and data sources; record the next actionable step. Update progress bars only from completed acceptance criteria. Keep old change and decision entries, marking superseded decisions rather than deleting them. Record estimated timelines separately from measured progress and revisit them when evidence changes. If the report becomes too large, move detailed feature or data catalogs into linked companion files and retain their summaries and history here.
+
+### Source-control workflow
+
+The director requests a GitHub commit and push after each completed development session. Review the exact changes, run relevant checks, update this report and commit with a descriptive message before pushing to the agreed repository. Do not claim a push succeeded until the remote confirms it. Keep Godot caches, build outputs, test logs and saves out of version control. Sessions 6–15 remain upcoming.

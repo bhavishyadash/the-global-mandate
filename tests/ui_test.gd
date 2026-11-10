@@ -11,6 +11,8 @@ func run_checks() -> void:
 	screen._advance_day()
 	assert(screen.world.date.day == 2)
 	screen.tax.value = 60
+	assert("8.0%" in screen.tax_preview.text)
+	assert(is_equal_approx(screen.world.country.income_tax_rate, 0.20))
 	screen._apply_tax()
 	assert(is_equal_approx(screen.world.country.approval, 8.0))
 	screen.spending.value = 1500

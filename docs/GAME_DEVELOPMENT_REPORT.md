@@ -337,6 +337,10 @@ These are small, connected work packages completed and tested together on 2026-1
 
 **Batch verification:** Godot 4.7.2 headless simulation and UI checks passed in the workspace and original project. Checks cover differing group responses, initial tax scenario, majority vote, implementation, election seats, v2 save round-trip and v1 migration, alongside existing budget/calendar/backup tests. The simulation remains an early fictional prototype; diplomacy, country-specific institutions, real-world data and realistic economic models remain future work.
 
+### Session 16 — working-copy reconciliation
+
+Issue #1; PR #54. Established the repository checkout as the preferred source-controlled Godot project and documented that the older project folder is separate. Added a read-only SHA-256 comparison utility and a test covering matching, differing, missing, extra and generated-cache files. The comparison found `.gitignore` differs and the repository alone has `tests/test_compare_projects.py`; no files were overwritten. The utility intentionally excludes generated Godot files, documentation and tools, so it does not certify those files match. The bundled Python test passed; the default `python` launcher was unavailable in the sandbox.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

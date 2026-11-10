@@ -22,8 +22,10 @@ func run_checks() -> void:
 	assert(is_equal_approx(screen.world.country.annual_spending, 1500000000.0))
 	screen._vote_policy()
 	assert(screen.world.politics.procurement_policy)
-	screen._hold_election()
+	screen.world.date = {"year": 2029, "month": 12, "day": 31}
+	screen._advance_day()
 	assert(screen.world.politics.election_count == 1)
+	assert("2034" in screen.politics_summary.text)
 	screen._toggle_pause()
 	assert(screen.running)
 	screen._toggle_pause()

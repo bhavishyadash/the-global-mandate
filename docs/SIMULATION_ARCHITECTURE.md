@@ -34,7 +34,7 @@ The UI accumulates real time at the selected speed and calls `advance_day` once 
 - Income tax accepts a finite fraction between 0 and 0.60. Revenue changes using a fixed fictional $2 billion base; each group changes an internal approval value by the rate change multiplied by its fictional sensitivity. Displayed approval is clamped to 0–100 without discarding the internal excess. National approval is recalculated. Effects are immediate.
 - Spending accepts a finite annual amount from $0 to $10 billion and updates the budget and event log. It does not currently affect services, employment or approval.
 - Procurement passes only once and only if supporting parties hold more than 50 seats. It starts a 100-day implementation counter; it has no economic effect yet.
-- A manually called test election maps national approval to the government party's seats, gives the remaining seats to the opposition and sets the third party to zero. It is not a realistic electoral system.
+- A test election occurs on January 1 every four years beginning in 2030. It maps national approval to the government party's seats, gives the remaining seats to the opposition and sets the third party to zero. The schedule is derived from the date, and older saves do not retroactively simulate missed elections. It is not a realistic electoral system.
 - The event log holds at most 200 newest-first text strings. It is not yet a structured, replayable event system.
 
 ## Persistence

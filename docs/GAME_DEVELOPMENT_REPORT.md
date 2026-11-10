@@ -18,7 +18,7 @@
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\the-global-mandate`; Godot 4.7 project |
 | Simulation | Framework prototype in original project | Gregorian calendar, fictional budget, tax decision and single-slot save/load |
 | World data | Not started | Research sources, licensing, dates, gaps and uncertainty |
-| Political systems | Concept stage | Country-specific institutions, laws, population groups and reactions |
+| Political systems | Early fictional prototype | Three population groups, a three-party legislature, one test law and a simplified election; real country institutions remain future work |
 | Economy | Concept stage | Budget, sectors, households, employment, prices and trade |
 | Diplomacy and military | Concept stage | Negotiations, escalation and strategic conflict; optional military models |
 | GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
@@ -226,9 +226,9 @@ The graphical layer displays the world and sends player decisions. The simulatio
 | F002 | World state and scenario data | Planned | M1 | Validated, versioned, reproducible state |
 | F003 | Save/load | Prototype | M1 | Single versioned slot; round-trip tested, manual UI test pending |
 | F004 | Executive orders | Designed at concept level | M1–M3 | Authority, implementation and institutional response |
-| F005 | Public and private opinion | Concept | M3–M5 | Groups react differently; visible explanation |
+| F005 | Public and private opinion | Partial prototype | M3–M5 | Three groups react differently to tax; private opinion is not implemented |
 | F006 | Government budget and debt | Concept | M4 | Revenues, expenses and financing reconcile |
-| F007 | Elections and parties | Concept | M5 | Configurable rules; traceable results |
+| F007 | Elections and parties | Partial prototype | M5 | Three fixed parties and a manual illustrative election; real election rules are not implemented |
 | F008 | Federal / regional authority | Concept | M5 | Powers differ by scenario and institution |
 | F009 | Negotiation and treaties | Concept | M6 | AI considers goals, trust and constraints |
 | F010 | Nuclear escalation risk | Concept | M6–M7 | Research-backed assumptions; uncertain outcomes |
@@ -318,15 +318,30 @@ For each adopted dataset record: source URL, access date, reference period, lice
 | 2026-11-10 | Session 4: added a government-spending control, validated spending inputs and recorded spending changes as dated events. The present model affects the treasury only; it does not yet model services, jobs or approval. | Automated checks verify the balance, invalid inputs and save/load of spending. | Add sector allocations and realistic consequences in later systems. |
 | 2026-11-10 | Session 5: added a load-previous-backup button, tightened save validation, added a warning when the treasury crosses below zero, bounded event history to 200 entries, and explained the current budget calculations in the interface. | Tests cover backup restoration, invalid saves, deficit warning, leap-day rollover, 20 simulated years and core UI actions. Both simulation and headless UI checks passed on the original project. | Manually check layout and save/backup buttons. Debt, group approval and realistic spending impacts remain unimplemented. |
 
-### Sessions 6–15 — upcoming, not completed
+### Sessions 6–15 — focused prototype work, completed as one development batch
 
-The remaining sessions have not been carried out. Prioritize population groups and varied policy reactions; government institutions and authority; legislation; a simple election; country definitions; diplomacy; budget/service modeling; better save migration and recovery; performance profiling; and integrated playtesting. Refine the order and acceptance criteria as each layer is built and record each session here when completed. These are targets, not promises that an entire system will fit in one session.
+These are small, connected work packages completed and tested together on 2026-11-10, not ten full-scale systems or ten separately dated workdays.
+
+| Session | Change | Current limitation |
+|---|---|---|
+| 6 | Added three fictional income groups with population shares and individual approval values. | Groups do not yet represent demographics, regional differences or private beliefs. |
+| 7 | Added different tax sensitivities for those groups. | Coefficients are arbitrary test values; reactions are immediate. |
+| 8 | Calculate national approval as the population-weighted average. A direct 20% to 60% tax increase still yields approximately 8% from the initial scenario. | Repeated changes and approval limits are simplified. |
+| 9 | Added a fictional three-party, 100-seat legislature and seat counts. | Party positions and seat distributions are fixed at initialization. |
+| 10 | Added a parliamentary vote on a fictional procurement policy requiring a majority. | No executive orders, constitutional review, legislative debate or detailed policy effects. |
+| 11 | Added implementation progress over 100 days and an event on completion. | Procurement costs and economic benefits are not modeled. |
+| 12 | Added a manually triggered illustrative election which converts approval into government seats. | This is a deliberately simple two-bloc approximation, not a realistic voting system; no election schedule or coalition negotiation. |
+| 13 | Added version-2 saves containing population groups, parties, policy progress and election count. | One save slot; no generalized migration framework. |
+| 14 | Added validation of political state and migration of version-1 saves, initializing each group's approval from the old national value. | Historical differences between groups cannot be recovered from older saves. |
+| 15 | Added a scrollable political display and buttons, expanded simulation and UI checks, and integrated the batch into the original project. | Headless interaction tests passed; graphical layout and manual interactions have not been visually verified. |
+
+**Batch verification:** Godot 4.7.2 headless simulation and UI checks passed in the workspace and original project. Checks cover differing group responses, initial tax scenario, majority vote, implementation, election seats, v2 save round-trip and v1 migration, alongside existing budget/calendar/backup tests. The simulation remains an early fictional prototype; diplomacy, country-specific institutions, real-world data and realistic economic models remain future work.
 
 ## 12. Immediate next actions
 
-1. Manually test the save/load buttons, including restarting the game; improve validation and save recovery.
+1. Visually review the expanded UI and manually test saving, loading and the new political controls.
 3. Agree the initial scenario and baseline hardware; convert M1/M3 acceptance criteria into concrete tasks.
-4. Continue the GPS menu inventory when game access permits.
+4. Continue the GPS menu inventory when game access permits; design more realistic political, economic and institutional models before expanding content.
 
 ## 13. Maintenance protocol
 

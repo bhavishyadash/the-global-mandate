@@ -1,5 +1,8 @@
 extends RefCounted
 
+const Politics = preload("res://simulation/politics.gd")
+var politics = Politics.new()
+
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
 var date: Dictionary = INITIAL_DATE.duplicate()
@@ -26,6 +29,8 @@ func advance_day() -> void:
 	country.treasury += daily_balance()
 	if previous_treasury >= 0.0 and country.treasury < 0.0:
 		add_event("Treasury fell below zero. Borrowing is not yet modeled.")
+	if politics.advance_day():
+		add_event("Procurement policy implementation completed.")
 	date.day += 1
 	if date.day > days_in_month(date.year, date.month):
 		date.day = 1
@@ -52,7 +57,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 1, "date": date, "country": country, "events": events}))
+	file.store_string(JSON.stringify({"version": 2, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -80,7 +85,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or parsed.get("version") != 1:
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -105,9 +110,17 @@ func load_game(path: String) -> String:
 	for event in e:
 		if not event is String:
 			return "Save has invalid event data."
+	var loaded_politics = Politics.new()
+	if parsed.version == 2:
+		if not loaded_politics.import_state(parsed.get("politics")) or absf(loaded_politics.approval() - float(c.approval)) > 0.001:
+			return "Save has invalid political data."
+	else:
+		for group in loaded_politics.groups:
+			group.approval = float(c.approval)
 	date = {"year": year, "month": month, "day": day}
 	country = c.duplicate(true)
 	country.population = int(c.population)
+	politics = loaded_politics
 	events.clear()
 	for event in e:
 		events.append(event)
@@ -124,11 +137,23 @@ func set_income_tax(rate: float) -> bool:
 		return true
 	# Placeholder: $2 billion taxable base, other revenue held constant.
 	country.annual_revenue += (rate - previous) * 2000000000.0
-	# Temporary test sensitivity: a rise from 20% to 60% reduces 50% approval to 8%.
-	country.approval = clampf(country.approval - (rate - previous) * 105.0, 0.0, 100.0)
+	politics.apply_tax_change(rate - previous)
+	country.approval = politics.approval()
 	country.income_tax_rate = rate
 	add_event("Income tax changed from %.1f%% to %.1f%%." % [previous * 100.0, rate * 100.0])
 	return true
+
+func vote_procurement() -> bool:
+	var votes: int = politics.votes_for_policy()
+	if politics.vote_procurement():
+		add_event("Procurement policy passed with %d of 100 seats; implementation begins." % votes)
+		return true
+	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes)
+	return false
+
+func hold_election() -> void:
+	politics.election()
+	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats)
 
 func set_annual_spending(amount: float) -> bool:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:

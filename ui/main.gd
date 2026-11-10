@@ -12,6 +12,7 @@ var status: Label
 var spending: SpinBox
 var speed := 1
 var explanation: Label
+var politics_summary: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -20,9 +21,12 @@ func _ready() -> void:
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
 		margin.add_theme_constant_override(edge, 24)
 	add_child(margin)
+	var scroll := ScrollContainer.new()
+	margin.add_child(scroll)
 	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 12)
-	margin.add_child(layout)
+	scroll.add_child(layout)
 	var title := Label.new()
 	title.text = "THE GLOBAL MANDATE  |  Simulation foundation"
 	title.add_theme_font_size_override("font_size", 25)
@@ -96,6 +100,19 @@ func _ready() -> void:
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	explanation.text = "Budget = annual revenue minus annual spending. The daily change divides this balance by the days in the year. Tax and approval effects are fictional placeholders; spending currently affects only the budget."
 	layout.add_child(explanation)
+	politics_summary = Label.new()
+	politics_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(politics_summary)
+	var political_controls := HBoxContainer.new()
+	layout.add_child(political_controls)
+	var vote_button := Button.new()
+	vote_button.text = "Vote on procurement policy"
+	vote_button.pressed.connect(_vote_policy)
+	political_controls.add_child(vote_button)
+	var election_button := Button.new()
+	election_button.text = "Hold test election"
+	election_button.pressed.connect(_hold_election)
+	political_controls.add_child(election_button)
 	var heading := Label.new()
 	heading.text = "RECENT DECISIONS"
 	layout.add_child(heading)
@@ -128,6 +145,14 @@ func _apply_spending() -> void:
 	world.set_annual_spending(spending.value * 1000000.0)
 	_refresh()
 
+func _vote_policy() -> void:
+	world.vote_procurement()
+	_refresh()
+
+func _hold_election() -> void:
+	world.hold_election()
+	_refresh()
+
 func _save_game() -> void:
 	var error: String = world.save_game(SAVE_PATH)
 	status.text = "Game saved." if error.is_empty() else error
@@ -155,4 +180,12 @@ func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nTreasury: $%.0f\nAnnual revenue: $%.0f   |   Annual spending: $%.0f\nAnnual balance: $%.0f   |   Daily change: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.annual_revenue, c.annual_spending, world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	var lines := PackedStringArray(["POLITICS — fictional test model"])
+	for group in world.politics.groups:
+		lines.append("%s (%.0f%% of population): %.1f%% approval" % [group.name, group.share * 100, group.approval])
+	for party in world.politics.parties:
+		lines.append("%s: %d seats" % [party.name, party.seats])
+	lines.append("Procurement support: %d/100 seats | Implementation: %d%% | Elections: %d" % [world.politics.votes_for_policy(), world.politics.procurement_progress, world.politics.election_count])
+	lines.append("Test policy requires a majority and takes 100 days to implement. Election is illustrative and may be called at any time.")
+	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))

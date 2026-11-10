@@ -15,6 +15,10 @@ func run_checks() -> void:
 	screen.spending.value = 1500
 	screen._apply_spending()
 	assert(is_equal_approx(screen.world.country.annual_spending, 1500000000.0))
+	screen._vote_policy()
+	assert(screen.world.politics.procurement_policy)
+	screen._hold_election()
+	assert(screen.world.politics.election_count == 1)
 	screen._toggle_pause()
 	assert(screen.running)
 	screen._toggle_pause()

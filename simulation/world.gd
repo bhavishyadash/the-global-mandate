@@ -198,8 +198,15 @@ func hold_election() -> void:
 	politics.election()
 	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats)
 
-func set_annual_spending(amount: float) -> bool:
+func preview_annual_spending(amount: float) -> Dictionary:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
+		return {}
+	var balance: float = country.annual_revenue - amount
+	var year_days := 366.0 if is_leap_year(date.year) else 365.0
+	return {"annual_balance": balance, "daily_balance": balance / year_days}
+
+func set_annual_spending(amount: float) -> bool:
+	if preview_annual_spending(amount).is_empty():
 		return false
 	var previous: float = country.annual_spending
 	if is_equal_approx(previous, amount):

@@ -17,4 +17,6 @@ godot --headless --path . --script res://tests/ui_test.gd
 
 For a timeout-protected run of both checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
+GitHub Actions runs the Python utility tests and Godot headless checks on pull requests and pushes to `main`; its Godot 4.7.2 download is checksum-verified. This hosted check does not replace visual playtesting or Windows-specific compatibility testing.
+
 Save files are stored in Godot's user data directory, not in the repository.

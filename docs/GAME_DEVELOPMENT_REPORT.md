@@ -393,6 +393,10 @@ Related to issues #22 and #25; PR #66. Added a majority vote to repeal the ficti
 
 Related to issue #26; PR #67. The fictional election splits non-government seats between both other parties in proportion to their previous seats, with an even fallback when both previously held none. Local tests cover normal and extreme results and seat totals. This is not a realistic electoral model, and a party at zero seats cannot recover unless both other parties were at zero.
 
+### Session 30 — integrated policy scenario
+
+Related to issue #48; PR #68. Added an end-to-end scenario covering a tax change, policy adoption and cost, save/load, the scheduled election, repeal and budget consequences. The bounded runner includes the new test, and all three Godot suites passed locally. This tests prototype consistency rather than realism; the broader simulation-invariants and long-run-testing issue remains open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

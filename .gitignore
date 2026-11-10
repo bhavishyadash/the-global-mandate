@@ -3,4 +3,5 @@
 /android/
 *.log
 tests/test_save.json*
+tests/integration_test_save.json*
 __pycache__/

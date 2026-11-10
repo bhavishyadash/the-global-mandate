@@ -365,6 +365,10 @@ Related to issue #8; PR #59. Added a Python runner for the two headless Godot su
 
 Related to issue #8; PR #60. Added a bounded Linux GitHub Actions workflow with a checksum-verified Godot 4.7.2 download, Python utility tests and headless simulation/UI checks. The hosted PR run is the verification record; Windows-specific and visual testing remain outside this workflow.
 
+### Session 23 — prevent tax approval drift
+
+Related to issue #20; PR #61. Track an unclamped internal group approval and display it within 0–100%, so reversing a tax change does not create drift after a boundary was reached. Version-3 saves retain the value; v1/v2 migrate from visible approval and cannot recover previously clipped history. The 20% to 60% example and headless simulation/UI tests passed locally; this remains a fictional, immediate linear model.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

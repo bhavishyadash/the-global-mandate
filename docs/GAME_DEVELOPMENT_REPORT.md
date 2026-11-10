@@ -341,6 +341,10 @@ These are small, connected work packages completed and tested together on 2026-1
 
 Issue #1; PR #54. Established the repository checkout as the preferred source-controlled Godot project and documented that the older project folder is separate. Added a read-only SHA-256 comparison utility and a test covering matching, differing, missing, extra and generated-cache files. The comparison found `.gitignore` differs and the repository alone has `tests/test_compare_projects.py`; no files were overwritten. The utility intentionally excludes generated Godot files, documentation and tools, so it does not certify those files match. The bundled Python test passed; the default `python` launcher was unavailable in the sandbox.
 
+### Session 17 — simulation architecture baseline
+
+Issue #2; PR #55. Documented existing simulation ownership, units, update ordering, decisions, persistence and known limitations in `SIMULATION_ARCHITECTURE.md`. The model remains a fictional prototype; documentation does not imply that future contracts have been implemented. Headless simulation and UI checks passed.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

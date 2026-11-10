@@ -361,6 +361,10 @@ Related to issue #6; PR #58. The UI processes at most 30 simulation days per fra
 
 Related to issue #8; PR #59. Added a Python runner for the two headless Godot suites with per-test timeouts, completion markers and nonzero failure status. Runner unit tests cover success, failure and timeout, and both Godot suites passed via the runner. CI and cross-platform validation remain open.
 
+### Session 22 — continuous integration
+
+Related to issue #8; PR #60. Added a bounded Linux GitHub Actions workflow with a checksum-verified Godot 4.7.2 download, Python utility tests and headless simulation/UI checks. The hosted PR run is the verification record; Windows-specific and visual testing remain outside this workflow.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

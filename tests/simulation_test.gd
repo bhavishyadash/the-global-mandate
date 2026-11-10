@@ -19,6 +19,16 @@ func _initialize() -> void:
 	assert(high_tax_world.set_income_tax(0.60))
 	assert(is_equal_approx(high_tax_world.country.approval, 8.0))
 	assert(high_tax_world.politics.groups[0].approval > high_tax_world.politics.groups[2].approval)
+	var cycle = World.new()
+	cycle.country.income_tax_rate = 0.60
+	cycle.country.approval = 80.0
+	for group in cycle.politics.groups:
+		group.approval = 80.0
+		group.raw_approval = 80.0
+	assert(cycle.set_income_tax(0.0))
+	assert(is_equal_approx(cycle.country.approval, 100.0))
+	assert(cycle.set_income_tax(0.60))
+	assert(is_equal_approx(cycle.country.approval, 80.0))
 	var government = World.new()
 	assert(government.vote_procurement())
 	assert(not government.vote_procurement())
@@ -55,6 +65,12 @@ func _initialize() -> void:
 	assert(long_run.date == {"year": 2046, "month": 1, "day": 1})
 	assert(absf(long_run.country.treasury - 3000000000.0) < 10.0)
 	var save_path := "res://tests/test_save.json"
+	assert(cycle.set_income_tax(0.0))
+	assert(cycle.save_game(save_path).is_empty())
+	var cycle_restored = World.new()
+	assert(cycle_restored.load_game(save_path).is_empty())
+	assert(cycle_restored.set_income_tax(0.60))
+	assert(is_equal_approx(cycle_restored.country.approval, 80.0))
 	assert(government.save_game(save_path).is_empty())
 	var restored_politics = World.new()
 	assert(restored_politics.load_game(save_path).is_empty())
@@ -73,6 +89,16 @@ func _initialize() -> void:
 	assert(is_equal_approx(restored.country.income_tax_rate, 0.60))
 	assert(is_equal_approx(restored.country.annual_spending, 1500000000.0))
 	assert(restored.events == high_tax_world.events)
+	# Version 2 did not store raw approval; migrate its visible values.
+	var v2_politics: Dictionary = high_tax_world.politics.export_state()
+	for group in v2_politics.groups:
+		group.erase("raw_approval")
+	var v2_file := FileAccess.open(save_path, FileAccess.WRITE)
+	v2_file.store_string(JSON.stringify({"version": 2, "date": high_tax_world.date, "country": high_tax_world.country, "events": high_tax_world.events, "politics": v2_politics}))
+	v2_file.close()
+	var v2 = World.new()
+	assert(v2.load_game(save_path).is_empty())
+	assert(is_equal_approx(v2.politics.approval(), high_tax_world.country.approval))
 	assert(high_tax_world.set_income_tax(0.30))
 	assert(high_tax_world.save_game(save_path).is_empty())
 	var backup = World.new()

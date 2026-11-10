@@ -57,7 +57,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 2, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
+	file.store_string(JSON.stringify({"version": 3, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -107,7 +107,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -133,12 +133,19 @@ func load_game(path: String) -> String:
 		if not event is String:
 			return "Save has invalid event data."
 	var loaded_politics = Politics.new()
-	if parsed.version == 2:
-		if not loaded_politics.import_state(parsed.get("politics")) or absf(loaded_politics.approval() - float(c.approval)) > 0.001:
+	if parsed.version == 2 or parsed.version == 3:
+		var political_data: Variant = parsed.get("politics")
+		if parsed.version == 2 and political_data is Dictionary and political_data.get("groups") is Array:
+			political_data = political_data.duplicate(true)
+			for group in political_data.groups:
+				if group is Dictionary and group.has("approval"):
+					group.raw_approval = group.approval
+		if not loaded_politics.import_state(political_data) or absf(loaded_politics.approval() - float(c.approval)) > 0.001:
 			return "Save has invalid political data."
 	else:
 		for group in loaded_politics.groups:
 			group.approval = float(c.approval)
+			group.raw_approval = float(c.approval)
 	date = {"year": year, "month": month, "day": day}
 	country = c.duplicate(true)
 	country.population = int(c.population)

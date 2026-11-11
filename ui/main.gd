@@ -210,8 +210,7 @@ func _ready() -> void:
 	var directive_controls := HBoxContainer.new()
 	layout.add_child(directive_controls)
 	directive_picker = OptionButton.new()
-	directive_picker.add_item("Procurement reporting")
-	directive_picker.add_item("Override spending limit")
+	_sync_directive_picker()
 	directive_controls.add_child(directive_picker)
 	var directive_button := Button.new()
 	directive_button.text = "Issue directive"
@@ -459,6 +458,7 @@ func _start_scenario(path: String) -> bool:
 	event_filter.select(0)
 	_sync_scenario_picker()
 	_sync_healthcare_picker()
+	_sync_directive_picker()
 	status.text = "Scenario started and paused."
 	_refresh()
 	return true
@@ -476,6 +476,12 @@ func _sync_healthcare_picker() -> void:
 	for amount in world.healthcare.rules.funding_options:
 		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
 	healthcare_picker.select(1)
+
+func _sync_directive_picker() -> void:
+	directive_picker.clear()
+	for kind in ["reporting", "override"]:
+		directive_picker.add_item(world.institutions.rules.cases[kind].name)
+	directive_picker.select(0)
 
 func _apply_tax() -> void:
 	status.text = Decisions.execute(world, {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}}).message
@@ -605,6 +611,7 @@ func _load_from(path: String) -> void:
 		_category_selected(category_picker.selected)
 		_sync_scenario_picker()
 		_sync_healthcare_picker()
+		_sync_directive_picker()
 		status.text = "Game loaded and paused."
 		_refresh()
 	else:
@@ -681,9 +688,9 @@ func _refresh_history() -> void:
 func _refresh_directive() -> void:
 	var model = world.institutions
 	var selected := "reporting" if directive_picker.selected == 0 else "override"
-	var choice: Dictionary = model.CASES[selected]
-	var active_name: String = model.CASES[model.kind].name if model.CASES.has(model.kind) else "None"
-	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Court review resolves after 30 days; the override is suspended after 10.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/60\nImplemented reporting adds 10 to the administration target and costs $5 million/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", active_name, model.status, model.days, model.progress]
+	var choice: Dictionary = model.rules.cases[selected]
+	var active_name: String = model.rules.cases[model.kind].name if model.rules.cases.has(model.kind) else "None"
+	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Review after %d days; directives exceeding authority are suspended after %d.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/%d\nImplemented reporting adds 10 to the administration target and costs $5 million/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", model.rules.review_day, model.rules.injunction_day, active_name, model.status, model.days, model.progress, model.rules.implementation_days]
 
 func _update_tax_preview(value: float) -> void:
 	_invalidate_comparison()

@@ -60,6 +60,8 @@ func apply_scenario(data: Variant) -> String:
 	healthcare = Healthcare.new()
 	if data.version >= 3:
 		healthcare.configure(data.healthcare_rules)
+	if data.version >= 4:
+		institutions.configure(data.institution_rules)
 	if data.version >= 2:
 		politics.import_state(data.politics)
 		services.import_state(data.services)
@@ -123,6 +125,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.random_seed_value = random_seed_value
 	future.random_state = random_state
 	future.healthcare.configure(healthcare.rules)
+	future.institutions.configure(institutions.rules)
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
 		return {}
 	for key in changes:
@@ -241,7 +244,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 18, "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 19, "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -320,7 +323,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 18:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 19:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -407,6 +410,8 @@ func import_snapshot(parsed: Variant) -> String:
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
+	if parsed.version >= 19 and not loaded_institutions.configure(parsed.get("institution_rules")):
+		return "Save has invalid institutional rules."
 	var loaded_healthcare = Healthcare.new()
 	if parsed.version >= 18 and not loaded_healthcare.configure(parsed.get("healthcare_rules")):
 		return "Save has invalid healthcare rules."
@@ -659,7 +664,7 @@ func vote_procurement() -> bool:
 func issue_directive(kind: String) -> bool:
 	if not institutions.issue(kind):
 		return false
-	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name, "institution", "directive_issued")
+	add_event("Executive issued the %s directive; the fictional court review began." % institutions.rules.cases[kind].name, "institution", "directive_issued")
 	return true
 
 func start_diplomatic_talks(partner: String, proposal: String = "dialogue") -> bool:
@@ -684,7 +689,7 @@ func end_cooperation(partner: String) -> bool:
 func revoke_directive() -> bool:
 	if not institutions.revoke():
 		return false
-	add_event("Executive revoked the %s directive; implementation stopped." % institutions.CASES[institutions.kind].name, "institution", "directive_revoked")
+	add_event("Executive revoked the %s directive; implementation stopped." % institutions.rules.cases[institutions.kind].name, "institution", "directive_revoked")
 	return true
 
 func vote_procurement_repeal() -> bool:

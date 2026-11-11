@@ -1,1 +1,5 @@
 # Session 59: multi-country simulation core
+
+Added an experimental headless registry of up to 250 validated, uniquely identified country states sharing a start date and synchronized daily ticks. It routes existing decisions to an identified country and supports concurrent 30-day bilateral dialogues, symmetric relationships and dated events in both countries. Snapshot export returns detached data; import validates every country, shared dates, relationship keys and dialogue progress before replacing live state. Tests cover duplicate IDs, date mismatch, isolated decisions, dialogue timing, both-country events, JSON snapshot continuation and invalid-import atomicity.
+
+This is an initial coupled-world scaffold, not integrated into the playable UI or the existing single-country save file. Registry relationships are separate from the older hard-coded single-country diplomacy system; no synchronization, economic exchanges, AI, geography or realistic diplomatic behavior is claimed. Registry snapshots are in-memory/JSON data; user-facing persistent world saves remain future work. Performance and target hardware must be measured separately.

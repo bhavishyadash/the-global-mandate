@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
-**Report status:** Living record; updated through session 58
+**Report status:** Living record; updated through session 59
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -510,6 +510,10 @@ PR #95. The standalone build now starts maximized after the previous default app
 ### Session 58 — validated world snapshots
 
 PR #96. Extracted detached snapshot export and atomic validated import from the save loader, with unchanged save-v14 format and migration coverage. This is infrastructure for multi-country state, not yet a coupled world. See [Session 58](SESSION_58.md).
+
+### Session 59 — multi-country core
+
+PR #97. Added a headless registry of uniquely identified, synchronized countries with bilateral dialogue and validated detached snapshots. Existing gameplay remains single-country and its diplomacy is separate; registry persistence and UI integration are open. See [Session 59](SESSION_59.md).
 
 ## 12. Immediate next actions
 

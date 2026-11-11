@@ -12,6 +12,9 @@ func run_checks() -> void:
 	assert(screen.dashboard_tabs.get_tab_title(3) == "Government")
 	screen.dashboard_tabs.current_tab = 3
 	assert(screen.dashboard_tabs.current_tab == 3)
+	screen._forecast_budget()
+	assert("365-DAY FORECAST" in screen.forecast_label.text)
+	assert(screen.world.date.day == 1)
 	assert(screen.world.date.day == 1)
 	screen._advance_day()
 	assert(screen.world.date.day == 2)

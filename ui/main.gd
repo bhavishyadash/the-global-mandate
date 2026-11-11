@@ -25,6 +25,7 @@ var additional_tax_preview: Label
 var directive_picker: OptionButton
 var directive_summary: Label
 var dashboard_tabs: TabContainer
+var forecast_label: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -214,6 +215,14 @@ func _ready() -> void:
 		node.reparent(overview)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
+	var forecast_button := Button.new()
+	forecast_button.text = "Forecast next 365 days"
+	forecast_button.pressed.connect(_forecast_budget)
+	finances.add_child(forecast_button)
+	forecast_label = Label.new()
+	forecast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	forecast_label.text = "Forecast on demand; rerun after changing settings or advancing time."
+	finances.add_child(forecast_label)
 	for node in [tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
 	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
@@ -233,6 +242,15 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	column.add_theme_constant_override("separation", 12)
 	panel.add_child(column)
 	return column
+
+func _forecast_budget() -> void:
+	var result: Dictionary = world.forecast_fiscal(365)
+	if result.is_empty():
+		forecast_label.text = "Forecast unavailable for this state."
+		return
+	var d: Dictionary = result.end_date
+	var warning := "Cash exhausted by day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "Cash remains positive."
+	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning]
 
 func _process(delta: float) -> void:
 	if running:

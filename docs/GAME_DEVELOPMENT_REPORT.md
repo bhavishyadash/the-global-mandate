@@ -469,6 +469,10 @@ PR #85. Added a validated common command interface and migrated existing UI deci
 
 PR #86. Added a bounded deterministic decision replay harness and automated repeatability test, plus a synthetic independent-copy benchmark. A local 200-copy/30-day run took 94.908 ms for ticks; it is not a coupled-world or frame-rate benchmark. Details and measurement limits: [Session 48](SESSION_48.md).
 
+### Session 49 — structured event history
+
+PR #87. Added bounded, dated and categorized event records, History filtering and save-v13 migration. Older text is preserved as legacy records with unknown structured metadata. Tests cover filtering, copying, invalid saves, migration and replay. Structured actors and causal payloads remain future work. See [Session 49](SESSION_49.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

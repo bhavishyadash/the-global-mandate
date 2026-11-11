@@ -5,6 +5,41 @@ const Decisions = preload("res://simulation/decisions.gd")
 
 func _initialize() -> void:
 	var world = World.new()
+	var rng_world = World.new()
+	var rng_twin = World.new()
+	for i in range(20):
+		assert(rng_world.next_random_u32() == rng_twin.next_random_u32())
+	var fraction: float = rng_world.next_random_fraction()
+	assert(fraction >= 0.0 and fraction < 1.0)
+	assert(rng_world.random_state == rng_twin.next_random_u32())
+	var random_before: int = rng_world.random_state
+	assert(not rng_world.forecast_fiscal(30).is_empty())
+	assert(rng_world.random_state == random_before)
+	var random_path := "res://tests/random_state_test.json"
+	assert(not FileAccess.file_exists(random_path))
+	assert(rng_world.save_game(random_path).is_empty())
+	var rng_restored = World.new()
+	assert(rng_restored.load_game(random_path).is_empty())
+	assert(rng_world.next_random_u32() == rng_restored.next_random_u32())
+	var random_file := FileAccess.open(random_path, FileAccess.READ)
+	var random_save: Dictionary = JSON.parse_string(random_file.get_as_text())
+	random_file.close()
+	random_save.random_state = -1
+	random_file = FileAccess.open(random_path, FileAccess.WRITE)
+	random_file.store_string(JSON.stringify(random_save))
+	random_file.close()
+	var state_before_invalid: int = rng_restored.random_state
+	assert(not rng_restored.load_game(random_path).is_empty())
+	assert(rng_restored.random_state == state_before_invalid)
+	random_save.version = 13
+	random_save.erase("random_seed")
+	random_save.erase("random_state")
+	random_file = FileAccess.open(random_path, FileAccess.WRITE)
+	random_file.store_string(JSON.stringify(random_save))
+	random_file.close()
+	assert(rng_restored.load_game(random_path).is_empty())
+	assert(rng_restored.random_state == World.Scenario.DEFAULT_SEED)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(random_path))
 	var decision_world = World.new()
 	var decision_before: Dictionary = decision_world.country.duplicate(true)
 	var events_before: Array = decision_world.events.duplicate()
@@ -37,6 +72,9 @@ func _initialize() -> void:
 	assert(not world.apply_scenario(invalid_scenario).is_empty())
 	invalid_scenario = scenario_data.duplicate(true)
 	invalid_scenario.country.annual_revenue = 0.0
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	invalid_scenario = scenario_data.duplicate(true)
+	invalid_scenario.seed = -1
 	assert(not world.apply_scenario(invalid_scenario).is_empty())
 	invalid_scenario = scenario_data.duplicate(true)
 	invalid_scenario.politics.parties[0].seats = 99

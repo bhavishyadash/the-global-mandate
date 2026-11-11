@@ -1,6 +1,7 @@
 {
   "version": 2,
   "id": "test_republic",
+  "seed": 12345,
   "description": "Fictional baseline for testing; not real-world data.",
   "date": {"year": 2026, "month": 1, "day": 1},
   "country": {

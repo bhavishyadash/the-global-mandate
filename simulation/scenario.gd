@@ -4,6 +4,8 @@ const Politics = preload("res://simulation/politics.gd")
 const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
+const DEFAULT_SEED := 12345
+const MAX_SEED := 4294967295
 
 # One country per scenario; version 1 uses the original test defaults.
 const CATEGORIES := ["Health", "Education", "Security", "Infrastructure", "Administration"]
@@ -20,6 +22,8 @@ static func read_file(path: String) -> Variant:
 static func validate(data: Variant) -> String:
 	if not data is Dictionary or not _whole(data.get("version")) or data.version < 1 or data.version > 2 or not _id(data.get("id")) or not data.get("description") is String:
 		return "Invalid scenario header or unsupported version."
+	if data.has("seed") and (not _whole(data.seed) or data.seed < 0 or data.seed > MAX_SEED):
+		return "Scenario seed must be a whole 32-bit unsigned number."
 	var date: Variant = data.get("date")
 	var c: Variant = data.get("country")
 	if not date is Dictionary or not c is Dictionary:

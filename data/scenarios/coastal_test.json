@@ -1,6 +1,7 @@
 {
   "version": 2,
   "id": "coastal_test",
+  "seed": 12345,
   "description": "Fictional alternate starting state; not real-world data.",
   "date": {
     "year": 2026,

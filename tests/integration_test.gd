@@ -37,5 +37,27 @@ func _initialize() -> void:
 	assert(final_world.politics.election_count == 1)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE + ".bak"))
+	# Multi-year deficit crosses a leap year and a save/load boundary while
+	# accumulated interest changes daily. Check the accounting identity daily.
+	var long_run = World.new()
+	long_run.country.treasury = 0.0
+	assert(long_run.set_annual_spending(2000000000.0))
+	var cumulative := 0.0
+	var resumed = World.new()
+	for day in range(1461):
+		var divisor := 366.0 if World.is_leap_year(long_run.date.year) else 365.0
+		cumulative += long_run.annual_balance() / divisor
+		long_run.advance_day()
+		assert(absf(long_run.country.treasury - long_run.country.debt - cumulative) < 0.1)
+		if day == 730:
+			assert(long_run.save_game(TEST_SAVE).is_empty())
+			assert(resumed.load_game(TEST_SAVE).is_empty())
+		elif day > 730:
+			resumed.advance_day()
+	assert(long_run.date.year == 2030 and long_run.politics.election_count == 1)
+	assert(resumed.date == long_run.date)
+	assert(absf(resumed.country.debt - long_run.country.debt) < 0.1)
+	assert(absf(resumed.country.approval - long_run.country.approval) < 0.001)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
 	print("Integrated scenario checks passed")
 	quit(0)

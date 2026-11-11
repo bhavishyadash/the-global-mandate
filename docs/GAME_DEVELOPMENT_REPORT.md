@@ -429,6 +429,10 @@ PR #75, related to #10, #45 and #48. Added an on-demand 365-day forecast on an i
 
 PR #76, related to #10, #11, #12, #45 and #48. Added a non-mutating comparison of current settings with entered income tax, an additional tax and total spending, including cash, debt and approval. Tests compare forecasts to an actual run and reject invalid changes. Assumptions and limitations: [Session 38](SESSION_38.md).
 
+### Session 39 — population transparency and robustness
+
+PR #77, related to #18, #19, #20, #45 and #48. Added a Population tab explaining the prototype's group shares, approval components and tax sensitivities; rejected income-tax changes that would produce negative revenue; tested four years of deficit accounting, leap-year progression and save/load continuation. These groups are not unique personalities or researched country demographics. Details: [Session 39](SESSION_39.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

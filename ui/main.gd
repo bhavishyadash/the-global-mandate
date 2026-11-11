@@ -27,6 +27,7 @@ var directive_summary: Label
 var dashboard_tabs: TabContainer
 var forecast_label: Label
 var comparison_label: Label
+var population_summary: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -211,6 +212,7 @@ func _ready() -> void:
 	var finances := _make_dashboard_tab("Budget & services")
 	var taxes := _make_dashboard_tab("Tax previews")
 	var government := _make_dashboard_tab("Government")
+	var population := _make_dashboard_tab("Population")
 	var decisions := _make_dashboard_tab("History")
 	for node in [summary, explanation]:
 		node.reparent(overview)
@@ -236,6 +238,9 @@ func _ready() -> void:
 		node.reparent(taxes)
 	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
 		node.reparent(government)
+	population_summary = Label.new()
+	population_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	population.add_child(population_summary)
 	for node in [heading, history]:
 		node.reparent(decisions)
 	_refresh()
@@ -292,7 +297,7 @@ func _advance_day() -> void:
 	_refresh()
 
 func _apply_tax() -> void:
-	world.set_income_tax(tax.value / 100.0)
+	status.text = "Income tax updated." if world.set_income_tax(tax.value / 100.0) else "Income tax change is unavailable."
 	_refresh()
 
 func _additional_tax_kind() -> String:
@@ -395,6 +400,12 @@ func _refresh() -> void:
 	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
 	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
+	var people := PackedStringArray(["POPULATION APPROVAL — fictional test groups", "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
+	for i in range(world.politics.groups.size()):
+		var group: Dictionary = world.politics.groups[i]
+		people.append("%s | %.0f%% of population (~%.0f people) | approval %.1f%%\n  Raw %.1f + services %+.1f points | sensitivity to +1 percentage point tax: income -%.2f, consumption -%.2f, corporate -%.2f points before limits." % [group.name, group.share * 100.0, c.population * group.share, group.approval, group.raw_approval, group.service_bonus, group.tax_sensitivity / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.consumption[i] / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.corporate[i] / 100.0])
+	people.append("Service contribution responds gradually to the average condition of the five services. The three groups and all sensitivities are placeholders, not real demographic data or a model of individual personalities.")
+	population_summary.text = "\n\n".join(people)
 	_refresh_directive()
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)

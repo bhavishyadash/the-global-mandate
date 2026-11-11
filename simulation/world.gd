@@ -236,7 +236,7 @@ func export_snapshot() -> Dictionary:
 	# an exported snapshot. The same representation is used for save files.
 	return {"version": 16, "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
-func save_game(path: String) -> String:
+func save_game(path: String, rename_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
 	if FileAccess.file_exists(temporary):
 		return "A temporary save already exists; inspect it before saving."
@@ -272,7 +272,7 @@ func save_game(path: String) -> String:
 				DirAccess.remove_absolute(absolute_temp)
 				return "An interrupted backup rotation needs manual recovery before saving."
 			if FileAccess.file_exists(backup):
-				if DirAccess.rename_absolute(backup, previous_backup) != OK:
+				if _save_rename(backup, previous_backup, rename_operation) != OK:
 					DirAccess.remove_absolute(absolute_temp)
 					return "Could not preserve the previous backup."
 				retained_backup = true
@@ -282,20 +282,25 @@ func save_game(path: String) -> String:
 			if FileAccess.file_exists(displaced):
 				DirAccess.remove_absolute(absolute_temp)
 				return "A previous invalid save already exists; move it before saving again."
-		if DirAccess.rename_absolute(absolute_path, displaced) != OK:
+		if _save_rename(absolute_path, displaced, rename_operation) != OK:
 			if retained_backup:
-				DirAccess.rename_absolute(previous_backup, backup)
+				_save_rename(previous_backup, backup, rename_operation)
 			DirAccess.remove_absolute(absolute_temp)
 			return "Could not preserve the existing save."
-	if DirAccess.rename_absolute(absolute_temp, absolute_path) != OK:
+	if _save_rename(absolute_temp, absolute_path, rename_operation) != OK:
 		if not displaced.is_empty() and FileAccess.file_exists(displaced):
-			DirAccess.rename_absolute(displaced, absolute_path)
+			_save_rename(displaced, absolute_path, rename_operation)
 		if retained_backup and not FileAccess.file_exists(backup):
-			DirAccess.rename_absolute(previous_backup, backup)
+			_save_rename(previous_backup, backup, rename_operation)
 		return "Could not finish saving; the previous save was retained if possible."
 	if retained_backup and DirAccess.remove_absolute(previous_backup) != OK:
 		return "Game saved, but the older backup could not be removed; manual cleanup is needed."
 	return ""
+
+static func _save_rename(source: String, destination: String, operation: Callable) -> Error:
+	# The optional callable allows deterministic filesystem failure tests; the
+	# production path always uses the OS rename implementation.
+	return operation.call(source, destination) if operation.is_valid() else DirAccess.rename_absolute(source, destination)
 
 func load_game(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)

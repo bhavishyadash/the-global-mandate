@@ -23,9 +23,18 @@ func run_checks() -> void:
 	assert(screen.dashboard_tabs.current_tab == 3)
 	screen._forecast_budget()
 	assert("365-DAY FORECAST" in screen.forecast_label.text)
+	assert(screen.forecast_current)
 	assert(screen.world.date.day == 1)
 	screen._compare_budget()
 	assert("does not apply changes" in screen.comparison_label.text)
+	assert(screen.comparison_current)
+	screen.tax.value = 21
+	assert(not screen.comparison_current and "OUT OF DATE" in screen.comparison_label.text)
+	assert(screen.forecast_current)
+	screen.tax.value = 20
+	screen._advance_day()
+	assert(not screen.forecast_current and "OUT OF DATE" in screen.forecast_label.text)
+	screen.world.date.day = 1
 	assert(is_equal_approx(screen.world.country.income_tax_rate, 0.20))
 	assert(screen.world.date.day == 1)
 	screen._advance_day()

@@ -37,6 +37,36 @@ func _initialize() -> void:
 	assert(final_world.politics.election_count == 1)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE + ".bak"))
+	# Run diplomacy, implementation, service response, budgets, a forecast and
+	# a mid-flight save together. The forecast must not mutate the live world.
+	var combined = World.new()
+	assert(combined.issue_directive("reporting"))
+	assert(combined.start_diplomatic_talks("maritime", "cooperation"))
+	var combined_forecast: Dictionary = combined.forecast_fiscal(365)
+	assert(combined.diplomacy.progress == 0 and combined.institutions.days == 0)
+	for day in range(45):
+		combined.advance_day()
+	assert(combined.diplomacy.agreements.maritime == 350)
+	assert(combined.institutions.status == "upheld")
+	assert(combined.policy_annual_cost() == 10000000.0)
+	assert(combined.save_game(TEST_SAVE).is_empty())
+	var combined_loaded = World.new()
+	assert(combined_loaded.load_game(TEST_SAVE).is_empty())
+	for day in range(320):
+		combined.advance_day()
+		combined_loaded.advance_day()
+	assert(combined.institutions.status == "implemented")
+	assert(combined.services.levels.Administration > 50.0)
+	assert(combined.country.approval > 50.0)
+	assert(absf(combined.country.treasury - combined_forecast.cash) < 0.1)
+	assert(absf(combined_loaded.country.treasury - combined.country.treasury) < 0.1)
+	assert(absf(combined_loaded.country.approval - combined.country.approval) < 0.001)
+	assert(combined_loaded.diplomacy.agreements == combined.diplomacy.agreements)
+	assert(combined_loaded.revoke_directive())
+	assert(combined_loaded.end_cooperation("maritime"))
+	assert(combined_loaded.policy_annual_cost() == 0.0)
+	assert(combined_loaded.diplomacy.annual_partner_contribution() == 0.0)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
 	# Multi-year deficit crosses a leap year and a save/load boundary while
 	# accumulated interest changes daily. Check the accounting identity daily.
 	var long_run = World.new()

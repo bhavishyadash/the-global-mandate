@@ -27,6 +27,8 @@ var directive_summary: Label
 var dashboard_tabs: TabContainer
 var forecast_label: Label
 var comparison_label: Label
+var forecast_current := false
+var comparison_current := false
 var population_summary: Label
 var diplomacy_picker: OptionButton
 var diplomacy_summary: Label
@@ -287,6 +289,7 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	return column
 
 func _forecast_budget() -> void:
+	forecast_current = false
 	var result: Dictionary = world.forecast_fiscal(365)
 	if result.is_empty():
 		forecast_label.text = "Forecast unavailable for this state."
@@ -294,8 +297,10 @@ func _forecast_budget() -> void:
 	var d: Dictionary = result.end_date
 	var warning := "Cash exhausted by day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "Cash remains positive."
 	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning]
+	forecast_current = true
 
 func _compare_budget() -> void:
+	comparison_current = false
 	var baseline: Dictionary = world.forecast_fiscal(365)
 	var kind := _additional_tax_kind()
 	var changes := {"income_tax": tax.value / 100.0, "spending": spending.value * 1000000.0}
@@ -305,6 +310,18 @@ func _compare_budget() -> void:
 		comparison_label.text = "Comparison unavailable for these inputs."
 		return
 	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, total budget $%.0f; changing the total resets category shares.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, spending.value * 1000000.0, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval]
+	comparison_current = true
+
+func _invalidate_comparison() -> void:
+	if comparison_current:
+		comparison_current = false
+		comparison_label.text = "OUT OF DATE — rerun comparison.\n" + comparison_label.text
+
+func _invalidate_forecasts() -> void:
+	if forecast_current:
+		forecast_current = false
+		forecast_label.text = "OUT OF DATE — rerun forecast.\n" + forecast_label.text
+	_invalidate_comparison()
 
 func _process(delta: float) -> void:
 	if running:
@@ -420,6 +437,7 @@ func _load_from(path: String) -> void:
 		status.text = error
 
 func _refresh() -> void:
+	_invalidate_forecasts()
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
@@ -478,6 +496,7 @@ func _refresh_directive() -> void:
 	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Court review resolves after 30 days; the override is suspended after 10.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/60\nImplemented reporting adds 10 to the administration target and costs $5 million/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", active_name, model.status, model.days, model.progress]
 
 func _update_tax_preview(value: float) -> void:
+	_invalidate_comparison()
 	var preview: Dictionary = world.preview_income_tax(value / 100.0)
 	if preview.is_empty():
 		tax_preview.text = "Tax preview unavailable."
@@ -488,6 +507,7 @@ func _update_tax_preview(value: float) -> void:
 	tax_preview.text = "\n".join(lines)
 
 func _update_additional_tax_preview(value: float) -> void:
+	_invalidate_comparison()
 	var kind := _additional_tax_kind()
 	var preview: Dictionary = world.preview_additional_tax(kind, value / 100.0)
 	if preview.is_empty():
@@ -499,6 +519,7 @@ func _update_additional_tax_preview(value: float) -> void:
 	additional_tax_preview.text = "\n".join(lines)
 
 func _update_spending_preview(value: float) -> void:
+	_invalidate_comparison()
 	var preview: Dictionary = world.preview_annual_spending(value * 1000000.0)
 	if preview.is_empty():
 		spending_preview.text = "Spending preview unavailable."

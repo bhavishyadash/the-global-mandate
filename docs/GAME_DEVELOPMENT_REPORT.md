@@ -16,14 +16,14 @@
 |---|---|---|
 | Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
-| Simulation | Framework prototype in original project | Gregorian calendar, fictional budget, tax decision and single-slot save/load |
+| Simulation | Framework prototype in tracked project | Gregorian calendar, fictional budget, population, institutions, diplomacy and single-slot save/load |
 | World data | Not started | Research sources, licensing, dates, gaps and uncertainty |
 | Political systems | Early fictional prototype | Three population groups, a three-party legislature, one test law and a simplified election; real country institutions remain future work |
 | Economy | Concept stage | Budget, sectors, households, employment, prices and trade |
 | Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
 | GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
 | Visual design | Not decided | Map style, UI references and low-end performance target needed |
-| Playable build | Early framework prototype in original project | Headless scene launch verified; visual interaction not yet verified |
+| Playable build | Early framework prototype in tracked project | Headless simulation and UI checks pass; visual interaction and low-end performance not yet verified |
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — bars show verified completion, not effort spent. Initial percentages are approximate tracking placeholders, not a schedule forecast.
@@ -452,6 +452,10 @@ PR #81. Added a separately displayed fictional partner contribution for active c
 ### Session 44 — executive consequences
 
 PR #82. The fictional reporting directive now affects the Administration service target and budget after implementation; revocation stops future effects but preserves prior service changes. Tests cover timing, public response and save/load. Previously implemented directives acquire the new fictional rules on load. See [Session 44](SESSION_44.md).
+
+### Session 45 — integrated policy reliability
+
+PR #83. Forecasts and comparisons now flag stale results; a combined scenario tests negotiations, agreement accounting, executive implementation, services, approval, save/load and forecast consistency. Normalized diplomatic numeric types after a save/load discrepancy was found. Local headless checks pass. See [Session 45](SESSION_45.md).
 
 ## 12. Immediate next actions
 

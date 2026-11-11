@@ -24,6 +24,8 @@ var date: Dictionary = INITIAL_DATE.duplicate()
 var country: Dictionary = {}
 var scenario_id := ""
 var initialization_error := ""
+var random_seed_value := Scenario.DEFAULT_SEED
+var random_state := Scenario.DEFAULT_SEED
 var fiscal: Dictionary = _new_fiscal_period(false)
 var previous_fiscal: Dictionary = {}
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
@@ -43,6 +45,8 @@ func apply_scenario(data: Variant) -> String:
 		return error
 	# Validate all data before replacing any live state.
 	scenario_id = data.id
+	random_seed_value = int(data.get("seed", Scenario.DEFAULT_SEED))
+	random_state = random_seed_value
 	initialization_error = ""
 	date = {"year": int(data.date.year), "month": int(data.date.month), "day": int(data.date.day)}
 	country = data.country.duplicate(true)
@@ -61,6 +65,15 @@ func apply_scenario(data: Variant) -> String:
 	events = ["Scenario started. All figures are fictional test data."]
 	event_records = [{"category": "scenario", "date": date.duplicate(), "text": events[0]}]
 	return ""
+
+func next_random_u32() -> int:
+	# 32-bit LCG, specified explicitly for stable replay across platforms.
+	# It is for game simulation only, not cryptographic use.
+	random_state = (1664525 * random_state + 1013904223) & 0xffffffff
+	return random_state
+
+func next_random_fraction() -> float:
+	return next_random_u32() / 4294967296.0
 
 func annual_balance() -> float:
 	return total_annual_revenue() - country.annual_spending - policy_annual_cost() - debt_interest()
@@ -102,6 +115,8 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.date = date.duplicate(true)
 	future.country = country.duplicate(true)
 	future.scenario_id = scenario_id
+	future.random_seed_value = random_seed_value
+	future.random_state = random_state
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()):
 		return {}
 	for key in changes:
@@ -216,7 +231,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 13, "scenario_id": scenario_id, "event_records": event_records, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 14, "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -266,7 +281,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 13:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 14:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -290,6 +305,14 @@ func load_game(path: String) -> String:
 		return "Save has out-of-range policy or approval data."
 	c = c.duplicate(true)
 	var loaded_scenario_id := "test_republic"
+	var loaded_seed := Scenario.DEFAULT_SEED
+	var loaded_random_state := Scenario.DEFAULT_SEED
+	if parsed.version >= 14:
+		for key in ["random_seed", "random_state"]:
+			if not _is_whole_number(parsed.get(key)) or parsed[key] < 0 or parsed[key] > Scenario.MAX_SEED:
+				return "Save has invalid random state."
+		loaded_seed = int(parsed.random_seed)
+		loaded_random_state = int(parsed.random_state)
 	if parsed.version < 12:
 		c.id = "test_republic"
 	else:
@@ -384,6 +407,8 @@ func load_game(path: String) -> String:
 		loaded_previous = parsed.previous_fiscal.duplicate(true)
 	date = {"year": year, "month": month, "day": day}
 	scenario_id = loaded_scenario_id
+	random_seed_value = loaded_seed
+	random_state = loaded_random_state
 	fiscal = loaded_fiscal
 	previous_fiscal = loaded_previous
 	country = c.duplicate(true)

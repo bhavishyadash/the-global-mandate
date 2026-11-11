@@ -1,1 +1,3 @@
 # Session 53: deterministic random state
+
+Added an explicit 32-bit linear congruential generator with a documented stable formula, scenario seed, integer and fraction APIs, and save-v14 persistence of seed and current state. Version 1–13 saves receive the documented default seed because no prior random state existed. Forecast copies the state without consuming the live sequence. Replays start from the scenario seed. Tests cover repeatability, changed seeds, range, invalid values, forecast isolation and save/load continuation. No current political, economic or diplomatic rule consumes random numbers; statistical quality, independence between future systems and any use for specific game outcomes require separate design. This generator is not cryptographic.

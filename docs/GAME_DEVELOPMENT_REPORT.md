@@ -485,6 +485,10 @@ PR #89. Expanded scenario data to include political groups, party seats, service
 
 PR #90. Added a second fictional starting scenario and an in-game selection flow with confirmation before replacing the current session. Tests cover invalid input, reset, replay and packaged scenario data. The scenarios share the same rules and are not a coupled world. See [Session 52](SESSION_52.md).
 
+### Session 53 — reproducible random state
+
+PR #91. Added a scenario seed and stable 32-bit random state, saved in v14, with replay, forecast isolation and migration tests. Existing simulation outcomes remain deterministic; stochastic game mechanics remain future work. See [Session 53](SESSION_53.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

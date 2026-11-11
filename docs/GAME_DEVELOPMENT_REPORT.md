@@ -477,6 +477,10 @@ PR #87. Added bounded, dated and categorized event records, History filtering an
 
 PR #88. Added a development export preset that includes scenario data, resource identity metadata, a packaged-scenario smoke test and CI coverage. The local resource pack was exported and loaded successfully from an empty directory. This does not establish a working standalone Windows export or visual rendering. See [Session 50](SESSION_50.md).
 
+### Session 51 — scenario population and institutions
+
+PR #89. Expanded scenario data to include political groups, party seats, service conditions, executive state and diplomacy, with cross-system consistency checks and version-1 scenario compatibility. A second fictional starting state is covered by tests; model structure and partner identities remain fixed. See [Session 51](SESSION_51.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

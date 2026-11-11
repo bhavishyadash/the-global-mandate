@@ -51,6 +51,11 @@ func apply_scenario(data: Variant) -> String:
 	services = Services.new()
 	institutions = Institutions.new()
 	diplomacy = Diplomacy.new()
+	if data.version == 2:
+		politics.import_state(data.politics)
+		services.import_state(data.services)
+		institutions.import_state(data.institutions)
+		diplomacy.import_state(data.diplomacy)
 	fiscal = _new_fiscal_period(date.month != 1 or date.day != 1)
 	previous_fiscal = {}
 	events = ["Scenario started. All figures are fictional test data."]

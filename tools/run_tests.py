@@ -14,6 +14,7 @@ CASES = (
     ("res://tests/integration_test.gd", "Integrated scenario checks passed"),
     ("res://tests/replay_test.gd", "Replay checks passed"),
     ("res://tests/stress_test.gd", "Long-run stress checks passed"),
+    ("res://tests/world_registry_test.gd", "Multi-country registry checks passed"),
 )
 
 

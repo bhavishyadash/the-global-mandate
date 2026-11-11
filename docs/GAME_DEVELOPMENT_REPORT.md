@@ -401,6 +401,10 @@ Related to issue #48; PR #68. Added an end-to-end scenario covering a tax change
 
 Related to issues #10, #11, #12, #17, #45 and #48; PR #69. Added five individually adjustable spending categories, budget previews, tax/other revenue display, cash, debt, automatic borrowing and repayment, and a fictional 3% debt-interest rate. Version-4 saves preserve budget categories and debt; earlier saves migrate using default shares and convert a negative treasury to debt. Local simulation, UI and integrated tests passed for accounting, invalid inputs, borrowing, repayment, migration and inconsistent save rejection. No services, economic feedback, realistic debt market or visual playtest is claimed. Broader related issues remain open.
 
+### Session 32 — services and group responses
+
+Related to issues #12, #18, #19, #20, #45 and #48; PR #70. Added five fictional public-service conditions, targets based on spending per resident and gradual daily changes. Average service condition contributes differently to each test group's approval, separately from tax response. The interface shows current and target conditions. Version-5 saves persist and validate service state; v1–v4 start at neutral condition because past service history is unavailable. Local simulation, UI and integration checks passed for funding cuts/increases, baseline stability, group differences, old-save migration, corrupt service rejection and deterministic continuation. All coefficients are placeholders; real demographic, staffing, regional and economic effects and visual testing remain open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

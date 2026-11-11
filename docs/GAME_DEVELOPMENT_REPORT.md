@@ -417,6 +417,10 @@ Related to issues #21, #23, #24, #25, #45 and #48; PR #72. Added a fictional dir
 
 Related to #10, #45 and #48; PR #73. Added daily recorded fiscal flows, borrowing and repayment, current and previous year displays, and version-8 save migration. Tests cover rollover, accounting, debt, persistence and malformed history. Older saves show a partial ledger because historical flows cannot be reconstructed. This is an illustrative aggregate, not a calibrated national accounting model. Details: [Session 35](SESSION_35.md).
 
+### Session 36 — dashboard navigation
+
+PR #74, related to #45 and #48. Organized the prototype into five scrollable tabs and kept common time and save controls available; headless UI, simulation and integration checks passed. Visual and resolution testing remains open. See [Session 36](SESSION_36.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

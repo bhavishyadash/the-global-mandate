@@ -23,12 +23,16 @@ func _initialize() -> void:
 			return
 		var initialized := Time.get_ticks_usec()
 		var negotiations := 0
+		var tick_samples: Array[float] = []
 		for day in range(365):
 			if day % 90 == 0:
 				for i in range(count - 1):
 					if registry.start_dialogue("country_%03d" % i, "country_%03d" % (i + 1)):
 						negotiations += 1
+			var tick_started := Time.get_ticks_usec()
 			registry.advance_day()
+			tick_samples.append((Time.get_ticks_usec() - tick_started) / 1000.0)
 		var finished := Time.get_ticks_usec()
-		print("countries=%d days=365 dialogues=%d init_ms=%.3f ticks_ms=%.3f average_tick_ms=%.3f" % [count, negotiations, (initialized - started) / 1000.0, (finished - initialized) / 1000.0, (finished - initialized) / 365000.0])
+		tick_samples.sort()
+		print("countries=%d days=365 dialogues=%d init_ms=%.3f total_ms=%.3f average_daily_work_ms=%.3f p95_tick_ms=%.3f max_tick_ms=%.3f" % [count, negotiations, (initialized - started) / 1000.0, (finished - initialized) / 1000.0, (finished - initialized) / 365000.0, tick_samples[346], tick_samples[364]])
 	quit(0)

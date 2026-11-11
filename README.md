@@ -14,6 +14,8 @@ The source-controlled project is this repository's `project.godot`. The earlier 
 
 The `docs/` directory contains the living development report, initial milestone and partial GPS feature survey. Sessions 6–15 added a small fictional political prototype; see the report for its limits.
 
+If an interrupted save blocks saving or the primary cannot be loaded, see [save recovery](docs/SAVE_RECOVERY.md) before moving or replacing files.
+
 Run the headless checks with a Godot 4.7 executable:
 
 ```text

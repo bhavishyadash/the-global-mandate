@@ -38,14 +38,34 @@ func _initialize() -> void:
 	invalid_scenario = scenario_data.duplicate(true)
 	invalid_scenario.country.annual_revenue = 0.0
 	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	invalid_scenario = scenario_data.duplicate(true)
+	invalid_scenario.politics.parties[0].seats = 99
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	invalid_scenario = scenario_data.duplicate(true)
+	invalid_scenario.services.levels.Health = 90.0
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	assert(world.country == before_scenario)
+	var v1_scenario: Dictionary = scenario_data.duplicate(true)
+	v1_scenario.version = 1
+	for field in ["politics", "services", "institutions", "diplomacy"]:
+		v1_scenario.erase(field)
+	assert(World.Scenario.validate(v1_scenario).is_empty())
 	var alternate: Dictionary = scenario_data.duplicate(true)
 	alternate.id = "custom_scenario"
 	alternate.country.id = "custom_country"
 	alternate.country.name = "Custom Test Country"
 	alternate.date.month = 3
+	alternate.politics.groups[0].approval = 60.0
+	alternate.politics.groups[0].raw_approval = 60.0
+	alternate.country.approval = 54.0
+	alternate.politics.parties[0].seats = 50
+	alternate.politics.parties[1].seats = 20
+	alternate.diplomacy.relations.maritime = 80.0
 	var scenario_world = World.new()
 	assert(scenario_world.apply_scenario(alternate).is_empty())
 	assert(scenario_world.country.name == "Custom Test Country" and scenario_world.fiscal.partial)
+	assert(scenario_world.politics.groups[0].approval == 60.0 and scenario_world.politics.parties[0].seats == 50)
+	assert(scenario_world.diplomacy.relations.maritime == 80.0 and scenario_world.country.approval == 54.0)
 	alternate.country.name = "Changed externally"
 	assert(scenario_world.country.name == "Custom Test Country")
 	var scenario_path := "res://tests/scenario_test.json"
@@ -54,6 +74,7 @@ func _initialize() -> void:
 	var scenario_restored = World.new()
 	assert(scenario_restored.load_game(scenario_path).is_empty())
 	assert(scenario_restored.scenario_id == "custom_scenario" and scenario_restored.country.id == "custom_country")
+	assert(scenario_restored.politics.groups[0].approval == 60.0 and scenario_restored.diplomacy.relations.maritime == 80.0)
 	assert(scenario_restored.event_records == scenario_world.event_records)
 	var stored_scenario_file := FileAccess.open(scenario_path, FileAccess.READ)
 	var stored_scenario: Dictionary = JSON.parse_string(stored_scenario_file.get_as_text())

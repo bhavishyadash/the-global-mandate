@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "id": "test_republic",
   "description": "Fictional baseline for testing; not real-world data.",
   "date": {"year": 2026, "month": 1, "day": 1},
@@ -16,5 +16,21 @@
     "consumption_tax_rate": 0.0,
     "corporate_tax_rate": 0.0,
     "approval": 50.0
-  }
+  },
+  "politics": {
+    "groups": [
+      {"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 100.0},
+      {"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 105.0},
+      {"name": "Higher income", "share": 0.2, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 115.0}
+    ],
+    "parties": [
+      {"name": "Government", "seats": 48, "support": true},
+      {"name": "Reform Party", "seats": 22, "support": true},
+      {"name": "Opposition", "seats": 30, "support": false}
+    ],
+    "procurement_policy": false, "procurement_progress": 0, "election_count": 0
+  },
+  "services": {"levels": {"Health": 50.0, "Education": 50.0, "Security": 50.0, "Infrastructure": 50.0, "Administration": 50.0}},
+  "institutions": {"kind": "", "status": "none", "days": 0, "progress": 0},
+  "diplomacy": {"relations": {"maritime": 30.0, "northern": -10.0}, "cooldowns": {"maritime": 0, "northern": 0}, "agreements": {"maritime": 0, "northern": 0}, "active": "", "progress": 0, "proposal": ""}
 }

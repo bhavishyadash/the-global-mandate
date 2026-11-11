@@ -1,7 +1,11 @@
 extends RefCounted
 
-# This initial schema configures one country only. Politics, institutions,
-# services and diplomacy still start with their documented test defaults.
+const Politics = preload("res://simulation/politics.gd")
+const Services = preload("res://simulation/services.gd")
+const Institutions = preload("res://simulation/institutions.gd")
+const Diplomacy = preload("res://simulation/diplomacy.gd")
+
+# One country per scenario; version 1 uses the original test defaults.
 const CATEGORIES := ["Health", "Education", "Security", "Infrastructure", "Administration"]
 
 static func read_file(path: String) -> Variant:
@@ -14,7 +18,7 @@ static func read_file(path: String) -> Variant:
 	return json.data
 
 static func validate(data: Variant) -> String:
-	if not data is Dictionary or data.get("version") != 1 or not _id(data.get("id")) or not data.get("description") is String:
+	if not data is Dictionary or not _whole(data.get("version")) or data.version < 1 or data.version > 2 or not _id(data.get("id")) or not data.get("description") is String:
 		return "Invalid scenario header or unsupported version."
 	var date: Variant = data.get("date")
 	var c: Variant = data.get("country")
@@ -41,9 +45,21 @@ static func validate(data: Variant) -> String:
 	for key in ["income_tax_rate", "consumption_tax_rate", "corporate_tax_rate"]:
 		if c[key] < 0.0 or c[key] > 0.60:
 			return "Scenario tax rate is out of range."
-	# Other systems currently initialize at neutral service and political values.
-	if c.approval != 50.0:
-		return "Starting approval must match the current neutral political baseline."
+	if c.approval < 0.0 or c.approval > 100.0:
+		return "Scenario approval is out of range."
+	var politics = Politics.new()
+	var services = Services.new()
+	var institutions = Institutions.new()
+	var diplomacy = Diplomacy.new()
+	if data.version == 2:
+		if not politics.import_state(data.get("politics")) or not services.import_state(data.get("services")) or not institutions.import_state(data.get("institutions")) or not diplomacy.import_state(data.get("diplomacy")):
+			return "Scenario political, service, institutional or diplomatic state is invalid."
+	var bonuses: Array = services.group_bonuses()
+	for i in range(politics.groups.size()):
+		if absf(politics.groups[i].service_bonus - bonuses[i]) > 0.001:
+			return "Scenario group approval and service conditions are inconsistent."
+	if absf(politics.approval() - float(c.approval)) > 0.001:
+		return "Scenario group and national approval are inconsistent."
 	var tax_revenue: float = c.income_tax_rate * 2000000000.0 + c.consumption_tax_rate * 1500000000.0 + c.corporate_tax_rate * 1000000000.0
 	if c.annual_revenue < tax_revenue:
 		return "Scenario revenue cannot be less than modeled tax revenue."

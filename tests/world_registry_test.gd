@@ -2,8 +2,11 @@ extends SceneTree
 
 const World = preload("res://simulation/world.gd")
 const Registry = preload("res://simulation/world_registry.gd")
+const SAVE := "res://tests/registry_test_save.json"
 
 func _initialize() -> void:
+	for suffix in ["", ".tmp", ".bak", ".invalid", ".bak.previous"]:
+		assert(not FileAccess.file_exists(SAVE + suffix))
 	var federal: Variant = World.Scenario.read_file(World.DEFAULT_SCENARIO)
 	var coastal: Variant = World.Scenario.read_file("res://data/scenarios/coastal_test.json")
 	var registry = Registry.new()
@@ -28,6 +31,26 @@ func _initialize() -> void:
 		registry.advance_day()
 	assert(registry.dialogue_progress("test_republic", "coastal_republic") == 29)
 	assert(registry.relationship("test_republic", "coastal_republic") == 0.0)
+	assert(registry.save_game(SAVE).is_empty())
+	assert(registry.save_game(SAVE).is_empty())
+	var primary := FileAccess.get_file_as_string(SAVE)
+	var backup := FileAccess.get_file_as_string(SAVE + ".bak")
+	registry._relations["coastal_republic|test_republic"] = 101.0
+	assert(not registry.save_game(SAVE).is_empty())
+	assert(FileAccess.get_file_as_string(SAVE) == primary)
+	assert(FileAccess.get_file_as_string(SAVE + ".bak") == backup)
+	assert(not FileAccess.file_exists(SAVE + ".tmp"))
+	registry._relations.erase("coastal_republic|test_republic")
+	var file_restored = Registry.new()
+	assert(file_restored.load_game(SAVE).is_empty())
+	assert(file_restored.dialogue_progress("test_republic", "coastal_republic") == 29)
+	assert(file_restored.load_game(SAVE + ".bak").is_empty())
+	var pending_temp := FileAccess.open(SAVE + ".tmp", FileAccess.WRITE)
+	pending_temp.store_string("preserve incomplete save")
+	pending_temp.close()
+	assert(not registry.save_game(SAVE).is_empty())
+	assert(FileAccess.get_file_as_string(SAVE + ".tmp") == "preserve incomplete save")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE + ".tmp"))
 	var encoded: String = JSON.stringify(registry.export_snapshot())
 	var restored = Registry.new()
 	assert(restored.import_snapshot(JSON.parse_string(encoded)).is_empty())
@@ -45,6 +68,8 @@ func _initialize() -> void:
 	var saved_before: Dictionary = restored.export_snapshot()
 	assert(not restored.import_snapshot(detached).is_empty())
 	assert(restored.export_snapshot() == saved_before)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE + ".bak"))
 	detached = saved_before.duplicate(true)
 	detached.relations["unknown|test_republic"] = 10.0
 	assert(not restored.import_snapshot(detached).is_empty())

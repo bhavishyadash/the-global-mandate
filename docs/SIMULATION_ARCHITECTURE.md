@@ -1,6 +1,6 @@
 # Simulation architecture: prototype baseline
 
-This documents the implemented prototype through session 55, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
+This documents the implemented prototype through session 60, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
 
 ## Ownership and boundaries
 
@@ -10,6 +10,7 @@ This documents the implemented prototype through session 55, not the final game 
 - `simulation/institutions.gd` owns a fictional single-directive lifecycle, fixed authority cases, court outcomes and agency implementation progress.
 - `simulation/diplomacy.gd` owns two fictional partners, talks and agreements; `simulation/scenario.gd` validates versioned single-country scenario data.
 - `simulation/decisions.gd` validates UI command requests and returns explicit results; `simulation/replay.gd` runs ordered commands on an isolated world.
+- `simulation/world_registry.gd` is an experimental headless multi-country layer with synchronized clocks, bilateral dialogue and separately versioned world snapshots/saves. It is not yet connected to the playable UI or its older single-country diplomacy model.
 - `ui/main.gd` displays state, provides player controls, schedules simulation days and calls world methods. The engine is usable without the graphical UI; the headless simulation tests instantiate it directly.
 - The model is mutable in memory: dictionaries and arrays are not yet encapsulated. Only operations called through the existing methods are validated. This is a limitation, not a guarantee that arbitrary state writes are safe.
 

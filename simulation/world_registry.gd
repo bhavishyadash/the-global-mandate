@@ -88,6 +88,72 @@ func export_snapshot() -> Dictionary:
 		snapshots[id] = _countries[id].export_snapshot()
 	return {"version": 1, "countries": snapshots, "relations": _relations.duplicate(true), "talks": _talks.duplicate(true)}
 
+func load_game(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return "No world save could be opened."
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		return "World save contains invalid JSON."
+	return import_snapshot(json.data)
+
+func save_game(path: String) -> String:
+	var temporary := path + ".tmp"
+	if FileAccess.file_exists(temporary):
+		return "A temporary world save already exists; inspect it before saving."
+	var file := FileAccess.open(temporary, FileAccess.WRITE)
+	if file == null:
+		return "Could not open the temporary world save."
+	file.store_string(JSON.stringify(export_snapshot()))
+	file.flush()
+	var write_error := file.get_error()
+	file.close()
+	var absolute_temp := ProjectSettings.globalize_path(temporary)
+	if write_error != OK:
+		DirAccess.remove_absolute(absolute_temp)
+		return "Could not finish writing the world save."
+	var candidate = get_script().new()
+	var validation_error: String = candidate.load_game(temporary)
+	if not validation_error.is_empty():
+		DirAccess.remove_absolute(absolute_temp)
+		return "World state cannot be saved: " + validation_error
+	var primary := ProjectSettings.globalize_path(path)
+	var backup := primary + ".bak"
+	var previous := backup + ".previous"
+	var displaced := ""
+	var retained := false
+	if FileAccess.file_exists(path):
+		var probe = get_script().new()
+		if probe.load_game(path).is_empty():
+			if FileAccess.file_exists(previous):
+				DirAccess.remove_absolute(absolute_temp)
+				return "An interrupted world backup rotation needs manual recovery."
+			if FileAccess.file_exists(backup):
+				if DirAccess.rename_absolute(backup, previous) != OK:
+					DirAccess.remove_absolute(absolute_temp)
+					return "Could not preserve the previous world backup."
+				retained = true
+			displaced = backup
+		else:
+			displaced = primary + ".invalid"
+			if FileAccess.file_exists(displaced):
+				DirAccess.remove_absolute(absolute_temp)
+				return "A previous invalid world save needs manual recovery."
+		if DirAccess.rename_absolute(primary, displaced) != OK:
+			if retained:
+				DirAccess.rename_absolute(previous, backup)
+			DirAccess.remove_absolute(absolute_temp)
+			return "Could not preserve the existing world save."
+	if DirAccess.rename_absolute(absolute_temp, primary) != OK:
+		if not displaced.is_empty() and FileAccess.file_exists(displaced):
+			DirAccess.rename_absolute(displaced, primary)
+		if retained and not FileAccess.file_exists(backup):
+			DirAccess.rename_absolute(previous, backup)
+		return "Could not finish saving; prior files were retained if possible."
+	if retained and DirAccess.remove_absolute(previous) != OK:
+		return "World saved, but older backup cleanup needs manual attention."
+	return ""
+
 func import_snapshot(data: Variant) -> String:
 	if not data is Dictionary or data.get("version") != 1 or not data.get("countries") is Dictionary or not data.get("relations") is Dictionary or not data.get("talks") is Dictionary:
 		return "Invalid registry snapshot."

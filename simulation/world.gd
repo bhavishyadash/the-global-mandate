@@ -5,6 +5,7 @@ const Services = preload("res://simulation/services.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
+const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate", "base": 1500000000.0}, "corporate": {"field": "corporate_tax_rate", "base": 1000000000.0}}
 const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "Infrastructure": 0.15, "Administration": 0.10}
 var politics = Politics.new()
 var services = Services.new()
@@ -21,6 +22,8 @@ var country := {
 	"annual_spending": 1100000000.0,
 	"spending_categories": {"Health": 330000000.0, "Education": 275000000.0, "Security": 220000000.0, "Infrastructure": 165000000.0, "Administration": 110000000.0},
 	"income_tax_rate": 0.20,
+	"consumption_tax_rate": 0.0,
+	"corporate_tax_rate": 0.0,
 	"approval": 50.0,
 }
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
@@ -34,6 +37,12 @@ func debt_interest() -> float:
 
 func income_tax_revenue() -> float:
 	return country.income_tax_rate * TEST_TAXABLE_BASE
+
+func additional_tax_revenue(kind: String) -> float:
+	if not ADDITIONAL_TAXES.has(kind):
+		return 0.0
+	var spec: Dictionary = ADDITIONAL_TAXES[kind]
+	return float(country[spec.field]) * float(spec.base)
 
 func policy_annual_cost() -> float:
 	return PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
@@ -94,7 +103,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 5, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state()}))
+	file.store_string(JSON.stringify({"version": 6, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -144,7 +153,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -167,6 +176,14 @@ func load_game(path: String) -> String:
 	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > 10000000000.0 or e.size() > MAX_EVENTS:
 		return "Save has out-of-range policy or approval data."
 	c = c.duplicate(true)
+	if parsed.version < 6:
+		c.consumption_tax_rate = 0.0
+		c.corporate_tax_rate = 0.0
+	else:
+		for kind in ADDITIONAL_TAXES:
+			var field: String = ADDITIONAL_TAXES[kind].field
+			if not _is_number(c.get(field)) or c[field] < 0.0 or c[field] > 0.60:
+				return "Save has invalid additional tax data."
 	if parsed.version < 4:
 		c.debt = maxf(0.0, -float(c.treasury))
 		c.treasury = maxf(0.0, float(c.treasury))
@@ -189,7 +206,7 @@ func load_game(path: String) -> String:
 			return "Save has invalid event data."
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
-	if parsed.version == 5 and not loaded_services.import_state(parsed.get("services")):
+	if parsed.version >= 5 and not loaded_services.import_state(parsed.get("services")):
 		return "Save has invalid service data."
 	if parsed.version >= 2:
 		var political_data: Variant = parsed.get("politics")
@@ -206,7 +223,7 @@ func load_game(path: String) -> String:
 		for group in loaded_politics.groups:
 			group.approval = float(c.approval)
 			group.raw_approval = float(c.approval)
-	if parsed.version == 5:
+	if parsed.version >= 5:
 		var bonuses: Array = loaded_services.group_bonuses()
 		for i in range(loaded_politics.groups.size()):
 			if absf(loaded_politics.groups[i].service_bonus - bonuses[i]) > 0.001:
@@ -264,6 +281,34 @@ func set_income_tax(rate: float) -> bool:
 	country.approval = politics.approval()
 	country.income_tax_rate = rate
 	add_event("Income tax changed from %.1f%% to %.1f%%." % [previous * 100.0, rate * 100.0])
+	return true
+
+func preview_additional_tax(kind: String, rate: float) -> Dictionary:
+	if not ADDITIONAL_TAXES.has(kind) or not is_finite(rate) or rate < 0.0 or rate > 0.60:
+		return {}
+	var spec: Dictionary = ADDITIONAL_TAXES[kind]
+	var delta: float = rate - float(country[spec.field])
+	var projected_revenue: float = country.annual_revenue + delta * float(spec.base)
+	if not is_finite(projected_revenue) or projected_revenue < 0.0:
+		return {}
+	var preview_politics = Politics.new()
+	if not preview_politics.import_state(politics.export_state()):
+		return {}
+	preview_politics.apply_additional_tax_change(kind, delta)
+	return {"annual_revenue": projected_revenue, "approval": preview_politics.approval(), "groups": preview_politics.groups.duplicate(true)}
+
+func set_additional_tax(kind: String, rate: float) -> bool:
+	if preview_additional_tax(kind, rate).is_empty():
+		return false
+	var spec: Dictionary = ADDITIONAL_TAXES[kind]
+	var previous: float = country[spec.field]
+	if is_equal_approx(previous, rate):
+		return true
+	country.annual_revenue += (rate - previous) * float(spec.base)
+	politics.apply_additional_tax_change(kind, rate - previous)
+	country.approval = politics.approval()
+	country[spec.field] = rate
+	add_event("%s tax changed from %.1f%% to %.1f%%." % [kind.capitalize(), previous * 100.0, rate * 100.0])
 	return true
 
 func vote_procurement() -> bool:

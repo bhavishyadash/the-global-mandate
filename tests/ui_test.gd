@@ -15,6 +15,11 @@ func run_checks() -> void:
 	assert(is_equal_approx(screen.world.country.income_tax_rate, 0.20))
 	screen._apply_tax()
 	assert(is_equal_approx(screen.world.country.approval, 8.0))
+	screen.additional_tax.value = 10
+	assert("CONSUMPTION" in screen.additional_tax_preview.text)
+	assert(is_zero_approx(screen.world.country.consumption_tax_rate))
+	screen._apply_additional_tax()
+	assert(is_equal_approx(screen.world.country.consumption_tax_rate, 0.10))
 	screen.spending.value = 1500
 	assert("Annual balance" in screen.spending_preview.text)
 	assert(is_equal_approx(screen.world.country.annual_spending, 1100000000.0))

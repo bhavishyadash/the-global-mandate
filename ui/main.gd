@@ -19,6 +19,9 @@ var spending_preview: Label
 var category_picker: OptionButton
 var category_amount: SpinBox
 var category_preview: Label
+var additional_tax_picker: OptionButton
+var additional_tax: SpinBox
+var additional_tax_preview: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -116,6 +119,21 @@ func _ready() -> void:
 	category_button.text = "Apply category ($ millions)"
 	category_button.pressed.connect(_apply_category)
 	category_controls.add_child(category_button)
+	var tax_controls := HBoxContainer.new()
+	layout.add_child(tax_controls)
+	additional_tax_picker = OptionButton.new()
+	additional_tax_picker.add_item("Consumption tax")
+	additional_tax_picker.add_item("Corporate tax")
+	tax_controls.add_child(additional_tax_picker)
+	additional_tax = SpinBox.new()
+	additional_tax.min_value = 0.0
+	additional_tax.max_value = 60.0
+	additional_tax.step = 0.1
+	tax_controls.add_child(additional_tax)
+	var additional_tax_button := Button.new()
+	additional_tax_button.text = "Apply selected tax (%)"
+	additional_tax_button.pressed.connect(_apply_additional_tax)
+	tax_controls.add_child(additional_tax_button)
 	status = Label.new()
 	layout.add_child(status)
 	explanation = Label.new()
@@ -126,6 +144,11 @@ func _ready() -> void:
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(tax_preview)
 	tax.value_changed.connect(_update_tax_preview)
+	additional_tax_preview = Label.new()
+	additional_tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(additional_tax_preview)
+	additional_tax_picker.item_selected.connect(_additional_tax_selected)
+	additional_tax.value_changed.connect(_update_additional_tax_preview)
 	spending_preview = Label.new()
 	spending_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(spending_preview)
@@ -179,6 +202,19 @@ func _apply_tax() -> void:
 	world.set_income_tax(tax.value / 100.0)
 	_refresh()
 
+func _additional_tax_kind() -> String:
+	return "consumption" if additional_tax_picker.selected == 0 else "corporate"
+
+func _additional_tax_selected(_index: int) -> void:
+	var kind := _additional_tax_kind()
+	additional_tax.value = world.country[world.ADDITIONAL_TAXES[kind].field] * 100.0
+	_update_additional_tax_preview(additional_tax.value)
+
+func _apply_additional_tax() -> void:
+	var kind := _additional_tax_kind()
+	status.text = "%s tax updated." % kind.capitalize() if world.set_additional_tax(kind, additional_tax.value / 100.0) else "Tax change is unavailable."
+	_refresh()
+
 func _apply_spending() -> void:
 	world.set_annual_spending(spending.value * 1000000.0)
 	_category_selected(category_picker.selected)
@@ -223,6 +259,7 @@ func _load_from(path: String) -> void:
 		elapsed = 0.0
 		pause_button.text = "Resume"
 		tax.value = world.country.income_tax_rate * 100.0
+		_additional_tax_selected(additional_tax_picker.selected)
 		spending.value = world.country.annual_spending / 1000000.0
 		_category_selected(category_picker.selected)
 		status.text = "Game loaded and paused."
@@ -235,7 +272,9 @@ func _refresh() -> void:
 	var d: Dictionary = world.date
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, c.annual_revenue, c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
-	budget_lines.append("Income-tax revenue (fixed test base): $%.0f | Other revenue: $%.0f" % [world.income_tax_revenue(), c.annual_revenue - world.income_tax_revenue()])
+	var consumption_revenue: float = world.additional_tax_revenue("consumption")
+	var corporate_revenue: float = world.additional_tax_revenue("corporate")
+	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
 	for category in World.CATEGORY_SHARES:
 		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.services.target(category, c.spending_categories[category], c.population)])
 	summary.text += "\n" + "\n".join(budget_lines)
@@ -250,6 +289,7 @@ func _refresh() -> void:
 	politics_summary.text = "\n".join(lines)
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)
+	_update_additional_tax_preview(additional_tax.value)
 	_update_spending_preview(spending.value)
 	_update_category_preview(category_amount.value)
 
@@ -262,6 +302,17 @@ func _update_tax_preview(value: float) -> void:
 	for group in preview.groups:
 		lines.append("%s: %.1f%% approval" % [group.name, group.approval])
 	tax_preview.text = "\n".join(lines)
+
+func _update_additional_tax_preview(value: float) -> void:
+	var kind := _additional_tax_kind()
+	var preview: Dictionary = world.preview_additional_tax(kind, value / 100.0)
+	if preview.is_empty():
+		additional_tax_preview.text = "Tax preview unavailable."
+		return
+	var lines := PackedStringArray(["%s TAX PREVIEW (fictional fixed-base model)" % kind.to_upper(), "Projected annual revenue: $%.0f | National approval: %.1f%%" % [preview.annual_revenue, preview.approval]])
+	for group in preview.groups:
+		lines.append("%s: %.1f%% approval" % [group.name, group.approval])
+	additional_tax_preview.text = "\n".join(lines)
 
 func _update_spending_preview(value: float) -> void:
 	var preview: Dictionary = world.preview_annual_spending(value * 1000000.0)

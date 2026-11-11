@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
-**Report status:** Living record; updated through session 56
+**Report status:** Living record; updated through session 57
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -502,6 +502,10 @@ PR #93. Reconciled the milestone checklist with implemented evidence, documented
 ### Session 56 — Windows development build
 
 PR #94. Installed the checksum-verified Windows Godot export templates, added a non-overwriting build/smoke script and built a Windows executable plus PCK. Headless startup and a basic graphical day advance passed on the current machine; the default window was very small and provisional low-end hardware verification remains open. The downloaded archive was removed after verification. See [Session 56](SESSION_56.md).
+
+### Session 57 — startup window usability
+
+PR #95. The standalone build now starts maximized after the previous default appeared very small. A new Windows build was visually checked for maximized startup and restore/maximize controls; 720p and target-laptop validation remain open. See [Session 57](SESSION_57.md).
 
 ## 12. Immediate next actions
 

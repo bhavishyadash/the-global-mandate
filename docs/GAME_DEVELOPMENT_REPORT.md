@@ -421,6 +421,10 @@ Related to #10, #45 and #48; PR #73. Added daily recorded fiscal flows, borrowin
 
 PR #74, related to #45 and #48. Organized the prototype into five scrollable tabs and kept common time and save controls available; headless UI, simulation and integration checks passed. Visual and resolution testing remains open. See [Session 36](SESSION_36.md).
 
+### Session 37 — fiscal forecast
+
+PR #75, related to #10, #45 and #48. Added an on-demand 365-day forecast on an independent simulation copy, including evolving debt interest and policy state. Headless tests verify no mutation and agreement with an actual run. It assumes no new decisions or unmodeled shocks and uses fictional rules. See [Session 37](SESSION_37.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

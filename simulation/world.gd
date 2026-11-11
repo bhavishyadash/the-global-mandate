@@ -54,6 +54,31 @@ func policy_annual_cost() -> float:
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
 
+func forecast_fiscal(days: int) -> Dictionary:
+	# Simulate a separate copy: no files, live state or random outcomes are changed.
+	if days < 1 or days > 366 or date.year >= 9999:
+		return {}
+	var future = get_script().new()
+	future.date = date.duplicate(true)
+	future.country = country.duplicate(true)
+	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()):
+		return {}
+	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
+	for i in range(days):
+		var divisor := 366.0 if is_leap_year(future.date.year) else 365.0
+		result.revenue += future.country.annual_revenue / divisor
+		result.spending += future.country.annual_spending / divisor
+		result.policy += future.policy_annual_cost() / divisor
+		result.interest += future.debt_interest() / divisor
+		future.advance_day()
+		if result.first_cash_exhaustion_day == 0 and future.country.treasury <= 0.0:
+			result.first_cash_exhaustion_day = i + 1
+	result.end_date = future.date.duplicate()
+	result.cash = future.country.treasury
+	result.debt = future.country.debt
+	result.approval = future.country.approval
+	return result
+
 func advance_day() -> void:
 	var divisor := 366.0 if is_leap_year(date.year) else 365.0
 	var revenue: float = country.annual_revenue / divisor

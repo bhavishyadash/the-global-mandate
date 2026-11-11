@@ -5,6 +5,7 @@ const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
 const Healthcare = preload("res://simulation/healthcare.gd")
+const Congress = preload("res://simulation/congress.gd")
 const Scenario = preload("res://simulation/scenario.gd")
 const PolicyRules = preload("res://simulation/policy_rules.gd")
 const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
@@ -17,6 +18,7 @@ var services = Services.new()
 var institutions = Institutions.new()
 var diplomacy = Diplomacy.new()
 var healthcare = Healthcare.new()
+var congress = Congress.new()
 var policy_rules: Dictionary = PolicyRules.defaults()
 
 # All values here are fictional test data; rates are annual USD.
@@ -57,6 +59,7 @@ func apply_scenario(data: Variant) -> String:
 	institutions = Institutions.new()
 	diplomacy = Diplomacy.new()
 	healthcare = Healthcare.new()
+	congress = Congress.new()
 	policy_rules = data.policy_rules.duplicate(true) if data.version >= 5 else PolicyRules.defaults()
 	if data.version >= 3:
 		healthcare.configure(data.healthcare_rules)
@@ -245,7 +248,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 20, "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 21, "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -331,7 +334,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 20:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 21:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -433,6 +436,9 @@ func import_snapshot(parsed: Variant) -> String:
 			healthcare_data.appropriation = 1.0
 		if not loaded_healthcare.import_state(healthcare_data):
 			return "Save has invalid healthcare policy data."
+	var loaded_congress = Congress.new()
+	if parsed.version >= 21 and not loaded_congress.import_state(parsed.get("congress"), loaded_healthcare.rules.funding_options):
+		return "Save has invalid congressional bill data."
 	var loaded_diplomacy = Diplomacy.new()
 	if parsed.version >= 9:
 		var diplomatic_data: Variant = parsed.get("diplomacy")
@@ -489,6 +495,7 @@ func import_snapshot(parsed: Variant) -> String:
 	services = loaded_services
 	institutions = loaded_institutions
 	healthcare = loaded_healthcare
+	congress = loaded_congress
 	policy_rules = loaded_policy_rules.duplicate(true)
 	diplomacy = loaded_diplomacy
 	events.clear()
@@ -615,6 +622,36 @@ func preview_healthcare(amount: float, repeal: bool = false) -> Dictionary:
 	var current_cost: float = healthcare.annual_cost()
 	var next_cost: float = 0.0 if repeal else amount * (healthcare.appropriation if healthcare.active else 1.0)
 	return {"positions": positions, "votes": seats, "passes": seats > 50, "annual_cost": next_cost, "annual_balance": annual_balance() + current_cost - next_cost, "administration": services.levels.Administration, "progress": healthcare.progress, "full_health_target_bonus": float(healthcare.rules.target_per_100m) * amount / 100000000.0 if not repeal else 0.0}
+
+func introduce_congress_bill(amount: float) -> bool:
+	if not congress.introduce(amount, healthcare.rules.funding_options):
+		return false
+	add_event("Healthcare bill introduced in the fictional House ($%.0f/year)." % amount, "policy", "congress_bill_introduced")
+	return true
+
+func congress_vote() -> bool:
+	var before: String = congress.stage
+	if not congress.vote(healthcare.rules.funding_options):
+		return false
+	add_event("Congressional vote: %s → %s." % [before, congress.stage], "policy", "congress_vote")
+	if congress.stage == "enacted":
+		_enact_congress_healthcare()
+	return true
+
+func congress_president(action: String) -> bool:
+	if not congress.presidential_action(action):
+		return false
+	add_event("President chose to %s the healthcare bill." % action, "policy", "presidential_action")
+	if congress.stage == "enacted":
+		_enact_congress_healthcare()
+	return true
+
+func _enact_congress_healthcare() -> void:
+	if healthcare.active and congress.funding > healthcare.funding:
+		healthcare.progress *= healthcare.funding / congress.funding
+	healthcare.active = true
+	healthcare.funding = congress.funding
+	add_event("Healthcare authorization enacted through the bicameral prototype.", "policy", "congress_healthcare_enacted")
 
 func vote_healthcare(amount: float) -> bool:
 	var preview := preview_healthcare(amount)

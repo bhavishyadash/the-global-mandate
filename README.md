@@ -18,6 +18,8 @@ In **Laws**, search the selected category and choose an implemented law. Healthc
 
 The **Executive Orders** tab contains two fictional directive options with automatic court review under prototype rules. Submitting a law or directive opens a review first; canceling does not submit it. Opening a review pauses a running game and leaves it paused. These fictional institutions are not a model of US constitutional procedure.
 
+The **Government** tab also offers a separate US-inspired healthcare bill demonstration. Introduce a bill, vote in the House and Senate, then sign or veto it. After a veto, both chambers may vote on an override. The seats, party control and vote support are fictional and all members are assumed to vote. Signing or overriding changes the existing healthcare policy. The older single-chamber actions remain available separately. This demonstration omits important US procedures; see [session 80](docs/SESSION_80.md).
+
 The source-controlled project is this repository's `project.godot`. The earlier project in `Documents/the-global-mandate` is a separate copy; changes in it do not automatically appear here. To compare them without changing either folder, run `python tools/compare_projects.py "C:\Users\Shadow\Documents\the-global-mandate"` from this repository. The comparison ignores generated Godot data, documentation and tooling; it reports differences but never synchronizes files. Review differences before manually copying anything.
 
 The `docs/` directory contains the living development report, initial milestone and partial GPS feature survey. Sessions 6–15 added a small fictional political prototype; see the report for its limits.

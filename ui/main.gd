@@ -27,6 +27,8 @@ var spending: SpinBox
 var speed := 1
 var explanation: Label
 var politics_summary: Label
+var congress_summary: Label
+var congress_funding: OptionButton
 var tax_preview: Label
 var spending_preview: Label
 var category_picker: OptionButton
@@ -430,11 +432,31 @@ func _ready() -> void:
 	for node in [income_controls, tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
 	politics_summary.reparent(government)
+	var congress_title := Label.new()
+	congress_title.text = "US-INSPIRED BICAMERAL HEALTHCARE BILL — fictional test"
+	government.add_child(congress_title)
+	congress_funding = OptionButton.new()
+	for amount in world.healthcare.rules.funding_options:
+		congress_funding.add_item("Healthcare authorization: $%.0fM / year" % (amount / 1000000.0))
+	congress_funding.select(1)
+	government.add_child(congress_funding)
+	var bill_controls := HBoxContainer.new()
+	government.add_child(bill_controls)
+	for spec in [["Introduce bill", "introduce_congress_bill"], ["Vote in chamber", "congress_vote"], ["Sign", "sign"], ["Veto", "veto"]]:
+		var button := Button.new()
+		button.text = spec[0]
+		var action: String = spec[1]
+		button.pressed.connect(func(): _request_congress_action(action))
+		bill_controls.add_child(button)
+	congress_summary = Label.new()
+	congress_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	government.add_child(congress_summary)
+	government.move_child(politics_summary, government.get_child_count() - 1)
 	var executive_heading := Label.new()
 	executive_heading.text = "EXECUTIVE ORDERS — fictional test scenario"
 	executive.add_child(executive_heading)
 	var executive_note := Label.new()
-	executive_note.text = "Choose a directive and review its authority, implementation and court outcome before issuing it."
+	executive_note.text = "Directives are separate from bills; this fictional court automatically reviews every directive. Real US orders require legal authority and are reviewed through actual litigation, not automatically."
 	executive_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	executive.add_child(executive_note)
 	for node in [directive_controls, directive_summary]:
@@ -703,9 +725,15 @@ func _sync_scenario_picker() -> void:
 
 func _sync_healthcare_picker() -> void:
 	healthcare_picker.clear()
+	if congress_funding != null:
+		congress_funding.clear()
 	for amount in world.healthcare.rules.funding_options:
 		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
+		if congress_funding != null:
+			congress_funding.add_item("Healthcare authorization: $%.0fM / year" % (amount / 1000000.0))
 	healthcare_picker.select(1)
+	if congress_funding != null:
+		congress_funding.select(1)
 
 func _sync_directive_picker() -> void:
 	directive_picker.clear()
@@ -814,6 +842,19 @@ func _show_law_detail(id: String) -> void:
 
 func _review_text(id: String, args: Dictionary) -> String:
 	match id:
+		"introduce_congress_bill":
+			return "Introduce a healthcare bill with $%.0fM annual authorization into the fictional House? No policy takes effect at introduction." % (float(args.funding) / 1000000.0)
+		"congress_vote":
+			var stage: String = world.congress.stage
+			if stage not in ["house", "senate", "override_house", "override_senate"]:
+				return ""
+			var house := stage in ["house", "override_house"]
+			var override := stage in ["override_house", "override_senate"]
+			return "%s %s vote: %d of %d fictional members support the bill. All members are assumed to vote. %s required. A successful final override enacts the bill." % ["House" if house else "Senate", "override" if override else "passage", world.congress.votes("house" if house else "senate", world.healthcare.rules.funding_options), 435 if house else 100, "Two-thirds" if override else "A majority"]
+		"congress_president":
+			if world.congress.stage != "president":
+				return ""
+			return "Presidential action: %s. %s" % [args.action, "Signing enacts the healthcare authorization." if args.action == "sign" else "A veto returns the bill to the House; both chambers must override to enact it."]
 		"vote_healthcare":
 			var amount: float = args.funding
 			var preview: Dictionary = world.preview_healthcare(amount)
@@ -863,6 +904,14 @@ func _request_review(id: String, args: Dictionary) -> bool:
 func _cancel_review() -> void:
 	pending_decision.clear()
 	review_snapshot = ""
+
+func _request_congress_action(action: String) -> void:
+	if action == "introduce_congress_bill":
+		_request_review(action, {"funding": world.healthcare.rules.funding_options[congress_funding.selected]})
+	elif action == "congress_vote":
+		_request_review(action, {})
+	else:
+		_request_review("congress_president", {"action": action})
 
 func _confirm_review() -> void:
 	if pending_decision.is_empty():
@@ -988,6 +1037,8 @@ func _refresh() -> void:
 	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
 	lines.append("Test policy requires a majority, takes %d days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [ceili(100.0 / float(world.policy_rules.procurement_progress_per_day)), world.policy_rules.procurement_annual_cost, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
+	var bill = world.congress
+	congress_summary.text = "HOUSE: 435 seats (Civic 230, Liberty 205) | SENATE: 100 seats (Civic 52, Liberty 48) | PRESIDENT: player (Civic)\nFictional vote support: House %d/435, Senate %d/100. All members vote; support can cross party lines.\nBill stage: %s | Authorization: $%.0fM/year\nIntroduction → House → Senate → presidential signature or veto → House and Senate override. A successful signature or override changes the existing healthcare policy.\nThis is an illustrative separate path: fixed seats and votes, no committees, Senate cloture, absences, amendments or presidential deadlines. The old single-chamber controls below and in Laws remain fictional alternatives." % [bill.votes("house", world.healthcare.rules.funding_options), bill.votes("senate", world.healthcare.rules.funding_options), bill.stage.replace("_", " ").capitalize(), bill.funding / 1000000.0]
 	var people := PackedStringArray(["POPULATION APPROVAL — fictional test groups", "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
 	for i in range(world.politics.groups.size()):
 		var group: Dictionary = world.politics.groups[i]

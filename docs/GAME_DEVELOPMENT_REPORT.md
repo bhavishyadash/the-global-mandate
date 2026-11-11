@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 79
+**Report status:** Living record; updated through session 80
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 80:** Added a US-inspired bicameral healthcare bill path with House and Senate votes, presidential action, veto overrides and saved bill progress. [Detailed session record and sources](SESSION_80.md). Votes and party control are fictional, and the existing single-chamber controls remain separate.
 
 **Session 79:** Added a searchable categorized law catalogue, decision review and a dedicated Executive Orders tab using existing fictional rules. [Detailed session record](SESSION_79.md). Only healthcare and procurement are implemented catalogue laws; realistic US institutions and wider law coverage remain upcoming.
 

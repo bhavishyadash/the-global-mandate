@@ -16,6 +16,9 @@ var explanation: Label
 var politics_summary: Label
 var tax_preview: Label
 var spending_preview: Label
+var category_picker: OptionButton
+var category_amount: SpinBox
+var category_preview: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -77,12 +80,12 @@ func _ready() -> void:
 	var budget_controls := HBoxContainer.new()
 	layout.add_child(budget_controls)
 	var spending_label := Label.new()
-	spending_label.text = "Annual government spending ($ millions) "
+	spending_label.text = "Reset total budget ($ millions) "
 	budget_controls.add_child(spending_label)
 	spending = SpinBox.new()
 	spending.min_value = 0
 	spending.max_value = 10000
-	spending.step = 10
+	spending.step = 0.01
 	spending.value = 1100
 	budget_controls.add_child(spending)
 	var apply_spending := Button.new()
@@ -97,11 +100,27 @@ func _ready() -> void:
 		speed_picker.add_item("%d days/sec" % multiplier, multiplier)
 	speed_picker.item_selected.connect(func(index: int): speed = speed_picker.get_item_id(index))
 	budget_controls.add_child(speed_picker)
+	var category_controls := HBoxContainer.new()
+	layout.add_child(category_controls)
+	category_picker = OptionButton.new()
+	for category in World.CATEGORY_SHARES:
+		category_picker.add_item(category)
+	category_controls.add_child(category_picker)
+	category_amount = SpinBox.new()
+	category_amount.min_value = 0
+	category_amount.max_value = 10000
+	category_amount.step = 0.01
+	category_amount.value = world.country.spending_categories[category_picker.get_item_text(0)] / 1000000.0
+	category_controls.add_child(category_amount)
+	var category_button := Button.new()
+	category_button.text = "Apply category ($ millions)"
+	category_button.pressed.connect(_apply_category)
+	category_controls.add_child(category_button)
 	status = Label.new()
 	layout.add_child(status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explanation.text = "Budget = annual revenue minus base spending and policy costs. The daily change divides this balance by the days in the year. All effects are fictional placeholders."
+	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Resetting the total restores the initial category shares. Values are fictional placeholders."
 	layout.add_child(explanation)
 	tax_preview = Label.new()
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -111,6 +130,11 @@ func _ready() -> void:
 	spending_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(spending_preview)
 	spending.value_changed.connect(_update_spending_preview)
+	category_preview = Label.new()
+	category_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(category_preview)
+	category_picker.item_selected.connect(_category_selected)
+	category_amount.value_changed.connect(_update_category_preview)
 	politics_summary = Label.new()
 	politics_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(politics_summary)
@@ -157,6 +181,21 @@ func _apply_tax() -> void:
 
 func _apply_spending() -> void:
 	world.set_annual_spending(spending.value * 1000000.0)
+	_category_selected(category_picker.selected)
+	_refresh()
+
+func _category_selected(index: int) -> void:
+	var name := category_picker.get_item_text(index)
+	category_amount.value = world.country.spending_categories[name] / 1000000.0
+	_update_category_preview(category_amount.value)
+
+func _apply_category() -> void:
+	var name := category_picker.get_item_text(category_picker.selected)
+	if world.set_category_spending(name, category_amount.value * 1000000.0):
+		spending.value = world.country.annual_spending / 1000000.0
+		status.text = "%s budget updated." % name
+	else:
+		status.text = "Category change exceeds the total budget limit."
 	_refresh()
 
 func _vote_policy() -> void:
@@ -185,6 +224,7 @@ func _load_from(path: String) -> void:
 		pause_button.text = "Resume"
 		tax.value = world.country.income_tax_rate * 100.0
 		spending.value = world.country.annual_spending / 1000000.0
+		_category_selected(category_picker.selected)
 		status.text = "Game loaded and paused."
 		_refresh()
 	else:
@@ -193,7 +233,12 @@ func _load_from(path: String) -> void:
 func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
-	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nTreasury: $%.0f\nAnnual revenue: $%.0f   |   Base spending: $%.0f\nAnnual policy cost: $%.0f\nAnnual balance: $%.0f   |   Daily change: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.annual_revenue, c.annual_spending, world.policy_annual_cost(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, c.annual_revenue, c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
+	budget_lines.append("Income-tax revenue (fixed test base): $%.0f | Other revenue: $%.0f" % [world.income_tax_revenue(), c.annual_revenue - world.income_tax_revenue()])
+	for category in World.CATEGORY_SHARES:
+		budget_lines.append("%s: $%.0f" % [category, c.spending_categories[category]])
+	summary.text += "\n" + "\n".join(budget_lines)
 	var lines := PackedStringArray(["POLITICS — fictional test model"])
 	for group in world.politics.groups:
 		lines.append("%s (%.0f%% of population): %.1f%% approval" % [group.name, group.share * 100, group.approval])
@@ -206,6 +251,7 @@ func _refresh() -> void:
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)
 	_update_spending_preview(spending.value)
+	_update_category_preview(category_amount.value)
 
 func _update_tax_preview(value: float) -> void:
 	var preview: Dictionary = world.preview_income_tax(value / 100.0)
@@ -222,4 +268,12 @@ func _update_spending_preview(value: float) -> void:
 	if preview.is_empty():
 		spending_preview.text = "Spending preview unavailable."
 		return
-	spending_preview.text = "SPENDING PREVIEW (fictional budget model)\nAnnual balance: $%.0f | Daily treasury change: $%.2f\nServices, employment and public opinion are not yet modeled." % [preview.annual_balance, preview.daily_balance]
+	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual balance: $%.0f | Daily net flow: $%.2f\nServices, employment and public opinion are not yet modeled." % [preview.annual_balance, preview.daily_balance]
+
+func _update_category_preview(value: float) -> void:
+	var name := category_picker.get_item_text(category_picker.selected)
+	var preview: Dictionary = world.preview_category_spending(name, value * 1000000.0)
+	if preview.is_empty():
+		category_preview.text = "Category preview unavailable: total exceeds budget limit."
+		return
+	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f" % [name, preview.annual_balance, preview.daily_balance]

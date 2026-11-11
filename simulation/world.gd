@@ -2,6 +2,9 @@ extends RefCounted
 
 const Politics = preload("res://simulation/politics.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
+const ANNUAL_DEBT_RATE := 0.03
+const TEST_TAXABLE_BASE := 2000000000.0
+const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "Infrastructure": 0.15, "Administration": 0.10}
 var politics = Politics.new()
 
 # All values here are fictional test data; rates are annual USD.
@@ -11,8 +14,10 @@ var country := {
 	"name": "Federal Republic (test scenario)",
 	"population": 10000000,
 	"treasury": 1000000000.0,
+	"debt": 0.0,
 	"annual_revenue": 1200000000.0,
 	"annual_spending": 1100000000.0,
+	"spending_categories": {"Health": 330000000.0, "Education": 275000000.0, "Security": 220000000.0, "Infrastructure": 165000000.0, "Administration": 110000000.0},
 	"income_tax_rate": 0.20,
 	"approval": 50.0,
 }
@@ -20,7 +25,13 @@ var events: Array[String] = ["Scenario started. All figures are fictional test d
 const MAX_EVENTS := 200
 
 func annual_balance() -> float:
-	return country.annual_revenue - country.annual_spending - policy_annual_cost()
+	return country.annual_revenue - country.annual_spending - policy_annual_cost() - debt_interest()
+
+func debt_interest() -> float:
+	return country.debt * ANNUAL_DEBT_RATE
+
+func income_tax_revenue() -> float:
+	return country.income_tax_rate * TEST_TAXABLE_BASE
 
 func policy_annual_cost() -> float:
 	return PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
@@ -29,10 +40,20 @@ func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
 
 func advance_day() -> void:
-	var previous_treasury: float = country.treasury
-	country.treasury += daily_balance()
-	if previous_treasury >= 0.0 and country.treasury < 0.0:
-		add_event("Treasury fell below zero. Borrowing is not yet modeled.")
+	var balance := daily_balance()
+	if balance < 0.0:
+		var expense := -balance
+		var cash_used: float = minf(country.treasury, expense)
+		country.treasury -= cash_used
+		var borrowing := expense - cash_used
+		if borrowing > 0.0:
+			if country.debt <= 0.0:
+				add_event("Cash exhausted; government borrowing began.")
+			country.debt += borrowing
+	else:
+		var repayment: float = minf(country.debt, balance)
+		country.debt -= repayment
+		country.treasury += balance - repayment
 	if politics.advance_day():
 		add_event("Procurement policy implementation completed.")
 	date.day += 1
@@ -68,7 +89,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 3, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
+	file.store_string(JSON.stringify({"version": 4, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -118,7 +139,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -140,11 +161,29 @@ func load_game(path: String) -> String:
 			return "Save has invalid financial or approval data."
 	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > 10000000000.0 or e.size() > MAX_EVENTS:
 		return "Save has out-of-range policy or approval data."
+	c = c.duplicate(true)
+	if parsed.version < 4:
+		c.debt = maxf(0.0, -float(c.treasury))
+		c.treasury = maxf(0.0, float(c.treasury))
+		c.spending_categories = _split_spending(float(c.annual_spending))
+	else:
+		if not _is_number(c.get("debt")) or c.debt < 0.0 or c.treasury < 0.0 or not c.get("spending_categories") is Dictionary:
+			return "Save has invalid budget data."
+		var categories: Dictionary = c.spending_categories
+		if categories.size() != CATEGORY_SHARES.size():
+			return "Save has invalid spending categories."
+		var total := 0.0
+		for category in CATEGORY_SHARES:
+			if not _is_number(categories.get(category)) or categories[category] < 0.0:
+				return "Save has invalid spending categories."
+			total += float(categories[category])
+		if absf(total - float(c.annual_spending)) > 0.01:
+			return "Save spending categories do not match the budget."
 	for event in e:
 		if not event is String:
 			return "Save has invalid event data."
 	var loaded_politics = Politics.new()
-	if parsed.version == 2 or parsed.version == 3:
+	if parsed.version == 2 or parsed.version == 3 or parsed.version == 4:
 		var political_data: Variant = parsed.get("politics")
 		if parsed.version == 2 and political_data is Dictionary and political_data.get("groups") is Array:
 			political_data = political_data.duplicate(true)
@@ -169,6 +208,20 @@ func load_game(path: String) -> String:
 static func _is_whole_number(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value))
 
+static func _is_number(value: Variant) -> bool:
+	return (value is int or value is float) and is_finite(float(value))
+
+static func _split_spending(amount: float) -> Dictionary:
+	var result := {}
+	var allocated := 0.0
+	for category in CATEGORY_SHARES:
+		if category == "Administration":
+			result[category] = amount - allocated
+		else:
+			result[category] = amount * CATEGORY_SHARES[category]
+			allocated += result[category]
+	return result
+
 func preview_income_tax(rate: float) -> Dictionary:
 	if not is_finite(rate) or rate < 0.0 or rate > 0.60:
 		return {}
@@ -178,7 +231,7 @@ func preview_income_tax(rate: float) -> Dictionary:
 	var delta: float = rate - country.income_tax_rate
 	preview_politics.apply_tax_change(delta)
 	return {
-		"annual_revenue": country.annual_revenue + delta * 2000000000.0,
+		"annual_revenue": country.annual_revenue + delta * TEST_TAXABLE_BASE,
 		"approval": preview_politics.approval(),
 		"groups": preview_politics.groups.duplicate(true),
 	}
@@ -190,7 +243,7 @@ func set_income_tax(rate: float) -> bool:
 	if is_equal_approx(rate, previous):
 		return true
 	# Placeholder: $2 billion taxable base, other revenue held constant.
-	country.annual_revenue += (rate - previous) * 2000000000.0
+	country.annual_revenue += (rate - previous) * TEST_TAXABLE_BASE
 	politics.apply_tax_change(rate - previous)
 	country.approval = politics.approval()
 	country.income_tax_rate = rate
@@ -220,7 +273,7 @@ func _conduct_election() -> void:
 func preview_annual_spending(amount: float) -> Dictionary:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
 		return {}
-	var balance: float = country.annual_revenue - amount - policy_annual_cost()
+	var balance: float = country.annual_revenue - amount - policy_annual_cost() - debt_interest()
 	var year_days := 366.0 if is_leap_year(date.year) else 365.0
 	return {"annual_balance": balance, "daily_balance": balance / year_days}
 
@@ -231,5 +284,23 @@ func set_annual_spending(amount: float) -> bool:
 	if is_equal_approx(previous, amount):
 		return true
 	country.annual_spending = amount
+	country.spending_categories = _split_spending(amount)
 	add_event("Annual spending changed from $%.0f to $%.0f." % [previous, amount])
+	return true
+
+func preview_category_spending(category: String, amount: float) -> Dictionary:
+	if not country.spending_categories.has(category) or not is_finite(amount) or amount < 0.0:
+		return {}
+	var total: float = country.annual_spending - country.spending_categories[category] + amount
+	return preview_annual_spending(total)
+
+func set_category_spending(category: String, amount: float) -> bool:
+	if preview_category_spending(category, amount).is_empty():
+		return false
+	var previous: float = country.spending_categories[category]
+	if is_equal_approx(previous, amount):
+		return true
+	country.spending_categories[category] = amount
+	country.annual_spending += amount - previous
+	add_event("%s annual spending changed from $%.0f to $%.0f." % [category, previous, amount])
 	return true

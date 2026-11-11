@@ -19,6 +19,7 @@ This documents implemented behavior as of session 17, not the final game design.
 | treasury and debt | Nonnegative fictional USD stocks. Negative legacy treasury migrates to debt. |
 | annual revenue and spending | Fictional USD per year; spending is split into five categories and total changes reset them to default shares |
 | income tax | Fraction from 0 to 0.60; flat placeholder, not a real tax system |
+| consumption and corporate tax | Fractions from 0 to 0.60; fictional fixed taxable bases of $1.5 billion and $1 billion respectively |
 | group share | Fraction of the total population; group shares sum to one |
 | group and national approval | Percentage points from 0 to 100; national approval is a weighted average |
 | seats | Integers totaling 100 in the test legislature |
@@ -33,6 +34,7 @@ The UI accumulates real time at the selected speed and calls `advance_day` once 
 ## Decisions and consequences
 
 - Income tax accepts a finite fraction between 0 and 0.60. Revenue changes using a fixed fictional $2 billion base; each group changes an internal approval value by the rate change multiplied by its fictional sensitivity. Displayed approval is clamped to 0–100 without discarding the internal excess. National approval is recalculated. Effects are immediate.
+- Consumption and corporate tax use separate fixed fictional bases and separate group response coefficients. They provide non-mutating previews and immediate changes to revenue and tax-related approval; economic incidence, tax avoidance and behavioral feedback are not modeled.
 - Total spending accepts a finite annual amount from $0 to $10 billion and resets category shares; individual categories can also be changed within the same total limit. Fiscal previews are non-mutating. Per-resident category funding gradually changes service conditions and contributes to group approval using fictional coefficients; employment and wider economic effects are not modeled.
 - Procurement passes only once and only if supporting parties hold more than 50 seats. It starts a 100-day implementation counter; once complete, a fictional $10 million annual policy cost reduces the projected budget balance and accrues starting the next simulated day. Existing saves with completed implementation acquire this cost. The policy has no modeled procurement benefit or wider economic effect.
 - A repeal vote succeeds if parties opposing the policy hold more than 50 seats. It clears implementation and stops future costs; the policy may be proposed again. This rule is a placeholder for legislative procedure.
@@ -41,7 +43,7 @@ The UI accumulates real time at the selected speed and calls `advance_day` once 
 
 ## Persistence
 
-Version 5 JSON saves include date, country, events, political state, debt, spending categories and service conditions. The loader validates expected fields and ranges before replacing live state. Version 1 migration initializes each group with the old national approval; version 2 migration initializes internal approval from each visible group approval. Previously clipped history cannot be recovered. Versions 1–3 use default spending shares and convert negative treasury into debt; versions 1–4 initialize service conditions at 50 and service contributions at zero. A temporary file and previous-save backup are used; the UI exposes save, load and load backup, and pauses after loading. An invalid primary is preserved as `.invalid` instead of replacing the good backup. This is not a general transaction or full crash-recovery guarantee.
+Version 6 JSON saves include date, country, events, political state, debt, spending categories, service conditions and additional tax rates. The loader validates expected fields and ranges before replacing live state. Version 1 migration initializes each group with the old national approval; version 2 migration initializes internal approval from each visible group approval. Previously clipped history cannot be recovered. Versions 1–3 use default spending shares and convert negative treasury into debt; versions 1–4 initialize service conditions at 50 and service contributions at zero; versions 1–5 initialize the additional tax rates at zero. A temporary file and previous-save backup are used; the UI exposes save, load and load backup, and pauses after loading. An invalid primary is preserved as `.invalid` instead of replacing the good backup. This is not a general transaction or full crash-recovery guarantee.
 
 During valid-primary rotation, an older backup is temporarily retained as `.bak.previous`; the code attempts rollback if a rename fails. An existing `.bak.previous` blocks further rotation for manual recovery. Rename failure and crash scenarios are not yet exhaustively tested.
 

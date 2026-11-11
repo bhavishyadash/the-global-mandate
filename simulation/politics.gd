@@ -1,6 +1,7 @@
 extends RefCounted
 
 # Fictional groups and coefficients for testing, not empirical estimates.
+const ADDITIONAL_TAX_SENSITIVITIES := {"consumption": [120.0, 90.0, 50.0], "corporate": [10.0, 25.0, 80.0]}
 var groups: Array = [
 	{"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 100.0},
 	{"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 105.0},
@@ -19,6 +20,11 @@ func apply_tax_change(delta: float) -> void:
 	for group in groups:
 		group.raw_approval -= delta * group.tax_sensitivity
 		group.approval = clampf(group.raw_approval + group.service_bonus, 0.0, 100.0)
+
+func apply_additional_tax_change(kind: String, delta: float) -> void:
+	for i in range(groups.size()):
+		groups[i].raw_approval -= delta * ADDITIONAL_TAX_SENSITIVITIES[kind][i]
+		groups[i].approval = clampf(groups[i].raw_approval + groups[i].service_bonus, 0.0, 100.0)
 
 func apply_service_bonuses(bonuses: Array) -> void:
 	for i in range(groups.size()):

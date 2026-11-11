@@ -405,6 +405,10 @@ Related to issues #10, #11, #12, #17, #45 and #48; PR #69. Added five individual
 
 Related to issues #12, #18, #19, #20, #45 and #48; PR #70. Added five fictional public-service conditions, targets based on spending per resident and gradual daily changes. Average service condition contributes differently to each test group's approval, separately from tax response. The interface shows current and target conditions. Version-5 saves persist and validate service state; v1–v4 start at neutral condition because past service history is unavailable. Local simulation, UI and integration checks passed for funding cuts/increases, baseline stability, group differences, old-save migration, corrupt service rejection and deterministic continuation. All coefficients are placeholders; real demographic, staffing, regional and economic effects and visual testing remain open.
 
+### Session 33 — additional taxes
+
+Related to issues #10, #11, #13, #20, #45 and #48; PR #71. Added separately adjustable fictional consumption and corporate taxes, fixed taxable bases, revenue breakdowns, group-specific reactions and non-mutating UI previews. Version-6 saves persist rates; earlier saves receive zero rates without changing prior revenue or opinions. Local simulation, UI and integration suites passed, including invalid inputs, old-save migration, v6 round trip and invalid-save rejection. Fixed bases and reaction coefficients are placeholders; tax compliance, economic feedback, realistic incidence and visual testing remain open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

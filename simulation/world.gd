@@ -226,12 +226,17 @@ static func days_in_month(year: int, month: int) -> int:
 		return 29 if is_leap_year(year) else 28
 	return 30 if month in [4, 6, 9, 11] else 31
 
+func export_snapshot() -> Dictionary:
+	# Return detached data so consumers cannot mutate the running world through
+	# an exported snapshot. The same representation is used for save files.
+	return {"version": 14, "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+
 func save_game(path: String) -> String:
 	var temporary := path + ".tmp"
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 14, "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify(export_snapshot()))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -287,7 +292,10 @@ func load_game(path: String) -> String:
 	var json := JSON.new()
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
-	var parsed: Variant = json.data
+	return import_snapshot(json.data)
+
+func import_snapshot(parsed: Variant) -> String:
+	# Validate into temporary subsystem objects before replacing live state.
 	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 14:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")

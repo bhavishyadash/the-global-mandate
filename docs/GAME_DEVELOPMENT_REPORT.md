@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
-**Report status:** Living record; updated through session 57
+**Report status:** Living record; updated through session 58
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -506,6 +506,10 @@ PR #94. Installed the checksum-verified Windows Godot export templates, added a 
 ### Session 57 — startup window usability
 
 PR #95. The standalone build now starts maximized after the previous default appeared very small. A new Windows build was visually checked for maximized startup and restore/maximize controls; 720p and target-laptop validation remain open. See [Session 57](SESSION_57.md).
+
+### Session 58 — validated world snapshots
+
+PR #96. Extracted detached snapshot export and atomic validated import from the save loader, with unchanged save-v14 format and migration coverage. This is infrastructure for multi-country state, not yet a coupled world. See [Session 58](SESSION_58.md).
 
 ## 12. Immediate next actions
 

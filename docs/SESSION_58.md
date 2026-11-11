@@ -1,1 +1,3 @@
 # Session 58: validated world snapshots
+
+Extracted `export_snapshot()` and `import_snapshot()` from the existing save format and loader. Exports are detached deep copies; imports validate all subsystems and migrations before replacing live state. Disk saves use the same snapshot representation and loader, retaining the candidate-validation and backup flow. Tests cover detached output, input isolation, invalid-import atomicity, deterministic continuation and the existing save/migration suites. This enables a future multi-country registry to compose validated country state without temporary files; it does not itself add a coupled world or a new save version.

@@ -239,6 +239,13 @@ func save_game(path: String) -> String:
 		return "Could not finish writing the save file."
 	var absolute_path := ProjectSettings.globalize_path(path)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
+	# A valid previous save must not be replaced by a snapshot that our own
+	# loader would reject. Validate before moving either primary or backup.
+	var candidate = get_script().new()
+	var validation_error: String = candidate.load_game(temporary)
+	if not validation_error.is_empty():
+		DirAccess.remove_absolute(absolute_temp)
+		return "Game state cannot be saved: " + validation_error
 	var backup := absolute_path + ".bak"
 	var previous_backup := backup + ".previous"
 	var displaced := ""

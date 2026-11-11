@@ -109,6 +109,17 @@ func _initialize() -> void:
 	var scenario_path := "res://tests/scenario_test.json"
 	assert(not FileAccess.file_exists(scenario_path))
 	assert(scenario_world.save_game(scenario_path).is_empty())
+	scenario_world.advance_day()
+	assert(scenario_world.save_game(scenario_path).is_empty())
+	var preserved_save := FileAccess.get_file_as_string(scenario_path)
+	var preserved_backup := FileAccess.get_file_as_string(scenario_path + ".bak")
+	var original_spending: float = scenario_world.country.spending_categories.Health
+	scenario_world.country.spending_categories.Health = -1.0
+	assert(not scenario_world.save_game(scenario_path).is_empty())
+	assert(FileAccess.get_file_as_string(scenario_path) == preserved_save)
+	assert(FileAccess.get_file_as_string(scenario_path + ".bak") == preserved_backup)
+	assert(not FileAccess.file_exists(scenario_path + ".tmp"))
+	scenario_world.country.spending_categories.Health = original_spending
 	var scenario_restored = World.new()
 	assert(scenario_restored.load_game(scenario_path).is_empty())
 	assert(scenario_restored.scenario_id == "custom_scenario" and scenario_restored.country.id == "custom_country")
@@ -131,6 +142,7 @@ func _initialize() -> void:
 	assert(scenario_restored.load_game(scenario_path).is_empty())
 	assert(scenario_restored.event_records[0].category == "legacy" and scenario_restored.event_records[0].date == null)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(scenario_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(scenario_path + ".bak"))
 	var foreign = World.new()
 	var declined = World.new()
 	assert(not declined.diplomacy.will_accept("northern", "cooperation"))

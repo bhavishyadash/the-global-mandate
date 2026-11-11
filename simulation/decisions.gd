@@ -23,7 +23,7 @@ const MESSAGES := {
 	"repeal_procurement": ["Procurement repeal passed.", "Repeal failed or the policy is not active."],
 	"vote_healthcare": ["Healthcare proposal passed.", "Healthcare proposal failed, is unchanged, or is invalid."],
 	"repeal_healthcare": ["Healthcare repeal passed.", "Healthcare repeal failed or the policy is not active."],
-	"set_healthcare_appropriation": ["Healthcare appropriation updated.", "Healthcare appropriation is unavailable."],
+	"set_healthcare_appropriation": ["Healthcare appropriation vote passed.", "Healthcare appropriation vote failed, is unchanged, or is unavailable."],
 	"issue_directive": ["Directive issued.", "Directive is unavailable or another directive is active."],
 	"revoke_directive": ["Directive revoked.", "No active directive to revoke."],
 	"start_talks": ["Diplomatic talks opened.", "Talks unavailable: check the partner, proposal, active talks and cooldown."],

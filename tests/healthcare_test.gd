@@ -18,6 +18,13 @@ func _initialize() -> void:
 	assert(is_equal_approx(world.annual_balance(), baseline - 100000000.0))
 	assert(not world.set_healthcare_appropriation(-0.1))
 	assert(not world.set_healthcare_appropriation(1.1))
+	var funding_preview: Dictionary = world.preview_healthcare_appropriation(0.5)
+	assert(funding_preview.votes == 70 and funding_preview.passes)
+	assert(funding_preview.positions[0].support and funding_preview.positions[1].support and not funding_preview.positions[2].support)
+	assert(is_equal_approx(funding_preview.annual_cost, 50000000.0))
+	assert(is_equal_approx(funding_preview.annual_balance, baseline - 50000000.0))
+	assert(is_equal_approx(funding_preview.daily_progress, 100.0 / 240.0))
+	assert(world.healthcare.appropriation == 1.0)
 	assert(world.set_healthcare_appropriation(0.5))
 	assert(is_equal_approx(world.policy_annual_cost(), 50000000.0))
 	assert(is_equal_approx(world.preview_healthcare(200000000.0).annual_cost, 100000000.0))
@@ -61,6 +68,18 @@ func _initialize() -> void:
 	rejected.politics.parties[2].seats = 60
 	assert(not rejected.vote_healthcare(100000000.0))
 	assert(not rejected.healthcare.active and is_zero_approx(rejected.policy_annual_cost()))
+	var minority = World.new()
+	assert(minority.vote_healthcare(100000000.0))
+	minority.politics.parties[0].seats = 20
+	minority.politics.parties[1].seats = 20
+	minority.politics.parties[2].seats = 60
+	assert(not minority.preview_healthcare_appropriation(0.5).passes)
+	assert(not minority.set_healthcare_appropriation(0.5))
+	assert(minority.healthcare.appropriation == 1.0 and is_equal_approx(minority.policy_annual_cost(), 100000000.0))
+	assert("failed" in minority.events[0])
+	assert(minority.set_healthcare_appropriation(0.75))
+	assert(minority.healthcare.appropriation == 0.75)
+	assert(not minority.set_healthcare_appropriation(0.75))
 	var bad = World.Healthcare.new()
 	assert(not bad.import_state({"active": true, "funding": 100000000.0, "progress": 101.0}))
 	assert(not bad.import_state({"active": true, "funding": 100000000.0, "progress": 10.0, "appropriation": 2.0}))

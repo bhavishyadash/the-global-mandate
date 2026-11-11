@@ -31,6 +31,17 @@ func votes(positions: Array) -> int:
 			result += int(party.seats)
 	return result
 
+func appropriation_support(parties: Array, fraction: float) -> Array:
+	if not is_finite(fraction) or fraction < 0.0 or fraction > 1.0 or parties.size() != 3:
+		return []
+	# Fictional positions: government backs its proposal; Reform supports up to
+	# half funding, and Opposition supports at least three-quarters funding.
+	var positions := [true, fraction <= 0.5, fraction >= 0.75]
+	var result: Array = []
+	for i in range(3):
+		result.append({"name": parties[i].name, "seats": int(parties[i].seats), "support": positions[i]})
+	return result
+
 func advance_day(administration: float) -> bool:
 	if not active or progress >= 100.0 or appropriation <= 0.0:
 		return false

@@ -337,7 +337,7 @@ func _ready() -> void:
 	laws.add_child(appropriation_picker)
 	appropriation_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
 	var appropriation_button := Button.new()
-	appropriation_button.text = "Apply healthcare appropriation"
+	appropriation_button.text = "Vote on healthcare appropriation"
 	appropriation_button.pressed.connect(_apply_healthcare_appropriation)
 	laws.add_child(appropriation_button)
 	healthcare_summary = Label.new()
@@ -525,9 +525,13 @@ func _refresh_healthcare() -> void:
 	if law.active:
 		var repeal: Dictionary = world.preview_healthcare(law.funding, true)
 		lines.append("Repeal support: %d/100 seats — %s." % [repeal.votes, "passes" if repeal.passes else "fails"])
-		var proposed_cost: float = law.funding * appropriation_picker.selected * 0.25
-		lines.append("Selected appropriation: $%.0f million/year; projected annual balance $%.0f million. Apply to change funding without another parliamentary vote." % [proposed_cost / 1000000.0, (world.annual_balance() + law.annual_cost() - proposed_cost) / 1000000.0])
-	lines.append("New laws start fully funded. Costs change from the next day; deficits are automatically borrowed. At full funding rollout takes 120 days at administration 50/100; partial funding slows rollout and reduces the health target bonus. Zero funding pauses rollout. Service conditions and group approval respond gradually. These rules and party positions are fictional placeholders.")
+		var funding_preview: Dictionary = world.preview_healthcare_appropriation(appropriation_picker.selected * 0.25)
+		var outcome: String = ("passes" if funding_preview.passes else "fails") if funding_preview.changed else "unchanged — no vote"
+		lines.append("APPROPRIATION VOTE: %d/100 seats support; %s (51 required)." % [funding_preview.votes, outcome])
+		for party in funding_preview.positions:
+			lines.append("%s: %d seats — %s" % [party.name, party.seats, "supports" if party.support else "opposes"])
+		lines.append("If passed: $%.0f million/year; annual balance $%.0f million. At current administration: %.2f rollout points/day; current-progress health target bonus %+.1f points." % [funding_preview.annual_cost / 1000000.0, funding_preview.annual_balance / 1000000.0, funding_preview.daily_progress, funding_preview.health_bonus])
+	lines.append("New laws start fully funded by their passage. Later appropriation changes need a majority vote; funding continues unchanged after rejection. Costs change from the next day; deficits are automatically borrowed. Rollout takes 120 days at full funding and administration 50/100; partial funding slows rollout and reduces the health target bonus. Zero funding pauses rollout. Service conditions and group approval respond gradually. These rules and party positions are fictional placeholders.")
 	for group in world.politics.groups:
 		lines.append("%s: %.1f%% approval (service contribution %+.1f points)" % [group.name, group.approval, group.service_bonus])
 	healthcare_summary.text = "\n".join(lines)

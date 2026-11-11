@@ -16,6 +16,16 @@ func _initialize() -> void:
 	var baseline: float = world.annual_balance()
 	assert(world.vote_healthcare(100000000.0))
 	assert(is_equal_approx(world.annual_balance(), baseline - 100000000.0))
+	assert(not world.set_healthcare_appropriation(-0.1))
+	assert(not world.set_healthcare_appropriation(1.1))
+	assert(world.set_healthcare_appropriation(0.5))
+	assert(is_equal_approx(world.policy_annual_cost(), 50000000.0))
+	assert(is_equal_approx(world.preview_healthcare(200000000.0).annual_cost, 100000000.0))
+	var paused_progress: float = world.healthcare.progress
+	assert(world.set_healthcare_appropriation(0.0))
+	world.advance_day()
+	assert(world.healthcare.progress == paused_progress and world.healthcare.health_bonus() == 0.0)
+	assert(world.set_healthcare_appropriation(0.5))
 	var model = World.Healthcare.new()
 	model.active = true
 	model.funding = 100000000.0
@@ -31,10 +41,11 @@ func _initialize() -> void:
 	var restored = World.new()
 	assert(restored.load_game(SAVE).is_empty())
 	assert(is_equal_approx(restored.healthcare.progress, world.healthcare.progress))
+	assert(restored.healthcare.appropriation == 0.5)
 	var before: float = restored.healthcare.progress
 	assert(restored.vote_healthcare(200000000.0))
 	assert(is_equal_approx(restored.healthcare.progress, before / 2.0))
-	assert(is_equal_approx(restored.policy_annual_cost(), 200000000.0))
+	assert(is_equal_approx(restored.policy_annual_cost(), 100000000.0))
 	var forecast: Dictionary = restored.forecast_fiscal(30)
 	assert(restored.healthcare.progress < before)
 	for day in range(30):
@@ -52,6 +63,26 @@ func _initialize() -> void:
 	assert(not rejected.healthcare.active and is_zero_approx(rejected.policy_annual_cost()))
 	var bad = World.Healthcare.new()
 	assert(not bad.import_state({"active": true, "funding": 100000000.0, "progress": 101.0}))
+	assert(not bad.import_state({"active": true, "funding": 100000000.0, "progress": 10.0, "appropriation": 2.0}))
+	var old_data: Dictionary = world.export_snapshot()
+	old_data.version = 15
+	old_data.healthcare.erase("appropriation")
+	var old_file := FileAccess.open(SAVE, FileAccess.WRITE)
+	old_file.store_string(JSON.stringify(old_data))
+	old_file.close()
+	var migrated = World.new()
+	assert(migrated.load_game(SAVE).is_empty())
+	assert(migrated.healthcare.active and migrated.healthcare.appropriation == 1.0)
+	for day in range(240):
+		migrated.advance_day()
+	var funded_health: float = migrated.services.levels.Health
+	var funded_approval: float = migrated.country.approval
+	assert(migrated.healthcare.progress == 100.0)
+	assert(migrated.set_healthcare_appropriation(0.0))
+	for day in range(60):
+		migrated.advance_day()
+	assert(migrated.services.levels.Health < funded_health)
+	assert(migrated.country.approval < funded_approval)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
 	print("Healthcare governing checks passed")
 	quit(0)

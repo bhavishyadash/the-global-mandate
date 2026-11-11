@@ -9,6 +9,7 @@ const SCHEMA := {
 	"set_category_spending": {"category": "string", "amount": "number"},
 	"vote_procurement": {}, "repeal_procurement": {},
 	"vote_healthcare": {"funding": "number"}, "repeal_healthcare": {},
+	"set_healthcare_appropriation": {"fraction": "number"},
 	"issue_directive": {"kind": "string"}, "revoke_directive": {},
 	"start_talks": {"partner": "string", "proposal": "string"},
 	"cancel_talks": {}, "end_cooperation": {"partner": "string"},
@@ -22,6 +23,7 @@ const MESSAGES := {
 	"repeal_procurement": ["Procurement repeal passed.", "Repeal failed or the policy is not active."],
 	"vote_healthcare": ["Healthcare proposal passed.", "Healthcare proposal failed, is unchanged, or is invalid."],
 	"repeal_healthcare": ["Healthcare repeal passed.", "Healthcare repeal failed or the policy is not active."],
+	"set_healthcare_appropriation": ["Healthcare appropriation updated.", "Healthcare appropriation is unavailable."],
 	"issue_directive": ["Directive issued.", "Directive is unavailable or another directive is active."],
 	"revoke_directive": ["Directive revoked.", "No active directive to revoke."],
 	"start_talks": ["Diplomatic talks opened.", "Talks unavailable: check the partner, proposal, active talks and cooldown."],
@@ -56,6 +58,7 @@ static func execute(world: Variant, request: Variant) -> Dictionary:
 		"repeal_procurement": accepted = world.vote_procurement_repeal()
 		"vote_healthcare": accepted = world.vote_healthcare(float(args.funding))
 		"repeal_healthcare": accepted = world.repeal_healthcare()
+		"set_healthcare_appropriation": accepted = world.set_healthcare_appropriation(float(args.fraction))
 		"issue_directive": accepted = world.issue_directive(args.kind)
 		"revoke_directive": accepted = world.revoke_directive()
 		"start_talks": accepted = world.start_diplomatic_talks(args.partner, args.proposal)

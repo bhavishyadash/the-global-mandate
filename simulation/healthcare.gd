@@ -8,6 +8,7 @@ const TARGET_PER_100M := 20.0
 var active := false
 var funding := 0.0
 var progress := 0.0
+var appropriation := 1.0
 
 static func valid_funding(amount: float) -> bool:
 	return is_finite(amount) and (amount == 50000000.0 or amount == 100000000.0 or amount == 200000000.0)
@@ -31,23 +32,26 @@ func votes(positions: Array) -> int:
 	return result
 
 func advance_day(administration: float) -> bool:
-	if not active or progress >= 100.0:
+	if not active or progress >= 100.0 or appropriation <= 0.0:
 		return false
 	# Neutral administration (50/100) completes the rollout in 120 days;
 	# weak administration slows it, and zero capacity stalls it.
-	progress = minf(100.0, progress + clampf(administration / 50.0, 0.0, 2.0) * 100.0 / DAYS_AT_NORMAL_CAPACITY)
+	progress = minf(100.0, progress + clampf(administration / 50.0, 0.0, 2.0) * appropriation * 100.0 / DAYS_AT_NORMAL_CAPACITY)
 	if progress >= 100.0 - 0.000001:
 		progress = 100.0
 	return progress >= 100.0
 
 func health_bonus() -> float:
-	return TARGET_PER_100M * (funding / 100000000.0) * (progress / 100.0) if active else 0.0
+	return TARGET_PER_100M * (funding / 100000000.0) * appropriation * (progress / 100.0) if active else 0.0
+
+func annual_cost() -> float:
+	return funding * appropriation if active else 0.0
 
 func export_state() -> Dictionary:
-	return {"active": active, "funding": funding, "progress": progress}
+	return {"active": active, "funding": funding, "progress": progress, "appropriation": appropriation}
 
 func import_state(data: Variant) -> bool:
-	if not data is Dictionary or not data.get("active") is bool or not _number(data.get("funding")) or not _number(data.get("progress")):
+	if not data is Dictionary or not data.get("active") is bool or not _number(data.get("funding")) or not _number(data.get("progress")) or not _number(data.get("appropriation")) or data.appropriation < 0.0 or data.appropriation > 1.0:
 		return false
 	if data.active:
 		if not valid_funding(float(data.funding)) or data.progress < 0.0 or data.progress > 100.0:
@@ -57,6 +61,7 @@ func import_state(data: Variant) -> bool:
 	active = data.active
 	funding = float(data.funding)
 	progress = float(data.progress)
+	appropriation = float(data.appropriation)
 	return true
 
 static func _number(value: Variant) -> bool:

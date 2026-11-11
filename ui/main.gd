@@ -32,6 +32,7 @@ var directive_summary: Label
 var dashboard_tabs: TabContainer
 var healthcare_picker: OptionButton
 var healthcare_summary: Label
+var appropriation_picker: OptionButton
 var forecast_label: Label
 var comparison_label: Label
 var forecast_current := false
@@ -329,6 +330,16 @@ func _ready() -> void:
 	healthcare_repeal.text = "Vote to repeal healthcare law"
 	healthcare_repeal.pressed.connect(_repeal_healthcare)
 	laws.add_child(healthcare_repeal)
+	appropriation_picker = OptionButton.new()
+	for percent in [0, 25, 50, 75, 100]:
+		appropriation_picker.add_item("Proposed appropriation: %d%%" % percent)
+	appropriation_picker.select(4)
+	laws.add_child(appropriation_picker)
+	appropriation_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
+	var appropriation_button := Button.new()
+	appropriation_button.text = "Apply healthcare appropriation"
+	appropriation_button.pressed.connect(_apply_healthcare_appropriation)
+	laws.add_child(appropriation_button)
 	healthcare_summary = Label.new()
 	healthcare_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	laws.add_child(healthcare_summary)
@@ -498,18 +509,25 @@ func _repeal_healthcare() -> void:
 	status.text = Decisions.execute(world, {"id": "repeal_healthcare", "args": {}}).message
 	_refresh()
 
+func _apply_healthcare_appropriation() -> void:
+	var fraction: float = appropriation_picker.selected * 0.25
+	status.text = Decisions.execute(world, {"id": "set_healthcare_appropriation", "args": {"fraction": fraction}}).message
+	_refresh()
+
 func _refresh_healthcare() -> void:
 	var amount: float = World.Healthcare.FUNDING_OPTIONS[healthcare_picker.selected]
 	var preview: Dictionary = world.preview_healthcare(amount)
 	var law = world.healthcare
-	var lines := PackedStringArray(["HEALTHCARE LAW — fictional test model", "Current: %s | rollout %.1f%% | annual cost $%.0f million" % ["active" if law.active else "inactive", law.progress, law.funding / 1000000.0], "Administration %.1f/100 | health condition %.1f/100 | current health target %.1f/100" % [world.services.levels.Administration, world.services.levels.Health, world.service_target("Health", world.country.spending_categories.Health)], "PROPOSAL: %d/100 seats support; %s (51 required)." % [preview.votes, "passes" if preview.passes else "fails"]])
+	var lines := PackedStringArray(["HEALTHCARE LAW — fictional test model", "Current: %s | rollout %.1f%% | authorized $%.0f million/year | funded %.0f%% ($%.0f million/year)" % ["active" if law.active else "inactive", law.progress, law.funding / 1000000.0, law.appropriation * 100.0 if law.active else 0.0, law.annual_cost() / 1000000.0], "Administration %.1f/100 | health condition %.1f/100 | current health target %.1f/100" % [world.services.levels.Administration, world.services.levels.Health, world.service_target("Health", world.country.spending_categories.Health)], "PROPOSAL: %d/100 seats support; %s (51 required)." % [preview.votes, "passes" if preview.passes else "fails"]])
 	for party in preview.positions:
 		lines.append("%s: %d seats — %s" % [party.name, party.seats, "supports" if party.support else "opposes"])
-	lines.append("If enacted: $%.0f million/year, annual balance $%.0f million at current rates; up to +%.1f health target points, subject to the 100-point cap." % [amount / 1000000.0, preview.annual_balance / 1000000.0, preview.full_health_target_bonus])
+	lines.append("If enacted: authorized $%.0f million/year, actual cost $%.0f million/year at current appropriation, annual balance $%.0f million at current rates; full-funding maximum +%.1f health target points, subject to the 100-point cap." % [amount / 1000000.0, preview.annual_cost / 1000000.0, preview.annual_balance / 1000000.0, preview.full_health_target_bonus])
 	if law.active:
 		var repeal: Dictionary = world.preview_healthcare(law.funding, true)
 		lines.append("Repeal support: %d/100 seats — %s." % [repeal.votes, "passes" if repeal.passes else "fails"])
-	lines.append("Costs start on the next day. Deficits are automatically borrowed; no separate appropriation is modeled. Rollout takes 120 days at administration 50/100, slower with less capacity; expanding funding stretches remaining rollout. Health conditions and population approval respond gradually. Party positions and effects are fictional placeholders.")
+		var proposed_cost: float = law.funding * appropriation_picker.selected * 0.25
+		lines.append("Selected appropriation: $%.0f million/year; projected annual balance $%.0f million. Apply to change funding without another parliamentary vote." % [proposed_cost / 1000000.0, (world.annual_balance() + law.annual_cost() - proposed_cost) / 1000000.0])
+	lines.append("New laws start fully funded. Costs change from the next day; deficits are automatically borrowed. At full funding rollout takes 120 days at administration 50/100; partial funding slows rollout and reduces the health target bonus. Zero funding pauses rollout. Service conditions and group approval respond gradually. These rules and party positions are fictional placeholders.")
 	for group in world.politics.groups:
 		lines.append("%s: %.1f%% approval (service contribution %+.1f points)" % [group.name, group.approval, group.service_bonus])
 	healthcare_summary.text = "\n".join(lines)

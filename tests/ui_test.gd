@@ -4,6 +4,7 @@ func _initialize() -> void:
 	call_deferred("run_checks")
 
 func run_checks() -> void:
+	assert(ProjectSettings.get_setting("display/window/size/mode") == 2)
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
 	screen.set_process(false)

@@ -4,6 +4,8 @@ A work-in-progress Godot 4.7 prototype for a political and geopolitical simulati
 
 Open `project.godot` in Godot 4.7 and press F5. Use the on-screen controls to advance time, adjust tax and spending, and save or load the prototype scenario.
 
+The prototype starts maximized for readability; the normal window controls can restore or resize it.
+
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
 
 The source-controlled project is this repository's `project.godot`. The earlier project in `Documents/the-global-mandate` is a separate copy; changes in it do not automatically appear here. To compare them without changing either folder, run `python tools/compare_projects.py "C:\Users\Shadow\Documents\the-global-mandate"` from this repository. The comparison ignores generated Godot data, documentation and tooling; it reports differences but never synchronizes files. Review differences before manually copying anything.

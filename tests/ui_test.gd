@@ -1,5 +1,7 @@
 extends SceneTree
 
+const World = preload("res://simulation/world.gd")
+
 func _initialize() -> void:
 	call_deferred("run_checks")
 
@@ -10,6 +12,19 @@ func run_checks() -> void:
 	screen.set_process(false)
 	assert(screen.dashboard_tabs.get_tab_count() == 10)
 	assert(screen.dashboard_tabs.get_tab_title(9) == "Executive Orders")
+	assert("HOUSE: 435" in screen.congress_summary.text and "SENATE: 100" in screen.congress_summary.text)
+	screen._request_congress_action("introduce_congress_bill")
+	assert(screen.world.congress.stage == "idle" and not screen.pending_decision.is_empty())
+	screen._confirm_review()
+	screen.review_dialog.hide()
+	assert(screen.world.congress.stage == "house")
+	screen._request_congress_action("congress_vote")
+	assert("280 of 435" in screen.review_dialog.dialog_text)
+	screen._cancel_review()
+	screen.review_dialog.hide()
+	assert(screen.world.congress.stage == "house")
+	assert(screen.world.apply_scenario(World.Scenario.read_file(World.DEFAULT_SCENARIO)).is_empty())
+	screen._refresh()
 	assert(screen.healthcare_panel.visible and not screen.procurement_panel.visible)
 	screen.law_categories.current_tab = 1
 	screen._refresh_law_catalog()

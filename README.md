@@ -14,7 +14,9 @@ The **World Map** tab displays offline Natural Earth reference geography. Drag o
 
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
 
-In **Laws**, select a healthcare authorization and inspect party support and the projected budget before submitting a vote. After passage, choose an appropriation from 0% to 100%, review party support and vote to change it. Advance days to see administrative rollout, service conditions and group approval change. The figures and party positions are fictional; deficits are automatically financed through debt.
+In **Laws**, search the selected category and choose an implemented law. Healthcare and Finance currently contain one law each; the other category tabs are placeholders. Select a healthcare authorization and review party support and the projected budget before submitting a vote. After passage, choose an appropriation from 0% to 100% and review the vote. Advance days to see rollout, service conditions and approval change. The figures and party positions are fictional; deficits are automatically financed through debt.
+
+The **Executive Orders** tab contains two fictional directive options with automatic court review under prototype rules. Submitting a law or directive opens a review first; canceling does not submit it. Opening a review pauses a running game and leaves it paused. These fictional institutions are not a model of US constitutional procedure.
 
 The source-controlled project is this repository's `project.godot`. The earlier project in `Documents/the-global-mandate` is a separate copy; changes in it do not automatically appear here. To compare them without changing either folder, run `python tools/compare_projects.py "C:\Users\Shadow\Documents\the-global-mandate"` from this repository. The comparison ignores generated Godot data, documentation and tooling; it reports differences but never synchronizes files. Review differences before manually copying anything.
 

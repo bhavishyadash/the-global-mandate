@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "funding_options": [50000000, 100000000, 200000000],
+  "days_at_normal_capacity": 120,
+  "target_per_100m": 20,
+  "reform_proposal_max": 100000000,
+  "opposition_proposal_min": 200000000,
+  "reform_repeal_min": 100000000,
+  "reform_appropriation_max": 0.5,
+  "opposition_appropriation_min": 0.75
+}

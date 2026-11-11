@@ -102,6 +102,35 @@ func _initialize() -> void:
 		migrated.advance_day()
 	assert(migrated.services.levels.Health < funded_health)
 	assert(migrated.country.approval < funded_approval)
+	var custom: Dictionary = World.Scenario.read_file(World.DEFAULT_SCENARIO)
+	custom.version = 3
+	custom.healthcare_rules = World.Healthcare.default_rules()
+	custom.healthcare_rules.funding_options = [20000000.0, 40000000.0, 80000000.0]
+	custom.healthcare_rules.reform_proposal_max = 40000000.0
+	custom.healthcare_rules.opposition_proposal_min = 80000000.0
+	custom.healthcare_rules.days_at_normal_capacity = 60.0
+	custom.healthcare_rules.target_per_100m = 10.0
+	var configured = World.new()
+	assert(configured.apply_scenario(custom).is_empty())
+	assert(not configured.vote_healthcare(100000000.0))
+	assert(configured.preview_healthcare(40000000.0).votes == 70)
+	assert(configured.vote_healthcare(40000000.0))
+	var expected: Dictionary = configured.forecast_fiscal(30)
+	var configured_snapshot: Dictionary = configured.export_snapshot()
+	var configured_loaded = World.new()
+	assert(configured_loaded.import_snapshot(configured_snapshot).is_empty())
+	for day in range(30):
+		configured_loaded.advance_day()
+	assert(is_equal_approx(configured_loaded.healthcare.progress, 50.0))
+	assert(is_equal_approx(configured_loaded.country.treasury, expected.cash))
+	assert(is_equal_approx(configured_loaded.healthcare.health_bonus(), 2.0))
+	var invalid_rules: Dictionary = configured_snapshot.duplicate(true)
+	invalid_rules.healthcare_rules.days_at_normal_capacity = 0
+	var intact: Dictionary = configured_loaded.export_snapshot()
+	assert(not configured_loaded.import_snapshot(invalid_rules).is_empty())
+	assert(configured_loaded.export_snapshot() == intact)
+	custom.healthcare_rules.funding_options = [1, 1, 2]
+	assert(not configured_loaded.apply_scenario(custom).is_empty())
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
 	print("Healthcare governing checks passed")
 	quit(0)

@@ -26,6 +26,7 @@ var directive_picker: OptionButton
 var directive_summary: Label
 var dashboard_tabs: TabContainer
 var forecast_label: Label
+var comparison_label: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -223,6 +224,14 @@ func _ready() -> void:
 	forecast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	forecast_label.text = "Forecast on demand; rerun after changing settings or advancing time."
 	finances.add_child(forecast_label)
+	var compare_button := Button.new()
+	compare_button.text = "Compare entered tax and total budget"
+	compare_button.pressed.connect(_compare_budget)
+	finances.add_child(compare_button)
+	comparison_label = Label.new()
+	comparison_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	comparison_label.text = "Comparison uses the entered income tax, total budget, and selected additional tax from Tax previews; it does not apply them."
+	finances.add_child(comparison_label)
 	for node in [tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
 	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
@@ -251,6 +260,17 @@ func _forecast_budget() -> void:
 	var d: Dictionary = result.end_date
 	var warning := "Cash exhausted by day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "Cash remains positive."
 	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning]
+
+func _compare_budget() -> void:
+	var baseline: Dictionary = world.forecast_fiscal(365)
+	var kind := _additional_tax_kind()
+	var changes := {"income_tax": tax.value / 100.0, "spending": spending.value * 1000000.0}
+	changes[kind + "_tax"] = additional_tax.value / 100.0
+	var proposed: Dictionary = world.forecast_fiscal(365, changes)
+	if baseline.is_empty() or proposed.is_empty():
+		comparison_label.text = "Comparison unavailable for these inputs."
+		return
+	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, total budget $%.0f; changing the total resets category shares.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, spending.value * 1000000.0, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval]
 
 func _process(delta: float) -> void:
 	if running:

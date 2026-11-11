@@ -9,6 +9,18 @@ func _initialize() -> void:
 	assert(not forecast.is_empty() and world.date == World.INITIAL_DATE)
 	assert(world.fiscal.days == 0 and world.politics.election_count == 0)
 	assert(world.forecast_fiscal(0).is_empty() and world.forecast_fiscal(367).is_empty())
+	var scenario: Dictionary = world.forecast_fiscal(30, {"income_tax": 0.3, "consumption_tax": 0.1, "spending": 1200000000.0})
+	assert(not scenario.is_empty() and world.country.income_tax_rate == 0.2)
+	assert(world.forecast_fiscal(30, {"income_tax": NAN}).is_empty())
+	assert(world.forecast_fiscal(30, {"unknown": 1}).is_empty())
+	var scenario_actual = World.new()
+	assert(scenario_actual.set_income_tax(0.3))
+	assert(scenario_actual.set_additional_tax("consumption", 0.1))
+	assert(scenario_actual.set_annual_spending(1200000000.0))
+	for i in range(30):
+		scenario_actual.advance_day()
+	assert(absf(scenario.cash - scenario_actual.country.treasury) < 0.01)
+	assert(is_equal_approx(scenario.approval, scenario_actual.country.approval))
 	for i in range(365):
 		world.advance_day()
 	assert(absf(forecast.cash - world.country.treasury) < 0.01)

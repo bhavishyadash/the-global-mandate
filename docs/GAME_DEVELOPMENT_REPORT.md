@@ -425,6 +425,10 @@ PR #74, related to #45 and #48. Organized the prototype into five scrollable tab
 
 PR #75, related to #10, #45 and #48. Added an on-demand 365-day forecast on an independent simulation copy, including evolving debt interest and policy state. Headless tests verify no mutation and agreement with an actual run. It assumes no new decisions or unmodeled shocks and uses fictional rules. See [Session 37](SESSION_37.md).
 
+### Session 38 — policy scenario comparison
+
+PR #76, related to #10, #11, #12, #45 and #48. Added a non-mutating comparison of current settings with entered income tax, an additional tax and total spending, including cash, debt and approval. Tests compare forecasts to an actual run and reject invalid changes. Assumptions and limitations: [Session 38](SESSION_38.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

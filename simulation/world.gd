@@ -54,7 +54,7 @@ func policy_annual_cost() -> float:
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
 
-func forecast_fiscal(days: int) -> Dictionary:
+func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	# Simulate a separate copy: no files, live state or random outcomes are changed.
 	if days < 1 or days > 366 or date.year >= 9999:
 		return {}
@@ -62,6 +62,17 @@ func forecast_fiscal(days: int) -> Dictionary:
 	future.date = date.duplicate(true)
 	future.country = country.duplicate(true)
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()):
+		return {}
+	for key in changes:
+		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending"] or not _is_number(changes[key]):
+			return {}
+	if changes.has("income_tax") and not future.set_income_tax(float(changes.income_tax)):
+		return {}
+	for kind in ["consumption", "corporate"]:
+		var key: String = kind + "_tax"
+		if changes.has(key) and not future.set_additional_tax(kind, float(changes[key])):
+			return {}
+	if changes.has("spending") and not future.set_annual_spending(float(changes.spending)):
 		return {}
 	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
 	for i in range(days):

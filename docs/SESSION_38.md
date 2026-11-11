@@ -1,1 +1,3 @@
 # Session 38: policy scenarios
+
+Players can compare a 365-day baseline against entered income tax, the selected additional tax, and total budget without applying them. The engine validates inputs and runs each scenario on an independent copy. Changing total spending resets category shares as in the real action; the selected additional tax is edited on the Tax previews tab. Results compare cash, debt and approval. The forecast assumes no later decisions or external shocks, and all coefficients remain fictional. Tests check invalid inputs, isolation, UI output and agreement with an actual 30-day run. Visual usability and richer distributional, economic and uncertainty models remain open.

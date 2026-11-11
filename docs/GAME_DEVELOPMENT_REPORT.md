@@ -15,12 +15,12 @@
 | Area | Status | What we know / need |
 |---|---|---|
 | Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
-| Godot project | Located and updated | `C:\Users\Shadow\Documents\the-global-mandate`; Godot 4.7 project |
+| Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
 | Simulation | Framework prototype in original project | Gregorian calendar, fictional budget, tax decision and single-slot save/load |
 | World data | Not started | Research sources, licensing, dates, gaps and uncertainty |
 | Political systems | Early fictional prototype | Three population groups, a three-party legislature, one test law and a simplified election; real country institutions remain future work |
 | Economy | Concept stage | Budget, sectors, households, employment, prices and trade |
-| Diplomacy and military | Concept stage | Negotiations, escalation and strategic conflict; optional military models |
+| Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
 | GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
 | Visual design | Not decided | Map style, UI references and low-end performance target needed |
 | Playable build | Early framework prototype in original project | Headless scene launch verified; visual interaction not yet verified |
@@ -432,6 +432,10 @@ PR #76, related to #10, #11, #12, #45 and #48. Added a non-mutating comparison o
 ### Session 39 — population transparency and robustness
 
 PR #77, related to #18, #19, #20, #45 and #48. Added a Population tab explaining the prototype's group shares, approval components and tax sensitivities; rejected income-tax changes that would produce negative revenue; tested four years of deficit accounting, leap-year progression and save/load continuation. These groups are not unique personalities or researched country demographics. Details: [Session 39](SESSION_39.md).
+
+### Session 40 — diplomacy foundation
+
+PR #78. Added two fictional partners, bilateral relations, one active 30-day negotiation, cancellation, cooldown, event history and a Diplomacy tab. Version-9 saves preserve and validate state; older saves get test defaults. Local simulation, interface and integration checks passed. See [Session 40](SESSION_40.md) for simplified rules and gaps.
 
 ## 12. Immediate next actions
 

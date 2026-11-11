@@ -32,3 +32,5 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Run Godot simulation and interface checks
         run: python3 tools/run_tests.py --godot "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64"
+      - name: Verify packaged scenario startup
+        run: python3 tools/check_export.py --godot "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64"

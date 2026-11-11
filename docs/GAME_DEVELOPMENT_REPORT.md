@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 67
+**Report status:** Living record; updated through session 68
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -39,6 +39,8 @@
 **Session 66:** Added a portable deterministic replay recorder API that captures the versioned scenario, seed, days and ordered decision results. [Detailed session record](SESSION_66.md). Player-facing recording and reports remain open.
 
 **Session 67:** Added a single-country save rotation failure matrix covering each rename and combined rollback failures. [Detailed session record](SESSION_67.md). Hardware power-loss durability and the separate registry save remain outside this test.
+
+**Session 68:** Added versioned structured event causes/severity and optional local diagnostic reports. [Detailed session record](SESSION_68.md). Player-entered steps are manual; automatic playable-session recording remains open.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

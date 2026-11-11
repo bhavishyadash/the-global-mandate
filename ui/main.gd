@@ -263,6 +263,10 @@ func _ready() -> void:
 	cancel_talks_button.text = "Cancel talks"
 	cancel_talks_button.pressed.connect(_cancel_talks)
 	diplomacy_tab.add_child(cancel_talks_button)
+	var end_agreement_button := Button.new()
+	end_agreement_button.text = "End selected cooperation agreement"
+	end_agreement_button.pressed.connect(_end_cooperation)
+	diplomacy_tab.add_child(end_agreement_button)
 	diplomacy_summary = Label.new()
 	diplomacy_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	diplomacy_tab.add_child(diplomacy_summary)
@@ -334,6 +338,11 @@ func _start_talks() -> void:
 
 func _cancel_talks() -> void:
 	status.text = "Diplomatic talks cancelled." if world.cancel_diplomatic_talks() else "No talks are active."
+	_refresh()
+
+func _end_cooperation() -> void:
+	var partner: String = world.diplomacy.PARTNERS.keys()[diplomacy_picker.selected]
+	status.text = "Cooperation ended; relations reduced." if world.end_cooperation(partner) else "No cooperation agreement with selected partner."
 	_refresh()
 
 func _additional_tax_kind() -> String:
@@ -442,9 +451,9 @@ func _refresh() -> void:
 		people.append("%s | %.0f%% of population (~%.0f people) | approval %.1f%%\n  Raw %.1f + services %+.1f points | sensitivity to +1 percentage point tax: income -%.2f, consumption -%.2f, corporate -%.2f points before limits." % [group.name, group.share * 100.0, c.population * group.share, group.approval, group.raw_approval, group.service_bonus, group.tax_sensitivity / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.consumption[i] / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.corporate[i] / 100.0])
 	people.append("Service contribution responds gradually to the average condition of the five services. The three groups and all sensitivities are placeholders, not real demographic data or a model of individual personalities.")
 	population_summary.text = "\n\n".join(people)
-	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue is accepted and adds 5 relations. Cooperation adds 10 if relations meet the partner's threshold; otherwise it is declined. Only one negotiation can run at a time. No treaties, conflict or economic effects are modeled."])
+	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue adds 5 relations. Accepted cooperation adds 10 and creates or renews a 365-day agreement costing $10 million per year; ending it early costs 5 relations. Only one negotiation can run at a time. No trade or conflict effects are modeled."])
 	for partner in world.diplomacy.PARTNERS:
-		diplomatic_lines.append("%s: relations %.1f / 100 | cooldown %d days" % [world.diplomacy.PARTNERS[partner], world.diplomacy.relations[partner], world.diplomacy.cooldowns[partner]])
+		diplomatic_lines.append("%s: relations %.1f / 100 | cooldown %d days | cooperation %d days remaining" % [world.diplomacy.PARTNERS[partner], world.diplomacy.relations[partner], world.diplomacy.cooldowns[partner], world.diplomacy.agreements[partner]])
 	if not world.diplomacy.active.is_empty():
 		diplomatic_lines.append("Active: %s — %s | day %d / 30" % [world.diplomacy.PARTNERS[world.diplomacy.active], world.diplomacy.PROPOSALS[world.diplomacy.proposal].name, world.diplomacy.progress])
 	else:

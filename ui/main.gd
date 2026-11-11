@@ -4,13 +4,14 @@ const World = preload("res://simulation/world.gd")
 const Decisions = preload("res://simulation/decisions.gd")
 const Diagnostics = preload("res://simulation/diagnostics.gd")
 const WorldMap = preload("res://ui/world_map.gd")
+const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
 const GovernmentTheme = preload("res://ui/government_theme.gd")
 const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
 const BudgetChart = preload("res://ui/budget_chart.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
-	{"id": "usa_sandbox", "name": "United States sandbox (fictional values)", "path": "res://data/scenarios/usa_sandbox.json", "map_id": "USA"},
+	{"id": "usa_sandbox", "name": "United States sandbox (fictional values)", "path": "res://data/scenarios/usa_sandbox.json"},
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
@@ -69,6 +70,10 @@ var map_focus_button: Button
 var map_clear_button: Button
 var map_simulation: Label
 var map_scenario_button: Button
+var map_layer_picker: OptionButton
+var map_legend: Label
+var map_bindings: Array = []
+var map_binding_error := ""
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -328,6 +333,10 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
+	var map_binding_data: Variant = MapScenarioRegistry.read()
+	map_binding_error = MapScenarioRegistry.validate(map_binding_data, world_map.countries, SCENARIOS)
+	if map_binding_error.is_empty():
+		map_bindings = map_binding_data.bindings.duplicate(true)
 	var map_sidebar_scroll := ScrollContainer.new()
 	map_sidebar_scroll.custom_minimum_size = Vector2(290, 360)
 	map_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -340,6 +349,14 @@ func _ready() -> void:
 	var map_heading := Label.new()
 	map_heading.text = "EXPLORE THE WORLD"
 	map_sidebar.add_child(map_heading)
+	map_layer_picker = OptionButton.new()
+	map_layer_picker.add_item("Layer: geography")
+	map_layer_picker.add_item("Layer: sandbox availability")
+	map_layer_picker.item_selected.connect(func(_index: int): _refresh_map_layer())
+	map_sidebar.add_child(map_layer_picker)
+	map_legend = Label.new()
+	map_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_sidebar.add_child(map_legend)
 	map_search = LineEdit.new()
 	map_search.placeholder_text = "Search countries or cities"
 	map_sidebar.add_child(map_search)
@@ -674,33 +691,66 @@ func _map_selection_cleared() -> void:
 	_refresh_map_simulation()
 
 func _map_scenario_index(id: String) -> int:
+	var binding := _map_binding(id)
+	if binding.is_empty():
+		return -1
 	for index in range(SCENARIOS.size()):
-		if SCENARIOS[index].get("map_id", "") == id and not id.is_empty():
+		if SCENARIOS[index].id == binding.scenario_id:
 			return index
 	return -1
+
+func _map_binding(id: String) -> Dictionary:
+	for binding in map_bindings:
+		if binding.map_id == id:
+			return binding
+	return {}
+
+func _map_binding_active(binding: Dictionary) -> bool:
+	return not binding.is_empty() and world.scenario_id == binding.scenario_id and world.country.id == binding.country_id
+
+func _refresh_map_layer() -> void:
+	if map_layer_picker == null or world_map == null:
+		return
+	var available: Array = []
+	var active := ""
+	for binding in map_bindings:
+		available.append(binding.map_id)
+		if _map_binding_active(binding):
+			active = binding.map_id
+	world_map.set_scenario_layer(map_layer_picker.selected, available, active)
+	if not map_binding_error.is_empty():
+		map_legend.text = "Sandbox layer unavailable: " + map_binding_error
+	elif map_layer_picker.selected == 1:
+		map_legend.text = "Gold: sandbox available  •  Teal: active sandbox  •  Slate: reference only"
+	else:
+		map_legend.text = "Geographic reference view"
 
 func _refresh_map_simulation() -> void:
 	if map_simulation == null:
 		return
+	_refresh_map_layer()
 	var selected: String = world_map.selected_id
 	var index := _map_scenario_index(selected)
+	var binding := _map_binding(selected)
 	map_scenario_button.visible = index >= 0
 	if selected.is_empty():
 		map_simulation.text = ""
+	elif not map_binding_error.is_empty():
+		map_simulation.text = "Sandbox links are unavailable: " + map_binding_error
 	elif index < 0:
 		map_simulation.text = "REFERENCE ONLY\nNo playable country scenario is linked here yet."
-	elif world.scenario_id == SCENARIOS[index].id and world.country.id == SCENARIOS[index].id:
+	elif _map_binding_active(binding):
 		map_scenario_button.text = "Open government"
-		map_simulation.text = "ACTIVE US SANDBOX — FICTIONAL VALUES\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nThese values are simulation placeholders, not US statistics. City-level simulation is not implemented." % [world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+		map_simulation.text = "ACTIVE %s — FICTIONAL VALUES\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nThese values are simulation placeholders, not real statistics. City-level simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
 	else:
-		map_scenario_button.text = "Start US sandbox"
-		map_simulation.text = "US SANDBOX AVAILABLE\nUses fictional test values, not US statistics. Starting replaces the current session after confirmation."
+		map_scenario_button.text = "Start " + binding.short_name
+		map_simulation.text = "%s AVAILABLE\nUses fictional test values, not real statistics. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
 
 func _map_scenario_action() -> void:
 	var index := _map_scenario_index(world_map.selected_id)
 	if index < 0:
 		return
-	if world.scenario_id == SCENARIOS[index].id and world.country.id == SCENARIOS[index].id:
+	if _map_binding_active(_map_binding(world_map.selected_id)):
 		dashboard_tabs.current_tab = 3
 	else:
 		_request_new_scenario(index)

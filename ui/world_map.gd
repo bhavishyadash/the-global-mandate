@@ -13,6 +13,8 @@ const BORDER := Color("70929c")
 const SELECTED := Color("13a98f")
 const HOVER := Color("477a82")
 const CITY := Color("f1d39a")
+const AVAILABLE := Color("b68b48")
+const ACTIVE := Color("158c79")
 var countries: Array = []
 var cities: Array = []
 var selected_id := ""
@@ -20,6 +22,9 @@ var selected_city_name := ""
 var hovered_id := ""
 var hovered_city_name := ""
 var city_mode := 0 # 0: major + capitals by zoom; 1: capitals; 2: all; 3: hidden
+var layer_mode := 0 # 0: geography; 1: scenario availability
+var available_ids: Array = []
+var active_id := ""
 var map_zoom := 1.0
 var pan := Vector2.ZERO
 var _pressed := false
@@ -118,7 +123,7 @@ func _draw() -> void:
 						projected.append(unit_to_screen(point))
 					# Projection and pixel precision can collapse tiny rings.
 					if not Geometry2D.triangulate_polygon(projected).is_empty():
-						draw_colored_polygon(projected, SELECTED if country.id == selected_id else (HOVER if country.id == hovered_id else LAND))
+						draw_colored_polygon(projected, country_fill_color(country.id))
 				screen.append(screen[0])
 				draw_polyline(screen, Color("a9ebdf") if country.id == selected_id else BORDER, 1.6 if country.id == selected_id else 1.0, true)
 	var labels: Array[Rect2] = []
@@ -155,6 +160,22 @@ static func _renderable_polygons(points: PackedVector2Array) -> Array:
 		if not Geometry2D.triangulate_polygon(polygon).is_empty():
 			result.append(polygon)
 	return result
+
+func set_scenario_layer(mode: int, available: Array, active: String) -> void:
+	if mode not in [0, 1]:
+		return
+	if layer_mode == mode and available_ids == available and active_id == active:
+		return
+	layer_mode = mode
+	available_ids = available.duplicate()
+	active_id = active if active in available_ids else ""
+	queue_redraw()
+
+func country_fill_color(id: String) -> Color:
+	if layer_mode == 1:
+		var base := ACTIVE if id == active_id else (AVAILABLE if id in available_ids else LAND)
+		return base.lightened(0.14) if id == hovered_id else base
+	return SELECTED if id == selected_id else (HOVER if id == hovered_id else LAND)
 
 func _city_visible(city: Dictionary) -> bool:
 	match city_mode:

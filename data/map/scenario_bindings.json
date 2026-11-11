@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "bindings": [
+    {"map_id": "USA", "scenario_id": "usa_sandbox", "country_id": "usa_sandbox", "short_name": "US sandbox"}
+  ]
+}

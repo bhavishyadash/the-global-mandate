@@ -7,9 +7,11 @@ func run_checks() -> void:
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
 	screen.set_process(false)
-	assert(screen.dashboard_tabs.get_tab_count() == 5)
+	assert(screen.dashboard_tabs.get_tab_count() == 6)
 	assert(screen.dashboard_tabs.get_tab_title(1) == "Budget & services")
 	assert(screen.dashboard_tabs.get_tab_title(3) == "Government")
+	assert(screen.dashboard_tabs.get_tab_title(4) == "Population")
+	assert("Raw" in screen.population_summary.text and "placeholders" in screen.population_summary.text)
 	screen.dashboard_tabs.current_tab = 3
 	assert(screen.dashboard_tabs.current_tab == 3)
 	screen._forecast_budget()

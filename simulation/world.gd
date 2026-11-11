@@ -345,15 +345,18 @@ func preview_income_tax(rate: float) -> Dictionary:
 	if not preview_politics.import_state(politics.export_state()):
 		return {}
 	var delta: float = rate - country.income_tax_rate
+	var projected_revenue: float = country.annual_revenue + delta * TEST_TAXABLE_BASE
+	if not is_finite(projected_revenue) or projected_revenue < 0.0:
+		return {}
 	preview_politics.apply_tax_change(delta)
 	return {
-		"annual_revenue": country.annual_revenue + delta * TEST_TAXABLE_BASE,
+		"annual_revenue": projected_revenue,
 		"approval": preview_politics.approval(),
 		"groups": preview_politics.groups.duplicate(true),
 	}
 
 func set_income_tax(rate: float) -> bool:
-	if not is_finite(rate) or rate < 0.0 or rate > 0.60:
+	if preview_income_tax(rate).is_empty():
 		return false
 	var previous: float = country.income_tax_rate
 	if is_equal_approx(rate, previous):

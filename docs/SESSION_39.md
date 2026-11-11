@@ -1,1 +1,5 @@
 # Session 39: population transparency and robustness
+
+Added a Population tab showing each fictional group's share, approximate population, visible and raw approval, service contribution, and the assumed immediate response to a one-percentage-point increase in each tax. National approval is explained as a share-weighted average, including the 0–100 display clamp. Raw approval bundles earlier influences; it is not a full causal breakdown. The three income groups are placeholders, not real demographics, unique personalities, or country-specific cultural models.
+
+Income-tax previews and changes now reject a projected negative or non-finite annual revenue, including hypothetical changes, and the UI reports rejection. Existing saves remain compatible. An integrated 1,461-day deficit scenario exercises interest, the 2028 leap year, an election, the daily cash/debt identity and save/load continuation. Local simulation, interface and integration tests passed. Real population research, disaggregated demographics and visual usability testing remain open.

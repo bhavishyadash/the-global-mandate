@@ -80,6 +80,11 @@ func _initialize() -> void:
 	assert(not world.set_income_tax(NAN))
 	assert(is_equal_approx(world.country.income_tax_rate, 0.25))
 	var high_tax_world = World.new()
+	var low_revenue = World.new()
+	low_revenue.country.annual_revenue = 0.0
+	assert(low_revenue.preview_income_tax(0.0).is_empty())
+	assert(not low_revenue.set_income_tax(0.0))
+	assert(low_revenue.country.annual_revenue == 0.0)
 	var before_preview: Dictionary = high_tax_world.country.duplicate(true)
 	var before_politics: Dictionary = high_tax_world.politics.export_state()
 	var prediction: Dictionary = high_tax_world.preview_income_tax(0.60)

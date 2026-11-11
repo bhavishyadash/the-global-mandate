@@ -24,7 +24,7 @@ func _ready() -> void:
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	focus_mode = Control.FOCUS_ALL
-	custom_minimum_size = Vector2(0, 450)
+	custom_minimum_size = Vector2(0, 360)
 	load_error = load_map()
 	queue_redraw()
 

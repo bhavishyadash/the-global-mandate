@@ -4,6 +4,7 @@ const World = preload("res://simulation/world.gd")
 const Decisions = preload("res://simulation/decisions.gd")
 const Diagnostics = preload("res://simulation/diagnostics.gd")
 const WorldMap = preload("res://ui/world_map.gd")
+const GovernmentTheme = preload("res://ui/government_theme.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -55,9 +56,16 @@ var map_selection: Label
 var map_search: LineEdit
 var map_results: ItemList
 var map_search_status: Label
+var government_status: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
+	theme = GovernmentTheme.create()
+	var background := ColorRect.new()
+	background.color = GovernmentTheme.BACKGROUND
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(background)
 	if not world.initialization_error.is_empty():
 		var failure := Label.new()
 		failure.text = "Cannot start: the default scenario is missing or invalid. " + world.initialization_error
@@ -68,20 +76,25 @@ func _ready() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
-		margin.add_theme_constant_override(edge, 24)
+		margin.add_theme_constant_override(edge, 16)
 	add_child(margin)
 	var scroll := ScrollContainer.new()
 	margin.add_child(scroll)
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	layout.add_theme_constant_override("separation", 12)
+	layout.add_theme_constant_override("separation", 8)
 	scroll.add_child(layout)
 	var title := Label.new()
-	title.text = "THE GLOBAL MANDATE  |  Simulation foundation"
-	title.add_theme_font_size_override("font_size", 25)
+	title.text = "THE GLOBAL MANDATE"
+	title.add_theme_font_size_override("font_size", 22)
 	layout.add_child(title)
+	government_status = Label.new()
+	government_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	government_status.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	layout.add_child(government_status)
 	var notice := Label.new()
-	notice.text = "Prototype: fictional data and simplified placeholder calculations."
+	notice.text = "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+	notice.add_theme_color_override("font_color", GovernmentTheme.MUTED)
 	layout.add_child(notice)
 	summary = Label.new()
 	layout.add_child(summary)
@@ -96,7 +109,7 @@ func _ready() -> void:
 	next_day.pressed.connect(_advance_day)
 	controls.add_child(next_day)
 	var tax_label := Label.new()
-	tax_label.text = "   Income tax (%) "
+	tax_label.text = "Income tax (%) "
 	controls.add_child(tax_label)
 	tax = SpinBox.new()
 	tax.min_value = 0.0
@@ -105,7 +118,7 @@ func _ready() -> void:
 	tax.value = 20.0
 	controls.add_child(tax)
 	var apply := Button.new()
-	apply.text = "Apply test policy"
+	apply.text = "Apply income tax"
 	apply.pressed.connect(_apply_tax)
 	controls.add_child(apply)
 	var save_button := Button.new()
@@ -120,6 +133,10 @@ func _ready() -> void:
 	backup_button.text = "Load backup"
 	backup_button.pressed.connect(_load_backup)
 	controls.add_child(backup_button)
+	var income_controls := HBoxContainer.new()
+	layout.add_child(income_controls)
+	for node in [tax_label, tax, apply]:
+		node.reparent(income_controls)
 	var budget_controls := HBoxContainer.new()
 	layout.add_child(budget_controls)
 	var spending_label := Label.new()
@@ -174,10 +191,13 @@ func _ready() -> void:
 	additional_tax_button.text = "Apply selected tax (%)"
 	additional_tax_button.pressed.connect(_apply_additional_tax)
 	tax_controls.add_child(additional_tax_button)
-	status = Label.new()
-	layout.add_child(status)
+	var status_row := HBoxContainer.new()
+	layout.add_child(status_row)
 	speed_status = Label.new()
-	layout.add_child(speed_status)
+	status_row.add_child(speed_status)
+	status = Label.new()
+	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	status_row.add_child(status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Category funding gradually affects service conditions and approval in the fictional test model. Resetting the total restores initial shares."
@@ -239,7 +259,7 @@ func _ready() -> void:
 	# Keep the clock, income tax and save controls visible while grouping the
 	# growing decision panels into independently scrollable sections.
 	dashboard_tabs = TabContainer.new()
-	dashboard_tabs.custom_minimum_size = Vector2(0, 520)
+	dashboard_tabs.custom_minimum_size = Vector2(0, 440)
 	dashboard_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dashboard_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_child(dashboard_tabs)
@@ -335,7 +355,7 @@ func _ready() -> void:
 	comparison_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	comparison_label.text = "Comparison uses the entered income tax, total budget, and selected additional tax from Tax previews; it does not apply them."
 	finances.add_child(comparison_label)
-	for node in [tax_controls, tax_preview, additional_tax_preview]:
+	for node in [income_controls, tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
 	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
 		node.reparent(government)
@@ -708,6 +728,7 @@ func _refresh() -> void:
 	_update_speed_status()
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
+	government_status.text = "%s   |   %04d-%02d-%02d   |   Cash $%.1fM   |   Annual balance $%.1fM   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, c.treasury / 1000000.0, world.annual_balance() / 1000000.0, c.approval]
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")

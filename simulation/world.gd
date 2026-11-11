@@ -248,7 +248,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 21, "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 22, "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -334,7 +334,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 21:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 22:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -437,8 +437,13 @@ func import_snapshot(parsed: Variant) -> String:
 		if not loaded_healthcare.import_state(healthcare_data):
 			return "Save has invalid healthcare policy data."
 	var loaded_congress = Congress.new()
-	if parsed.version >= 21 and not loaded_congress.import_state(parsed.get("congress"), loaded_healthcare.rules.funding_options):
-		return "Save has invalid congressional bill data."
+	if parsed.version >= 21:
+		var bill_data: Variant = parsed.get("congress")
+		if parsed.version == 21 and bill_data is Dictionary:
+			bill_data = bill_data.duplicate(true)
+			bill_data.history = []
+		if not loaded_congress.import_state(bill_data, loaded_healthcare.rules.funding_options):
+			return "Save has invalid congressional bill data."
 	var loaded_diplomacy = Diplomacy.new()
 	if parsed.version >= 9:
 		var diplomatic_data: Variant = parsed.get("diplomacy")

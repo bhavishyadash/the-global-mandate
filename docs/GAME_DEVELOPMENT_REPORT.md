@@ -3,8 +3,8 @@
 **Working title:** The Global Mandate (final name undecided)
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
-**Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
-**Report status:** Living record; updated through session 60
+**Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
+**Report status:** Living record; updated through session 61
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -26,11 +26,11 @@
 | Playable build | Early framework prototype in tracked project | Day advance, executive action, history and scenario confirmation visually exercised; save/load and layout still need visual testing |
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
-**Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1 has a functioning headless baseline but foundation signoff remains open until the platform and usability checks below are completed.
+**Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open
-M1  Core technical framework           BASELINE IMPLEMENTED — validation open
+M1  Core technical framework           BASELINE IMPLEMENTED — target checks deferred
 M2  World state, map and time          EARLY PROTOTYPE — no coupled world or map
 M3  First playable policy loop         EARLY PROTOTYPE — director playtest open
 M4  Economy and population foundation  EARLY PROTOTYPE — budget and groups only
@@ -108,7 +108,7 @@ The graphical layer displays the world and sends player decisions. The simulatio
 
 ### M1 — Core technical framework
 
-**Status:** BASELINE IMPLEMENTED; foundation validation remains open.
+**Status:** CORE BASELINE IMPLEMENTED; target-hardware and broader validation remain open.
 
 - [x] Set up simulation modules that run independently of rendering and interface.
 - [x] Define initial country/scenario IDs, date, validated decisions and categorized events. World dictionaries remain mutable and event payloads are limited.
@@ -116,10 +116,10 @@ The graphical layer displays the world and sends player decisions. The simulatio
 - [x] Add versioned saves, candidate validation, backup handling, seeded state and deterministic replay. Crash/fault injection is not exhaustive.
 - [x] Add event history, user-visible errors and a bounded headless test runner.
 - [x] Automate headless tests and a resource-pack build; record an initial independent-copy performance measurement. A Windows executable has passed local headless and basic graphical startup checks; coupled-world performance remains unverified.
-- [ ] Complete visual playtesting of the tracked project, including save/load and different window sizes. A limited smoke test covered day advancement, an executive action, history and the scenario confirmation.
+- [x] Visually exercise core standalone interactions: day advancement, save/load, scenario selection and a directive/history smoke test. Broader window-size and usability testing remains open.
 - [ ] Verify the standalone build on target hardware and define simulation speed targets. A Windows executable and PCK were built, started and advanced one day on the current machine in session 56.
 
-**Evidence:** Test worlds advance, accept decisions, save/reload, replay deterministically and pass a ten-year stress scenario; build/test instructions are in the README and a synthetic performance measurement is in session 48. **Foundation signoff is still open** for the unchecked visual and platform checks; these results do not imply that the broader game is complete.
+**Evidence:** Test worlds advance, accept decisions, save/reload, replay deterministically and pass a ten-year stress scenario; build/test instructions are in the README and synthetic performance measurements are in sessions 48 and 60. The director deferred validation on the provisional low-end hardware. These results do not imply that the broader game is complete.
 
 ### M2 — World state, map and time
 
@@ -518,6 +518,10 @@ PR #97. Added a headless registry of uniquely identified, synchronized countries
 ### Session 60 — multi-country persistence and benchmark
 
 PR #98. Added validated registry save/load with backup safeguards and a synthetic 200-country linked-dialogue benchmark. A local 365-day run took 1,302.541 ms of tick time; the test uses identical fictional copies and is not a target-hardware or full-game result. Existing playable UI still uses single-country saves. See [Session 60](SESSION_60.md).
+
+### Session 61 — foundation validation and handoff
+
+PR #99. Visually verified standalone save/load, scenario selection and restoration on the current machine. The director chose to defer low-end hardware validation. The M1 core baseline is implemented, with remaining quality and multi-country integration gaps recorded in [foundation acceptance](FOUNDATION_ACCEPTANCE.md); a prototype test save was created. Details: [Session 61](SESSION_61.md).
 
 ## 12. Immediate next actions
 

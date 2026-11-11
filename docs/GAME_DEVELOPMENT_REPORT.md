@@ -1,10 +1,10 @@
 # Geopolitical Simulator — Living Development Report
 
-**Working title:** Geopolitical Simulator (final name undecided)  
+**Working title:** The Global Mandate (final name undecided)
 **Report started:** 10 November 2026  
-**Development stage:** Pre-production / discovery  
-**Current milestone:** M1 — Core technical framework (M0 hardware and scope decisions remain open)  
-**Report status:** Initial baseline; update throughout development  
+**Development stage:** Early simulation prototype
+**Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
+**Report status:** Living record; updated through session 55
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -17,28 +17,28 @@
 | Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
 | Simulation | Framework prototype in tracked project | Gregorian calendar, fictional budget, population, institutions, diplomacy and single-slot save/load |
-| World data | Not started | Research sources, licensing, dates, gaps and uncertainty |
+| World data | Fictional scenarios only | Real-country research sources, licensing, dates, gaps and uncertainty remain open |
 | Political systems | Early fictional prototype | Three population groups, a three-party legislature, one test law and a simplified election; real country institutions remain future work |
-| Economy | Concept stage | Budget, sectors, households, employment, prices and trade |
+| Economy | Early fictional budget prototype | Sectors, households, employment, prices and trade remain open |
 | Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
 | GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
 | Visual design | Not decided | Map style, UI references and low-end performance target needed |
-| Playable build | Early framework prototype in tracked project | Headless simulation and UI checks pass; visual interaction and low-end performance not yet verified |
+| Playable build | Early framework prototype in tracked project | Day advance, executive action, history and scenario confirmation visually exercised; save/load and layout still need visual testing |
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
-**Progress by milestone** — bars show verified completion, not effort spent. Initial percentages are approximate tracking placeholders, not a schedule forecast.
+**Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1 has a functioning headless baseline but foundation signoff remains open until the platform and usability checks below are completed.
 
 ```text
-M0  Project foundation and scope       [######----]  60%  IN PROGRESS
-M1  Core technical framework           [####------]  40%  IN PROGRESS
-M2  World state and time               [----------]   0%  NOT STARTED
-M3  First playable policy loop         [----------]   0%  NOT STARTED
-M4  Economy and population foundation  [----------]   0%  NOT STARTED
-M5  Institutions and domestic politics[----------]   0%  NOT STARTED
-M6  Diplomacy and international system [----------]   0%  NOT STARTED
-M7  Military and conflict             [----------]   0%  NOT STARTED
-M8  Global content and country depth   [----------]   0%  NOT STARTED
-M9  Playtesting and release readiness  [----------]   0%  NOT STARTED
+M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open
+M1  Core technical framework           BASELINE IMPLEMENTED — validation open
+M2  World state, map and time          EARLY PROTOTYPE — no coupled world or map
+M3  First playable policy loop         EARLY PROTOTYPE — director playtest open
+M4  Economy and population foundation  EARLY PROTOTYPE — budget and groups only
+M5  Institutions and domestic politics EARLY PROTOTYPE — fictional rules
+M6  Diplomacy and international system EARLY PROTOTYPE — fictional talks
+M7  Military and conflict              NOT STARTED
+M8  Global content and country depth   NOT STARTED
+M9  Playtesting and release readiness  NOT STARTED
 ```
 
 The order is a dependency guide, not a waterfall: data, UI, testing, performance and research continue throughout. Features can be expanded across milestones once their foundation is usable.
@@ -62,12 +62,12 @@ Create a modern geopolitical game centered on governing: politics, law, economic
 | Decision | Current assumption | Owner / next step |
 |---|---|---|
 | Game name | Undecided | Director chooses later |
-| Godot / C# | Recommended, not confirmed | Inspect actual project and tooling before committing |
+| Engine / language | Godot 4.7.2 and GDScript in the prototype | Revisit only with a concrete technical reason |
 | Map | Undecided: flat, globe or hybrid | Director chooses after reviewing prototypes |
 | Initial playable geography | Fictional US-style test scenario proposed | Confirm during M0; world expansion follows |
 | Real-time scale and pause | Pausable simulation proposed | Prototype and test |
 | Military depth | Strategic-first; detailed mechanics undecided | Director defines desired control |
-| Target hardware | Not specified | Set baseline PC and acceptable frame / simulation speeds in M0–M1 |
+| Target hardware | Provisional low-end Windows laptop: 4 CPU cores, 8 GB RAM, integrated graphics, 720p | Director selected a provisional low-end target; specific CPU/GPU and measurements remain open |
 | Distribution, pricing, multiplayer | Not decided | Decide when supported by scope and testing |
 
 ## 3. Development layers
@@ -95,33 +95,35 @@ The graphical layer displays the world and sends player decisions. The simulatio
 **Status:** IN PROGRESS  
 **Purpose:** Know exactly what we are building on and define the first playable target.
 
-- [ ] Locate and inspect the Godot project, its engine version, existing code, assets and instructions.
-- [ ] Verify local Godot, language runtime, build and test tools; document any installation needed.
-- [ ] Review the existing project structure and preserve existing work.
-- [ ] Decide initial engine/language and create a version-control and backup approach.
+- [x] Locate and inspect the Godot project, its engine version, existing code, assets and instructions.
+- [x] Verify local Godot, language runtime and headless test tools; document missing export templates.
+- [x] Review the existing project structure and preserve the separate earlier copy.
+- [x] Establish the prototype engine/language, version control and save-backup approach.
 - [ ] Agree on the first scenario, map presentation and target hardware.
 - [ ] Expand the GPS feature inventory using the game menus and clearly label observations versus ideas.
-- [ ] Establish a feature register with priorities, dependencies and acceptance criteria.
+- [x] Establish a preliminary feature register with dependencies and acceptance criteria; continue refining priorities.
 
 **Done when:** The project builds or opens, its baseline is recorded, and the next milestone is agreed and measurable.  
-**Current limitation:** The original project is outside the normal writable roots; this session transferred the verified prototype with elevated access. Visual interaction remains untested.
+**Current limitation:** The source-controlled project is the copy in this workspace; the earlier project is separate. A limited visual smoke test passed; target hardware and broader usability remain unverified.
 
 ### M1 — Core technical framework
 
-**Status:** NOT STARTED
+**Status:** BASELINE IMPLEMENTED; foundation validation remains open.
 
-- [ ] Set up a simulation module independent of rendering and interface.
-- [ ] Define world state, country IDs, game date, decisions, events and data validation.
-- [ ] Add a predictable tick/update loop, pause and speed controls.
-- [ ] Add versioned save/load, backup handling and reproducible scenario seeds.
-- [ ] Add logging, error reporting and a headless simulation test runner.
-- [ ] Establish automated build, test and performance baseline.
+- [x] Set up simulation modules that run independently of rendering and interface.
+- [x] Define initial country/scenario IDs, date, validated decisions and categorized events. World dictionaries remain mutable and event payloads are limited.
+- [x] Add a predictable tick/update loop, pause and speed controls.
+- [x] Add versioned saves, candidate validation, backup handling, seeded state and deterministic replay. Crash/fault injection is not exhaustive.
+- [x] Add event history, user-visible errors and a bounded headless test runner.
+- [x] Automate headless tests and a resource-pack build; record an initial independent-copy performance measurement. A standalone executable and coupled-world performance remain unverified.
+- [ ] Complete visual playtesting of the tracked project, including save/load and different window sizes. A limited smoke test covered day advancement, an executive action, history and the scenario confirmation.
+- [ ] Verify a standalone build on target hardware and define acceptable performance targets.
 
-**Done when:** A test world advances, accepts a simple decision, saves and reloads identically, and its behavior is reproducible. Record build instructions, test results and performance numbers.
+**Evidence:** Test worlds advance, accept decisions, save/reload, replay deterministically and pass a ten-year stress scenario; build/test instructions are in the README and a synthetic performance measurement is in session 48. **Foundation signoff is still open** for the unchecked visual and platform checks; these results do not imply that the broader game is complete.
 
 ### M2 — World state, map and time
 
-**Status:** NOT STARTED
+**Status:** EARLY PROTOTYPE
 
 - [ ] Add a selectable map or placeholder country view and a country information panel.
 - [ ] Load sample countries from sourced, versioned scenario data.
@@ -133,7 +135,7 @@ The graphical layer displays the world and sends player decisions. The simulatio
 
 ### M3 — First playable policy loop
 
-**Status:** NOT STARTED
+**Status:** EARLY PROTOTYPE
 
 - [ ] Implement the initial fictional federal executive-action scenario described in `FIRST_MILESTONE.md`.
 - [ ] Model legal authority, decision lifecycle, agency capacity, implementation delays and budget impact.
@@ -145,7 +147,7 @@ The graphical layer displays the world and sends player decisions. The simulatio
 
 ### M4 — Economy and population foundation
 
-**Status:** NOT STARTED
+**Status:** EARLY PROTOTYPE
 
 - [ ] Model government revenue, spending, deficit and debt with documented units and accounting.
 - [ ] Add a small initial set of production sectors, employment, wages, households and prices.
@@ -158,7 +160,7 @@ The graphical layer displays the world and sends player decisions. The simulatio
 
 ### M5 — Domestic politics and country institutions
 
-**Status:** NOT STARTED
+**Status:** EARLY PROTOTYPE
 
 - [ ] Add parties, legislatures, legislative votes, elections and transfers of power.
 - [ ] Model public and private attitudes, representation, political influence and organized groups.
@@ -171,7 +173,7 @@ The graphical layer displays the world and sends player decisions. The simulatio
 
 ### M6 — Diplomacy and international systems
 
-**Status:** NOT STARTED
+**Status:** EARLY PROTOTYPE
 
 - [ ] Add bilateral relations, national interests, negotiations and agreements.
 - [ ] Add trade agreements, sanctions, international organizations and treaty obligations.
@@ -492,6 +494,10 @@ PR #91. Added a scenario seed and stable 32-bit random state, saved in v14, with
 ### Session 54 — save safety and long-run checks
 
 PR #92. Validate the candidate save with the loader before replacing the primary or backup; added a 3,650-day deterministic stress test with tax, spending, diplomacy, directives, elections and mid-run save/load. Filesystem crash and failure injection remain open. Details: [Session 54](SESSION_54.md).
+
+### Session 55 — foundation acceptance audit
+
+PR #93. Reconciled the milestone checklist with implemented evidence, documented remaining platform and usability gaps, improved timed-out test diagnostics, and visually exercised the tracked project in Godot: day advancement, an executive directive, its history entry and the scenario-change confirmation. Save/load and layout testing remain open. See [foundation acceptance](FOUNDATION_ACCEPTANCE.md) and [Session 55](SESSION_55.md).
 
 ## 12. Immediate next actions
 

@@ -21,8 +21,15 @@ def run_command(command: list[str], timeout: float, marker: str) -> tuple[bool, 
     try:
         result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
                                 errors="replace", timeout=timeout, check=False)
-    except subprocess.TimeoutExpired:
-        return False, f"Timed out after {timeout:g} seconds."
+    except subprocess.TimeoutExpired as exc:
+        # TimeoutExpired may contain bytes even when text=True. Preserve the
+        # emitted assertion/parse error so a timeout is actionable.
+        def text_output(value: str | bytes | None) -> str:
+            return value.decode(errors="replace") if isinstance(value, bytes) else value or ""
+
+        output = (text_output(exc.stdout) + text_output(exc.stderr)).strip()
+        message = f"Timed out after {timeout:g} seconds."
+        return False, f"{message}\n{output}" if output else message
     except OSError as exc:
         return False, f"Could not start the test: {exc}"
     output = result.stdout + result.stderr

@@ -16,9 +16,10 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(runner.run_command([sys.executable, "-c", "print('PASS'); exit(2)"], 5, "PASS")[0])
 
     def test_timeout_is_failure(self):
-        ok, message = runner.run_command([sys.executable, "-c", "import time; time.sleep(2)"], 0.1, "PASS")
+        ok, message = runner.run_command([sys.executable, "-c", "import time; print('diagnostic', flush=True); time.sleep(2)"], 0.3, "PASS")
         self.assertFalse(ok)
         self.assertIn("Timed out", message)
+        self.assertIn("diagnostic", message)
 
 
 if __name__ == "__main__":

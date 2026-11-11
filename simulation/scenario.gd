@@ -5,11 +5,12 @@ const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
 const Healthcare = preload("res://simulation/healthcare.gd")
+const PolicyRules = preload("res://simulation/policy_rules.gd")
 const DEFAULT_SEED := 12345
 const MAX_SEED := 4294967295
 
 # One country per scenario; v1 uses original defaults, v2 includes subsystem
-# state, v3 adds healthcare rules, and v4 adds institutional rules.
+# state, v3 adds healthcare, v4 institutions, and v5 baseline policy rules.
 const CATEGORIES := ["Health", "Education", "Security", "Infrastructure", "Administration"]
 
 static func read_file(path: String) -> Variant:
@@ -22,12 +23,14 @@ static func read_file(path: String) -> Variant:
 	return json.data
 
 static func validate(data: Variant) -> String:
-	if not data is Dictionary or not _whole(data.get("version")) or data.version < 1 or data.version > 4 or not _id(data.get("id")) or not data.get("description") is String:
+	if not data is Dictionary or not _whole(data.get("version")) or data.version < 1 or data.version > 5 or not _id(data.get("id")) or not data.get("description") is String:
 		return "Invalid scenario header or unsupported version."
 	if not Healthcare.valid_rules(data.get("healthcare_rules") if data.version >= 3 else Healthcare.default_rules()):
 		return "Scenario healthcare rules are missing or invalid."
 	if not Institutions.valid_rules(data.get("institution_rules") if data.version >= 4 else Institutions.default_rules()):
 		return "Scenario institutional rules are missing or invalid."
+	if not PolicyRules.valid(data.get("policy_rules") if data.version >= 5 else PolicyRules.defaults()):
+		return "Scenario baseline policy rules are missing or invalid."
 	if data.has("seed") and (not _whole(data.seed) or data.seed < 0 or data.seed > MAX_SEED):
 		return "Scenario seed must be a whole 32-bit unsigned number."
 	var date: Variant = data.get("date")

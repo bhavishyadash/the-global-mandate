@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "procurement_annual_cost": 10000000,
+  "procurement_progress_per_day": 1,
+  "reporting_annual_cost": 5000000,
+  "reporting_admin_target_bonus": 10
+}

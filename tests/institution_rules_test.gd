@@ -42,5 +42,35 @@ func _initialize() -> void:
 	legacy.erase("institution_rules")
 	assert(restored.import_snapshot(legacy).is_empty())
 	assert(restored.institutions.rules.review_day == 30)
+	var policy_scenario: Dictionary = World.Scenario.read_file(World.DEFAULT_SCENARIO)
+	policy_scenario.version = 5
+	policy_scenario.healthcare_rules = World.Healthcare.default_rules()
+	policy_scenario.institution_rules = World.Institutions.default_rules()
+	policy_scenario.policy_rules = World.PolicyRules.defaults()
+	policy_scenario.policy_rules.procurement_progress_per_day = 10
+	policy_scenario.policy_rules.procurement_annual_cost = 50000000
+	policy_scenario.policy_rules.reporting_annual_cost = 7000000
+	policy_scenario.policy_rules.reporting_admin_target_bonus = 15
+	var policy_world = World.new()
+	assert(policy_world.apply_scenario(policy_scenario).is_empty())
+	assert(policy_world.vote_procurement())
+	assert(policy_world.issue_directive("reporting"))
+	var policy_forecast: Dictionary = policy_world.forecast_fiscal(60)
+	var policy_loaded = World.new()
+	assert(policy_loaded.import_snapshot(policy_world.export_snapshot()).is_empty())
+	for day in range(60):
+		policy_loaded.advance_day()
+	assert(policy_loaded.politics.procurement_progress == 100)
+	assert(policy_loaded.institutions.status == "implemented")
+	assert(is_equal_approx(policy_loaded.policy_annual_cost(), 57000000.0))
+	assert(is_equal_approx(policy_loaded.country.treasury, policy_forecast.cash))
+	var invalid_policy: Dictionary = policy_loaded.export_snapshot()
+	invalid_policy.policy_rules.procurement_progress_per_day = 0
+	assert(not restored.import_snapshot(invalid_policy).is_empty())
+	legacy = World.new().export_snapshot()
+	legacy.version = 19
+	legacy.erase("policy_rules")
+	assert(restored.import_snapshot(legacy).is_empty())
+	assert(restored.policy_rules.procurement_progress_per_day == 1)
 	print("Institution rule checks passed")
 	quit(0)

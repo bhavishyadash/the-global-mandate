@@ -1,6 +1,6 @@
 # Simulation architecture: prototype baseline
 
-This documents the implemented prototype through session 70, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
+This documents the implemented prototype through session 72, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
 
 ## Ownership and boundaries
 

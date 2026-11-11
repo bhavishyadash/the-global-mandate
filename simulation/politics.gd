@@ -60,9 +60,9 @@ func repeal_procurement() -> bool:
 	procurement_progress = 0
 	return true
 
-func advance_day() -> bool:
+func advance_day(procurement_step: int = 1) -> bool:
 	if procurement_policy and procurement_progress < 100:
-		procurement_progress = mini(100, procurement_progress + 1)
+		procurement_progress = mini(100, procurement_progress + procurement_step)
 		return procurement_progress == 100
 	return false
 

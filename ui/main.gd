@@ -644,7 +644,7 @@ func _refresh() -> void:
 		lines.append("%s: %d seats" % [party.name, party.seats])
 	lines.append("Procurement support: %d/100 seats | Implementation: %d%% | Elections: %d" % [world.politics.votes_for_policy(), world.politics.procurement_progress, world.politics.election_count])
 	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
-	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
+	lines.append("Test policy requires a majority, takes %d days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [ceili(100.0 / float(world.policy_rules.procurement_progress_per_day)), world.policy_rules.procurement_annual_cost, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
 	var people := PackedStringArray(["POPULATION APPROVAL — fictional test groups", "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
 	for i in range(world.politics.groups.size()):
@@ -690,7 +690,7 @@ func _refresh_directive() -> void:
 	var selected := "reporting" if directive_picker.selected == 0 else "override"
 	var choice: Dictionary = model.rules.cases[selected]
 	var active_name: String = model.rules.cases[model.kind].name if model.rules.cases.has(model.kind) else "None"
-	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Review after %d days; directives exceeding authority are suspended after %d.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/%d\nImplemented reporting adds 10 to the administration target and costs $5 million/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", model.rules.review_day, model.rules.injunction_day, active_name, model.status, model.days, model.progress, model.rules.implementation_days]
+	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Review after %d days; directives exceeding authority are suspended after %d.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/%d\nImplemented reporting adds %.1f to the administration target and costs $%.0f/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", model.rules.review_day, model.rules.injunction_day, active_name, model.status, model.days, model.progress, model.rules.implementation_days, world.policy_rules.reporting_admin_target_bonus, world.policy_rules.reporting_annual_cost]
 
 func _update_tax_preview(value: float) -> void:
 	_invalidate_comparison()

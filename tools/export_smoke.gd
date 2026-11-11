@@ -2,6 +2,7 @@ extends SceneTree
 
 const World = preload("res://simulation/world.gd")
 const WorldMap = preload("res://ui/world_map.gd")
+const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
 
 func _initialize() -> void:
 	var world = World.new()
@@ -27,6 +28,11 @@ func _initialize() -> void:
 	var map = WorldMap.new()
 	if not map.load_map().is_empty() or map.countries.size() < 170:
 		push_error("Packaged world map data could not be loaded.")
+		quit(1)
+		return
+	var scenarios := [{"id": "usa_sandbox", "path": "res://data/scenarios/usa_sandbox.json"}]
+	if not MapScenarioRegistry.validate(MapScenarioRegistry.read(), map.countries, scenarios).is_empty():
+		push_error("Packaged map scenario bindings could not be loaded.")
 		quit(1)
 		return
 	map.free()

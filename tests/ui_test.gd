@@ -14,6 +14,8 @@ func run_checks() -> void:
 	screen._vote_healthcare()
 	assert(screen.world.healthcare.active and "active" in screen.healthcare_summary.text)
 	screen.appropriation_picker.select(2)
+	screen._refresh_healthcare()
+	assert("APPROPRIATION VOTE: 70/100" in screen.healthcare_summary.text)
 	screen._apply_healthcare_appropriation()
 	assert(screen.world.healthcare.appropriation == 0.5 and "funded 50%" in screen.healthcare_summary.text)
 	screen._repeal_healthcare()

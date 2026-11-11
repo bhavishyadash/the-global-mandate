@@ -586,12 +586,24 @@ func vote_healthcare(amount: float) -> bool:
 	add_event("Healthcare %s passed with %d of 100 seats; annual funding is $%.0f." % ["amendment" if amending else "proposal", preview.votes, amount], "policy")
 	return true
 
-func set_healthcare_appropriation(fraction: float) -> bool:
+func preview_healthcare_appropriation(fraction: float) -> Dictionary:
 	if not healthcare.active or not is_finite(fraction) or fraction < 0.0 or fraction > 1.0:
+		return {}
+	var positions: Array = healthcare.appropriation_support(politics.parties, fraction)
+	var seats: int = healthcare.votes(positions)
+	var cost: float = healthcare.funding * fraction
+	var daily_progress: float = minf(100.0 - healthcare.progress, clampf(services.levels.Administration / 50.0, 0.0, 2.0) * fraction * 100.0 / Healthcare.DAYS_AT_NORMAL_CAPACITY)
+	return {"positions": positions, "votes": seats, "passes": seats > 50, "changed": not is_equal_approx(healthcare.appropriation, fraction), "annual_cost": cost, "annual_balance": annual_balance() + healthcare.annual_cost() - cost, "daily_progress": daily_progress, "health_bonus": Healthcare.TARGET_PER_100M * healthcare.funding / 100000000.0 * fraction * healthcare.progress / 100.0}
+
+func set_healthcare_appropriation(fraction: float) -> bool:
+	var preview := preview_healthcare_appropriation(fraction)
+	if preview.is_empty() or is_equal_approx(healthcare.appropriation, fraction):
 		return false
-	if not is_equal_approx(healthcare.appropriation, fraction):
-		healthcare.appropriation = fraction
-		add_event("Healthcare appropriation set to %.0f%% of authorization." % (fraction * 100.0), "finance")
+	if not preview.passes:
+		add_event("Healthcare appropriation vote for %.0f%% failed with %d of 100 seats; funding unchanged." % [fraction * 100.0, preview.votes], "finance")
+		return false
+	healthcare.appropriation = fraction
+	add_event("Healthcare appropriation set to %.0f%% of authorization with %d of 100 seats." % [fraction * 100.0, preview.votes], "finance")
 	return true
 
 func repeal_healthcare() -> bool:

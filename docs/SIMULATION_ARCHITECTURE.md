@@ -1,6 +1,6 @@
 # Simulation architecture: prototype baseline
 
-This documents the implemented prototype through session 63, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
+This documents the implemented prototype through session 64, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
 
 ## Ownership and boundaries
 
@@ -8,6 +8,7 @@ This documents the implemented prototype through session 63, not the final game 
 - `simulation/politics.gd` owns three fictional population groups, three parties, seat counts, procurement state, implementation progress and illustrative election count.
 - `simulation/services.gd` owns fictional service conditions, spending-per-resident targets and group service contributions.
 - `simulation/healthcare.gd` owns the fictional law's authorization, appropriation, party positions and administrative rollout. The world connects its actual cost and target bonus to the fiscal and service models. Save format 16 persists the appropriation; version 15 migrates to full funding and earlier saves start with the law inactive.
+- Healthcare appropriation changes use the current legislature and a fictional per-party support rule; a majority passes the change immediately. Initial enactment remains fully funded. Rejected proposals retain their previous funding and produce an event.
 - `simulation/institutions.gd` owns a fictional single-directive lifecycle, fixed authority cases, court outcomes and agency implementation progress.
 - `simulation/diplomacy.gd` owns two fictional partners, talks and agreements; `simulation/scenario.gd` validates versioned single-country scenario data.
 - `simulation/decisions.gd` validates UI command requests and returns explicit results; `simulation/replay.gd` runs ordered commands on an isolated world.

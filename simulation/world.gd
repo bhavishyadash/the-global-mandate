@@ -2,6 +2,7 @@ extends RefCounted
 
 const Politics = preload("res://simulation/politics.gd")
 const Services = preload("res://simulation/services.gd")
+const Institutions = preload("res://simulation/institutions.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
@@ -9,6 +10,7 @@ const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate", "bas
 const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "Infrastructure": 0.15, "Administration": 0.10}
 var politics = Politics.new()
 var services = Services.new()
+var institutions = Institutions.new()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -70,6 +72,9 @@ func advance_day() -> void:
 	country.approval = politics.approval()
 	if politics.advance_day():
 		add_event("Procurement policy implementation completed.")
+	var institutional_event: String = institutions.advance_day()
+	if not institutional_event.is_empty():
+		add_event(institutional_event)
 	date.day += 1
 	if date.day > days_in_month(date.year, date.month):
 		date.day = 1
@@ -103,7 +108,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 6, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state()}))
+	file.store_string(JSON.stringify({"version": 7, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -153,7 +158,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -206,6 +211,9 @@ func load_game(path: String) -> String:
 			return "Save has invalid event data."
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
+	var loaded_institutions = Institutions.new()
+	if parsed.version >= 7 and not loaded_institutions.import_state(parsed.get("institutions")):
+		return "Save has invalid institutional data."
 	if parsed.version >= 5 and not loaded_services.import_state(parsed.get("services")):
 		return "Save has invalid service data."
 	if parsed.version >= 2:
@@ -233,6 +241,7 @@ func load_game(path: String) -> String:
 	country.population = int(c.population)
 	politics = loaded_politics
 	services = loaded_services
+	institutions = loaded_institutions
 	events.clear()
 	for event in e:
 		events.append(event)
@@ -318,6 +327,18 @@ func vote_procurement() -> bool:
 		return true
 	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes)
 	return false
+
+func issue_directive(kind: String) -> bool:
+	if not institutions.issue(kind):
+		return false
+	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name)
+	return true
+
+func revoke_directive() -> bool:
+	if not institutions.revoke():
+		return false
+	add_event("Executive revoked the %s directive; implementation stopped." % institutions.CASES[institutions.kind].name)
+	return true
 
 func vote_procurement_repeal() -> bool:
 	var votes: int = politics.votes_for_repeal()

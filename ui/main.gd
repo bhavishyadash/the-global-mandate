@@ -22,6 +22,8 @@ var category_preview: Label
 var additional_tax_picker: OptionButton
 var additional_tax: SpinBox
 var additional_tax_preview: Label
+var directive_picker: OptionButton
+var directive_summary: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -171,6 +173,24 @@ func _ready() -> void:
 	repeal_button.text = "Vote to repeal procurement"
 	repeal_button.pressed.connect(_repeal_policy)
 	political_controls.add_child(repeal_button)
+	var directive_controls := HBoxContainer.new()
+	layout.add_child(directive_controls)
+	directive_picker = OptionButton.new()
+	directive_picker.add_item("Procurement reporting")
+	directive_picker.add_item("Override spending limit")
+	directive_controls.add_child(directive_picker)
+	var directive_button := Button.new()
+	directive_button.text = "Issue directive"
+	directive_button.pressed.connect(_issue_directive)
+	directive_controls.add_child(directive_button)
+	var revoke_button := Button.new()
+	revoke_button.text = "Revoke directive"
+	revoke_button.pressed.connect(_revoke_directive)
+	directive_controls.add_child(revoke_button)
+	directive_summary = Label.new()
+	directive_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(directive_summary)
+	directive_picker.item_selected.connect(func(_index: int): _refresh_directive())
 	var heading := Label.new()
 	heading.text = "RECENT DECISIONS"
 	layout.add_child(heading)
@@ -242,6 +262,15 @@ func _repeal_policy() -> void:
 	world.vote_procurement_repeal()
 	_refresh()
 
+func _issue_directive() -> void:
+	var kind := "reporting" if directive_picker.selected == 0 else "override"
+	status.text = "Directive issued." if world.issue_directive(kind) else "Finish or revoke the active directive first."
+	_refresh()
+
+func _revoke_directive() -> void:
+	status.text = "Directive revoked." if world.revoke_directive() else "No active directive to revoke."
+	_refresh()
+
 func _save_game() -> void:
 	var error: String = world.save_game(SAVE_PATH)
 	status.text = "Game saved." if error.is_empty() else error
@@ -287,11 +316,19 @@ func _refresh() -> void:
 	lines.append("Repeal support: %d/100 seats (opponents of the policy)." % world.politics.votes_for_repeal())
 	lines.append("Test policy requires a majority, takes 100 days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [world.PROCUREMENT_ANNUAL_COST, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
+	_refresh_directive()
 	history.text = "\n".join(world.events.slice(0, 8))
 	_update_tax_preview(tax.value)
 	_update_additional_tax_preview(additional_tax.value)
 	_update_spending_preview(spending.value)
 	_update_category_preview(category_amount.value)
+
+func _refresh_directive() -> void:
+	var model = world.institutions
+	var selected := "reporting" if directive_picker.selected == 0 else "override"
+	var choice: Dictionary = model.CASES[selected]
+	var active_name: String = model.CASES[model.kind].name if model.CASES.has(model.kind) else "None"
+	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Court review resolves after 30 days; the override is suspended after 10.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/60\nNo fiscal or economic effects are modeled." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", active_name, model.status, model.days, model.progress]
 
 func _update_tax_preview(value: float) -> void:
 	var preview: Dictionary = world.preview_income_tax(value / 100.0)

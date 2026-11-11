@@ -6,6 +6,8 @@ Open `project.godot` in Godot 4.7 and press F5. Use the on-screen controls to ad
 
 The prototype starts maximized for readability; the normal window controls can restore or resize it.
 
+The **World Map** tab displays offline Natural Earth reference geography. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom; select a country or city for its reference panel. The map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
+
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
 
 In **Laws**, select a healthcare authorization and inspect party support and the projected budget before submitting a vote. After passage, choose an appropriation from 0% to 100%, review party support and vote to change it. Advance days to see administrative rollout, service conditions and group approval change. The figures and party positions are fictional; deficits are automatically financed through debt.
@@ -33,7 +35,7 @@ godot --headless --path . --script res://tests/institution_rules_test.gd
 
 For a timeout-protected run of all ten checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
-The `Windows Development` export preset includes `data/scenarios/*.json` and `data/rules/*.json`. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario from an empty directory. The check reports failure if Godot reports an error or the packaged scenario does not advance.
+The `Windows Development` export preset includes scenario, rules and compact world-map JSON data. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario and map from an empty directory. The check reports failure if Godot reports an error or the packaged data does not load.
 
 On Windows with matching Godot 4.7.2 Windows export templates installed, `python tools/build_windows.py --godot PATH_TO_GODOT_CONSOLE --output artifacts/NEW_EMPTY_FOLDER` produces `TheGlobalMandate.exe` and its accompanying `TheGlobalMandate.pck` and checks headless startup. Keep both files together. It refuses to overwrite an existing build; choose a new output folder. These development builds are ignored by Git. Headless startup does not replace graphical or target-hardware testing.
 

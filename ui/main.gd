@@ -61,6 +61,10 @@ var map_selection: Label
 var map_search: LineEdit
 var map_results: ItemList
 var map_search_status: Label
+var map_hover: Label
+var map_zoom_label: Label
+var map_focus_button: Button
+var map_clear_button: Button
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -298,7 +302,7 @@ func _ready() -> void:
 	var map_controls := HBoxContainer.new()
 	map_tab.add_child(map_controls)
 	var map_help := Label.new()
-	map_help.text = "Drag / arrows: pan  •  Wheel / + / −: zoom  •  Select a country or city"
+	map_help.text = "Click to select  •  Double-click to focus  •  Drag to pan  •  Wheel to zoom"
 	map_help.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_controls.add_child(map_help)
 	var zoom_in := Button.new()
@@ -310,6 +314,9 @@ func _ready() -> void:
 	var reset_map := Button.new()
 	reset_map.text = "Reset map"
 	map_controls.add_child(reset_map)
+	map_zoom_label = Label.new()
+	map_zoom_label.text = "1.0×"
+	map_controls.add_child(map_zoom_label)
 	var map_layout := HBoxContainer.new()
 	map_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_tab.add_child(map_layout)
@@ -317,15 +324,45 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
+	var map_sidebar_scroll := ScrollContainer.new()
+	map_sidebar_scroll.custom_minimum_size = Vector2(290, 360)
+	map_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_sidebar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	map_layout.add_child(map_sidebar_scroll)
 	var map_sidebar := VBoxContainer.new()
-	map_sidebar.custom_minimum_size = Vector2(250, 0)
-	map_layout.add_child(map_sidebar)
+	map_sidebar.custom_minimum_size = Vector2(270, 0)
+	map_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_sidebar_scroll.add_child(map_sidebar)
+	var map_heading := Label.new()
+	map_heading.text = "EXPLORE THE WORLD"
+	map_sidebar.add_child(map_heading)
 	map_search = LineEdit.new()
 	map_search.placeholder_text = "Search countries or cities"
 	map_sidebar.add_child(map_search)
 	map_search_status = Label.new()
 	map_search_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_sidebar.add_child(map_search_status)
+	var city_filter := OptionButton.new()
+	for name in ["Cities: automatic", "Cities: capitals", "Cities: all", "Cities: hidden"]:
+		city_filter.add_item(name)
+	map_sidebar.add_child(city_filter)
+	city_filter.item_selected.connect(func(index: int): world_map.set_city_mode(index))
+	map_hover = Label.new()
+	map_hover.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_hover.text = "Hover over a country or city"
+	map_sidebar.add_child(map_hover)
+	var selection_controls := HBoxContainer.new()
+	map_sidebar.add_child(selection_controls)
+	map_focus_button = Button.new()
+	map_focus_button.text = "Focus"
+	map_focus_button.disabled = true
+	selection_controls.add_child(map_focus_button)
+	map_clear_button = Button.new()
+	map_clear_button.text = "Clear"
+	map_clear_button.disabled = true
+	selection_controls.add_child(map_clear_button)
+	map_focus_button.pressed.connect(func(): world_map.focus_selection())
+	map_clear_button.pressed.connect(func(): world_map.clear_selection())
 	map_results = ItemList.new()
 	map_results.custom_minimum_size = Vector2(0, 150)
 	map_results.visible = false
@@ -338,6 +375,9 @@ func _ready() -> void:
 	map_sidebar.add_child(map_selection)
 	world_map.country_selected.connect(_map_country_selected)
 	world_map.city_selected.connect(_map_city_selected)
+	world_map.selection_cleared.connect(_map_selection_cleared)
+	world_map.hover_changed.connect(func(text: String): map_hover.text = text if not text.is_empty() else "Hover over a country or city")
+	world_map.zoom_changed.connect(func(value: float): map_zoom_label.text = "%.1f×" % value)
 	zoom_in.pressed.connect(func(): world_map.zoom_at(world_map.size / 2.0, 1.25))
 	zoom_out.pressed.connect(func(): world_map.zoom_at(world_map.size / 2.0, 0.8))
 	reset_map.pressed.connect(func(): world_map.reset_view())
@@ -597,10 +637,26 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	return column
 
 func _map_country_selected(id: String, country_name: String) -> void:
-	map_selection.text = "%s\n\nGeographic ID: %s\n\nReference geography only. Country-specific simulation, regions and data are not yet linked to this map." % [country_name, id]
+	var capital := "Not in dataset"
+	var count := 0
+	for city in world_map.cities:
+		if city.country == id:
+			count += 1
+			if city.capital:
+				capital = city.name
+	map_focus_button.disabled = false
+	map_clear_button.disabled = false
+	map_selection.text = "%s\n\nCOUNTRY  •  %s\nCapital: %s\nMapped places: %d\n\nReference geography only. Country-specific simulation and regions are not yet linked to this map." % [country_name, id, capital, count]
 
 func _map_city_selected(city: Dictionary) -> void:
-	map_selection.text = "%s\n\n%s\nCountry ID: %s\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country]
+	map_focus_button.disabled = false
+	map_clear_button.disabled = false
+	map_selection.text = "%s\n\n%s  •  %s\nLatitude: %.2f°\nLongitude: %.2f°\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country, float(city.point[1]), float(city.point[0])]
+
+func _map_selection_cleared() -> void:
+	map_focus_button.disabled = true
+	map_clear_button.disabled = true
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is real-world reference data. The current playable scenario is fictional and is not linked to these countries yet."
 
 func _search_map(query: String) -> void:
 	map_results.clear()

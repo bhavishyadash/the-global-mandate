@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 81
+**Report status:** Living record; updated through session 82
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 82:** Improved map pointer interactions, hover and selection feedback, city visibility controls, zoom and the geographic sidebar. [Detailed session record](SESSION_82.md). The map remains reference geography and is not yet connected to the playable fictional scenario.
 
 **Session 81:** Improved the healthcare bill screen with stage-aware actions, vote and fiscal previews, and saved chamber/presidential results. [Detailed session record](SESSION_81.md). Positions remain fictional and fixed; realistic country-specific institutions and appropriations remain upcoming.
 

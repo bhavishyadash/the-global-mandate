@@ -103,6 +103,38 @@ func run_checks() -> void:
 	assert(screen.world_map.selected_id == "USA" and "United States" in screen.map_selection.text)
 	var france_point: Vector2 = screen.world_map.unit_to_screen(Vector2(2.0 / 360.0, -46.0 / 180.0))
 	assert(screen.world_map.country_at(france_point).id == "FRA")
+	# Real pointer event path: hovering, a slightly wobbly click and double click.
+	screen.world_map.set_city_mode(3)
+	screen.world_map._update_hover(france_point)
+	assert(screen.world_map.hovered_id == "FRA" and "France" in screen.map_hover.text)
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = france_point
+	screen.world_map._gui_input(press)
+	var motion := InputEventMouseMotion.new()
+	motion.position = france_point + Vector2(2, 1)
+	screen.world_map._gui_input(motion)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.position = motion.position
+	screen.world_map._gui_input(release)
+	assert(screen.world_map.selected_id == "FRA" and "France" in screen.map_selection.text)
+	assert(not screen.map_focus_button.disabled and not screen.map_clear_button.disabled)
+	var double_click := InputEventMouseButton.new()
+	double_click.button_index = MOUSE_BUTTON_LEFT
+	double_click.pressed = true
+	double_click.double_click = true
+	double_click.position = france_point
+	screen.world_map._gui_input(double_click)
+	assert(screen.world_map.selected_id == "FRA" and screen.world_map.map_zoom > 1.0)
+	assert(screen.map_zoom_label.text != "1.0×")
+	screen.world_map.clear_selection()
+	assert(screen.world_map.selected_id.is_empty() and screen.map_focus_button.disabled and "Select a country" in screen.map_selection.text)
+	screen.world_map.reset_view()
+	screen.world_map.set_city_mode(3)
+	assert(screen.world_map._city_at(screen.world_map.unit_to_screen(Vector2(-77.0114 / 360.0, -38.9015 / 180.0))).is_empty())
+	screen.world_map.set_city_mode(0)
 	var sudan_point: Vector2 = screen.world_map.unit_to_screen(Vector2(30.0 / 360.0, -15.0 / 180.0))
 	assert(screen.world_map.country_at(sudan_point).id == "SDN")
 	var sudan: Dictionary = screen.world_map.countries.filter(func(c): return c.id == "SDN")[0]

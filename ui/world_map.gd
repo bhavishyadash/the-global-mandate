@@ -12,6 +12,7 @@ const CITY := Color("f1d39a")
 var countries: Array = []
 var cities: Array = []
 var selected_id := ""
+var selected_city_name := ""
 var map_zoom := 1.0
 var pan := Vector2.ZERO
 var _pressed := false
@@ -97,6 +98,8 @@ func _draw() -> void:
 		var location := unit_to_screen(_unit_point(city.point))
 		if not Rect2(Vector2.ZERO, size).grow(-3).has_point(location):
 			continue
+		if city.name == selected_city_name:
+			draw_circle(location, 7.0, SELECTED)
 		draw_circle(location, 3.2 if city.capital else 2.4, CITY)
 		if map_zoom < 1.7:
 			continue
@@ -152,12 +155,47 @@ func _city_at(point: Vector2) -> Dictionary:
 
 func select_at(point: Vector2) -> void:
 	var city := _city_at(point)
+	selected_city_name = city.get("name", "")
 	var country := country_at(point)
 	selected_id = country.get("id", "")
 	if not country.is_empty():
 		country_selected.emit(country.id, country.name)
 	if not city.is_empty():
 		city_selected.emit(city)
+	queue_redraw()
+
+func focus_city(city: Dictionary) -> void:
+	selected_id = city.get("country", "")
+	selected_city_name = city.name
+	_focus_unit(_unit_point(city.point), 3.5)
+	city_selected.emit(city.duplicate(true))
+
+func focus_country(country: Dictionary) -> void:
+	selected_id = country.id
+	selected_city_name = ""
+	var largest := Rect2()
+	var largest_area := -1.0
+	for polygon in country.polygons:
+		var ring: PackedVector2Array = polygon[0]
+		var bounds := Rect2(ring[0], Vector2.ZERO)
+		for point in ring:
+			bounds = bounds.expand(point)
+		var area := bounds.size.x * bounds.size.y
+		if area > largest_area:
+			largest = bounds
+			largest_area = area
+	if largest_area >= 0.0:
+		var width := _map_width()
+		var zoom_x := size.x / maxf(1.0, largest.size.x * width * 1.5)
+		var zoom_y := size.y / maxf(1.0, largest.size.y * width * 0.75)
+		_focus_unit(largest.get_center(), clampf(minf(zoom_x, zoom_y), 1.0, 6.0))
+	country_selected.emit(country.id, country.name)
+
+func _focus_unit(point: Vector2, zoom: float) -> void:
+	map_zoom = zoom
+	var width := _map_width() * map_zoom
+	pan = -Vector2(point.x * width, point.y * width / 2.0)
+	_clamp_pan()
 	queue_redraw()
 
 func zoom_at(point: Vector2, factor: float) -> void:

@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 69
+**Report status:** Living record; updated through session 70
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -43,6 +43,8 @@
 **Session 68:** Added versioned structured event causes/severity and optional local diagnostic reports. [Detailed session record](SESSION_68.md). Player-entered steps are manual; automatic playable-session recording remains open.
 
 **Session 69:** Added a cooperative per-frame simulation budget and visible backlog, with pause and catch-up tests. [Detailed session record](SESSION_69.md). This is not a guarantee of frame rate or a benchmark of the future full world.
+
+**Session 70:** Healthcare coefficients and party thresholds are now versioned scenario data, persisted in saves and forecasts. [Detailed session record](SESSION_70.md). Other policy and institutional definitions still require configuration work.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

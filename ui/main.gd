@@ -336,9 +336,7 @@ func _ready() -> void:
 	diagnostic_button.pressed.connect(_export_diagnostics)
 	decisions.add_child(diagnostic_button)
 	healthcare_picker = OptionButton.new()
-	for amount in World.Healthcare.FUNDING_OPTIONS:
-		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
-	healthcare_picker.select(1)
+	_sync_healthcare_picker()
 	laws.add_child(healthcare_picker)
 	healthcare_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
 	var healthcare_vote := Button.new()
@@ -460,6 +458,7 @@ func _start_scenario(path: String) -> bool:
 	_category_selected(category_picker.selected)
 	event_filter.select(0)
 	_sync_scenario_picker()
+	_sync_healthcare_picker()
 	status.text = "Scenario started and paused."
 	_refresh()
 	return true
@@ -471,6 +470,12 @@ func _sync_scenario_picker() -> void:
 			return
 	# An externally authored saved scenario may not be in the built-in catalog.
 	scenario_picker.select(-1)
+
+func _sync_healthcare_picker() -> void:
+	healthcare_picker.clear()
+	for amount in world.healthcare.rules.funding_options:
+		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
+	healthcare_picker.select(1)
 
 func _apply_tax() -> void:
 	status.text = Decisions.execute(world, {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}}).message
@@ -530,7 +535,7 @@ func _vote_policy() -> void:
 	_refresh()
 
 func _vote_healthcare() -> void:
-	var amount: float = World.Healthcare.FUNDING_OPTIONS[healthcare_picker.selected]
+	var amount: float = world.healthcare.rules.funding_options[healthcare_picker.selected]
 	status.text = Decisions.execute(world, {"id": "vote_healthcare", "args": {"funding": amount}}).message
 	_refresh()
 
@@ -544,7 +549,7 @@ func _apply_healthcare_appropriation() -> void:
 	_refresh()
 
 func _refresh_healthcare() -> void:
-	var amount: float = World.Healthcare.FUNDING_OPTIONS[healthcare_picker.selected]
+	var amount: float = world.healthcare.rules.funding_options[healthcare_picker.selected]
 	var preview: Dictionary = world.preview_healthcare(amount)
 	var law = world.healthcare
 	var lines := PackedStringArray(["HEALTHCARE LAW — fictional test model", "Current: %s | rollout %.1f%% | authorized $%.0f million/year | funded %.0f%% ($%.0f million/year)" % ["active" if law.active else "inactive", law.progress, law.funding / 1000000.0, law.appropriation * 100.0 if law.active else 0.0, law.annual_cost() / 1000000.0], "Administration %.1f/100 | health condition %.1f/100 | current health target %.1f/100" % [world.services.levels.Administration, world.services.levels.Health, world.service_target("Health", world.country.spending_categories.Health)], "PROPOSAL: %d/100 seats support; %s (51 required)." % [preview.votes, "passes" if preview.passes else "fails"]])
@@ -560,7 +565,7 @@ func _refresh_healthcare() -> void:
 		for party in funding_preview.positions:
 			lines.append("%s: %d seats — %s" % [party.name, party.seats, "supports" if party.support else "opposes"])
 		lines.append("If passed: $%.0f million/year; annual balance $%.0f million. At current administration: %.2f rollout points/day; current-progress health target bonus %+.1f points." % [funding_preview.annual_cost / 1000000.0, funding_preview.annual_balance / 1000000.0, funding_preview.daily_progress, funding_preview.health_bonus])
-	lines.append("New laws start fully funded by their passage. Later appropriation changes need a majority vote; funding continues unchanged after rejection. Costs change from the next day; deficits are automatically borrowed. Rollout takes 120 days at full funding and administration 50/100; partial funding slows rollout and reduces the health target bonus. Zero funding pauses rollout. Service conditions and group approval respond gradually. These rules and party positions are fictional placeholders.")
+	lines.append("New laws start fully funded by their passage. Later appropriation changes need a majority vote; funding continues unchanged after rejection. Costs change from the next day; deficits are automatically borrowed. Rollout takes %.0f days at full funding and administration 50/100; partial funding slows rollout and reduces the health target bonus. Zero funding pauses rollout. Service conditions and group approval respond gradually. These rules and party positions are fictional placeholders." % law.rules.days_at_normal_capacity)
 	for group in world.politics.groups:
 		lines.append("%s: %.1f%% approval (service contribution %+.1f points)" % [group.name, group.approval, group.service_bonus])
 	healthcare_summary.text = "\n".join(lines)
@@ -599,6 +604,7 @@ func _load_from(path: String) -> void:
 		spending.value = world.country.annual_spending / 1000000.0
 		_category_selected(category_picker.selected)
 		_sync_scenario_picker()
+		_sync_healthcare_picker()
 		status.text = "Game loaded and paused."
 		_refresh()
 	else:

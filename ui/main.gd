@@ -8,6 +8,7 @@ const SCENARIOS := [
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
 ]
 const MAX_DAYS_PER_FRAME := 30
+const DEFAULT_SIMULATION_BUDGET_USEC := 8000
 var world = World.new()
 var running := false
 var elapsed := 0.0
@@ -16,6 +17,8 @@ var history: Label
 var tax: SpinBox
 var pause_button: Button
 var status: Label
+var speed_status: Label
+var simulation_budget_usec := DEFAULT_SIMULATION_BUDGET_USEC
 var spending: SpinBox
 var speed := 1
 var explanation: Label
@@ -167,6 +170,8 @@ func _ready() -> void:
 	tax_controls.add_child(additional_tax_button)
 	status = Label.new()
 	layout.add_child(status)
+	speed_status = Label.new()
+	layout.add_child(speed_status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Category funding gradually affects service conditions and approval in the fictional test model. Resetting the total restores initial shares."
@@ -416,7 +421,10 @@ func _process(delta: float) -> void:
 	if running:
 		elapsed += delta * speed
 		var processed := 0
+		var started := Time.get_ticks_usec()
 		while elapsed >= 1.0 and processed < MAX_DAYS_PER_FRAME:
+			if processed > 0 and Time.get_ticks_usec() - started >= simulation_budget_usec:
+				break
 			elapsed -= 1.0
 			world.advance_day()
 			processed += 1
@@ -426,6 +434,7 @@ func _process(delta: float) -> void:
 func _toggle_pause() -> void:
 	running = not running
 	pause_button.text = "Pause" if running else "Resume"
+	_update_speed_status()
 
 func _advance_day() -> void:
 	world.advance_day()
@@ -597,6 +606,7 @@ func _load_from(path: String) -> void:
 
 func _refresh() -> void:
 	_invalidate_forecasts()
+	_update_speed_status()
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
@@ -647,6 +657,12 @@ func _refresh() -> void:
 	_update_additional_tax_preview(additional_tax.value)
 	_update_spending_preview(spending.value)
 	_update_category_preview(category_amount.value)
+
+func _update_speed_status() -> void:
+	if elapsed >= 1.0:
+		speed_status.text = "%s — %d simulation days queued. The game processes the backlog over multiple frames." % ["Running" if running else "Paused", int(elapsed)]
+	else:
+		speed_status.text = "Simulation %s." % ("running" if running else "paused")
 
 func _refresh_history() -> void:
 	var category: String = "" if event_filter.selected == 0 else World.EVENT_CATEGORIES[event_filter.selected - 1]

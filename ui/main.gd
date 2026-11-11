@@ -429,7 +429,7 @@ func _refresh() -> void:
 	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
 	budget_lines.append("Fictional partner contributions: $%.0f/year | cooperation costs: $%.0f/year" % [world.diplomacy.annual_partner_contribution(), world.diplomacy.annual_agreement_cost()])
 	for category in World.CATEGORY_SHARES:
-		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.services.target(category, c.spending_categories[category], c.population)])
+		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.service_target(category, c.spending_categories[category])])
 	var ledger: Dictionary = world.fiscal
 	budget_lines.append("RECORDED THIS YEAR: %d days%s | Revenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f" % [ledger.days, " (partial history)" if ledger.partial else "", ledger.revenue, ledger.spending, ledger.policy, ledger.interest])
 	budget_lines.append("Borrowed $%.0f | Repaid $%.0f | Recorded balance $%.0f" % [ledger.borrowed, ledger.repaid, ledger.revenue - ledger.spending - ledger.policy - ledger.interest])
@@ -475,7 +475,7 @@ func _refresh_directive() -> void:
 	var selected := "reporting" if directive_picker.selected == 0 else "override"
 	var choice: Dictionary = model.CASES[selected]
 	var active_name: String = model.CASES[model.kind].name if model.CASES.has(model.kind) else "None"
-	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Court review resolves after 30 days; the override is suspended after 10.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/60\nNo fiscal or economic effects are modeled." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", active_name, model.status, model.days, model.progress]
+	directive_summary.text = "EXECUTIVE DIRECTIVES — fictional test rules\nSelected: %s. %s\nScenario authority: %s. Court review resolves after 30 days; the override is suspended after 10.\nCurrent: %s | status: %s | elapsed: %d days | agency progress: %d/60\nImplemented reporting adds 10 to the administration target and costs $5 million/year until revoked. Override has no modeled effect. Values are fictional." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", active_name, model.status, model.days, model.progress]
 
 func _update_tax_preview(value: float) -> void:
 	var preview: Dictionary = world.preview_income_tax(value / 100.0)
@@ -511,5 +511,5 @@ func _update_category_preview(value: float) -> void:
 	if preview.is_empty():
 		category_preview.text = "Category preview unavailable: total exceeds budget limit."
 		return
-	var service_target: float = world.services.target(name, value * 1000000.0, world.country.population)
+	var service_target: float = world.service_target(name, value * 1000000.0)
 	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f | long-run service target %.1f/100 (fictional)" % [name, preview.annual_balance, preview.daily_balance, service_target]

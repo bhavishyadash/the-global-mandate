@@ -99,7 +99,7 @@ func additional_tax_revenue(kind: String) -> float:
 func policy_annual_cost() -> float:
 	var procurement: float = PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
 	var reporting: float = REPORTING_ANNUAL_COST if reporting_effect_active() else 0.0
-	return procurement + reporting + diplomacy.annual_agreement_cost() + (healthcare.funding if healthcare.active else 0.0)
+	return procurement + reporting + diplomacy.annual_agreement_cost() + healthcare.annual_cost()
 
 func reporting_effect_active() -> bool:
 	return institutions.kind == "reporting" and institutions.status == "implemented"
@@ -234,7 +234,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 15, "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 16, "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String) -> String:
 	var temporary := path + ".tmp"
@@ -301,7 +301,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 15:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 16:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -382,8 +382,13 @@ func import_snapshot(parsed: Variant) -> String:
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
 	var loaded_healthcare = Healthcare.new()
-	if parsed.version >= 15 and not loaded_healthcare.import_state(parsed.get("healthcare")):
-		return "Save has invalid healthcare policy data."
+	if parsed.version >= 15:
+		var healthcare_data: Variant = parsed.get("healthcare")
+		if parsed.version == 15 and healthcare_data is Dictionary:
+			healthcare_data = healthcare_data.duplicate(true)
+			healthcare_data.appropriation = 1.0
+		if not loaded_healthcare.import_state(healthcare_data):
+			return "Save has invalid healthcare policy data."
 	var loaded_diplomacy = Diplomacy.new()
 	if parsed.version >= 9:
 		var diplomatic_data: Variant = parsed.get("diplomacy")
@@ -562,8 +567,8 @@ func preview_healthcare(amount: float, repeal: bool = false) -> Dictionary:
 		return {}
 	var positions: Array = healthcare.support(politics.parties, amount, repeal)
 	var seats: int = healthcare.votes(positions)
-	var current_cost: float = healthcare.funding if healthcare.active else 0.0
-	var next_cost := 0.0 if repeal else amount
+	var current_cost: float = healthcare.annual_cost()
+	var next_cost: float = 0.0 if repeal else amount * (healthcare.appropriation if healthcare.active else 1.0)
 	return {"positions": positions, "votes": seats, "passes": seats > 50, "annual_cost": next_cost, "annual_balance": annual_balance() + current_cost - next_cost, "administration": services.levels.Administration, "progress": healthcare.progress, "full_health_target_bonus": Healthcare.TARGET_PER_100M * amount / 100000000.0 if not repeal else 0.0}
 
 func vote_healthcare(amount: float) -> bool:
@@ -581,6 +586,14 @@ func vote_healthcare(amount: float) -> bool:
 	add_event("Healthcare %s passed with %d of 100 seats; annual funding is $%.0f." % ["amendment" if amending else "proposal", preview.votes, amount], "policy")
 	return true
 
+func set_healthcare_appropriation(fraction: float) -> bool:
+	if not healthcare.active or not is_finite(fraction) or fraction < 0.0 or fraction > 1.0:
+		return false
+	if not is_equal_approx(healthcare.appropriation, fraction):
+		healthcare.appropriation = fraction
+		add_event("Healthcare appropriation set to %.0f%% of authorization." % (fraction * 100.0), "finance")
+	return true
+
 func repeal_healthcare() -> bool:
 	if not healthcare.active:
 		return false
@@ -591,6 +604,7 @@ func repeal_healthcare() -> bool:
 	healthcare.active = false
 	healthcare.funding = 0.0
 	healthcare.progress = 0.0
+	healthcare.appropriation = 1.0
 	add_event("Healthcare repeal passed with %d of 100 seats; future costs stopped." % preview.votes, "policy")
 	return true
 

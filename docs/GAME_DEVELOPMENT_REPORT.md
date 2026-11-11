@@ -481,6 +481,10 @@ PR #88. Added a development export preset that includes scenario data, resource 
 
 PR #89. Expanded scenario data to include political groups, party seats, service conditions, executive state and diplomacy, with cross-system consistency checks and version-1 scenario compatibility. A second fictional starting state is covered by tests; model structure and partner identities remain fixed. See [Session 51](SESSION_51.md).
 
+### Session 52 — scenario selection
+
+PR #90. Added a second fictional starting scenario and an in-game selection flow with confirmation before replacing the current session. Tests cover invalid input, reset, replay and packaged scenario data. The scenarios share the same rules and are not a coupled world. See [Session 52](SESSION_52.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

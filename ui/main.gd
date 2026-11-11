@@ -120,7 +120,7 @@ func _ready() -> void:
 	layout.add_child(status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Resetting the total restores the initial category shares. Values are fictional placeholders."
+	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Category funding gradually affects service conditions and approval in the fictional test model. Resetting the total restores initial shares."
 	layout.add_child(explanation)
 	tax_preview = Label.new()
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -237,7 +237,7 @@ func _refresh() -> void:
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	budget_lines.append("Income-tax revenue (fixed test base): $%.0f | Other revenue: $%.0f" % [world.income_tax_revenue(), c.annual_revenue - world.income_tax_revenue()])
 	for category in World.CATEGORY_SHARES:
-		budget_lines.append("%s: $%.0f" % [category, c.spending_categories[category]])
+		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.services.target(category, c.spending_categories[category], c.population)])
 	summary.text += "\n" + "\n".join(budget_lines)
 	var lines := PackedStringArray(["POLITICS — fictional test model"])
 	for group in world.politics.groups:
@@ -268,7 +268,7 @@ func _update_spending_preview(value: float) -> void:
 	if preview.is_empty():
 		spending_preview.text = "Spending preview unavailable."
 		return
-	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual balance: $%.0f | Daily net flow: $%.2f\nServices, employment and public opinion are not yet modeled." % [preview.annual_balance, preview.daily_balance]
+	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual balance: $%.0f | Daily net flow: $%.2f\nService and approval changes develop over time; employment and wider economic effects are not modeled." % [preview.annual_balance, preview.daily_balance]
 
 func _update_category_preview(value: float) -> void:
 	var name := category_picker.get_item_text(category_picker.selected)
@@ -276,4 +276,5 @@ func _update_category_preview(value: float) -> void:
 	if preview.is_empty():
 		category_preview.text = "Category preview unavailable: total exceeds budget limit."
 		return
-	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f" % [name, preview.annual_balance, preview.daily_balance]
+	var service_target: float = world.services.target(name, value * 1000000.0, world.country.population)
+	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f | long-run service target %.1f/100 (fictional)" % [name, preview.annual_balance, preview.daily_balance, service_target]

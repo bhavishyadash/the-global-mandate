@@ -2,9 +2,9 @@ extends RefCounted
 
 # Fictional groups and coefficients for testing, not empirical estimates.
 var groups: Array = [
-	{"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "tax_sensitivity": 100.0},
-	{"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "tax_sensitivity": 105.0},
-	{"name": "Higher income", "share": 0.2, "approval": 50.0, "raw_approval": 50.0, "tax_sensitivity": 115.0},
+	{"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 100.0},
+	{"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 105.0},
+	{"name": "Higher income", "share": 0.2, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 115.0},
 ]
 var parties: Array = [
 	{"name": "Government", "seats": 48, "support": true},
@@ -18,7 +18,12 @@ var election_count := 0
 func apply_tax_change(delta: float) -> void:
 	for group in groups:
 		group.raw_approval -= delta * group.tax_sensitivity
-		group.approval = clampf(group.raw_approval, 0.0, 100.0)
+		group.approval = clampf(group.raw_approval + group.service_bonus, 0.0, 100.0)
+
+func apply_service_bonuses(bonuses: Array) -> void:
+	for i in range(groups.size()):
+		groups[i].service_bonus = bonuses[i]
+		groups[i].approval = clampf(groups[i].raw_approval + groups[i].service_bonus, 0.0, 100.0)
 
 func approval() -> float:
 	var result := 0.0
@@ -89,12 +94,12 @@ func import_state(state: Variant) -> bool:
 	for group in gs:
 		if not group is Dictionary or not group.get("name") is String:
 			return false
-		for key in ["share", "approval", "raw_approval", "tax_sensitivity"]:
+		for key in ["share", "approval", "raw_approval", "service_bonus", "tax_sensitivity"]:
 			if not _number(group.get(key)):
 				return false
-		if group.share < 0 or group.share > 1 or group.approval < 0 or group.approval > 100 or absf(group.raw_approval) > 1000 or group.tax_sensitivity < 0 or group.tax_sensitivity > 1000:
+		if group.share < 0 or group.share > 1 or group.approval < 0 or group.approval > 100 or absf(group.raw_approval) > 1000 or absf(group.service_bonus) > 100 or group.tax_sensitivity < 0 or group.tax_sensitivity > 1000:
 			return false
-		if absf(group.approval - clampf(group.raw_approval, 0.0, 100.0)) > 0.001:
+		if absf(group.approval - clampf(group.raw_approval + group.service_bonus, 0.0, 100.0)) > 0.001:
 			return false
 		shares += group.share
 	if absf(shares - 1.0) > 0.00001:

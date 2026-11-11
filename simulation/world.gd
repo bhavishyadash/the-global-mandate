@@ -1,11 +1,13 @@
 extends RefCounted
 
 const Politics = preload("res://simulation/politics.gd")
+const Services = preload("res://simulation/services.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
 const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "Infrastructure": 0.15, "Administration": 0.10}
 var politics = Politics.new()
+var services = Services.new()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -54,6 +56,9 @@ func advance_day() -> void:
 		var repayment: float = minf(country.debt, balance)
 		country.debt -= repayment
 		country.treasury += balance - repayment
+	services.advance_day(country.spending_categories, country.population)
+	politics.apply_service_bonuses(services.group_bonuses())
+	country.approval = politics.approval()
 	if politics.advance_day():
 		add_event("Procurement policy implementation completed.")
 	date.day += 1
@@ -89,7 +94,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 4, "date": date, "country": country, "events": events, "politics": politics.export_state()}))
+	file.store_string(JSON.stringify({"version": 5, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -139,7 +144,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -183,23 +188,34 @@ func load_game(path: String) -> String:
 		if not event is String:
 			return "Save has invalid event data."
 	var loaded_politics = Politics.new()
-	if parsed.version == 2 or parsed.version == 3 or parsed.version == 4:
+	var loaded_services = Services.new()
+	if parsed.version == 5 and not loaded_services.import_state(parsed.get("services")):
+		return "Save has invalid service data."
+	if parsed.version >= 2:
 		var political_data: Variant = parsed.get("politics")
-		if parsed.version == 2 and political_data is Dictionary and political_data.get("groups") is Array:
+		if parsed.version < 5 and political_data is Dictionary and political_data.get("groups") is Array:
 			political_data = political_data.duplicate(true)
 			for group in political_data.groups:
-				if group is Dictionary and group.has("approval"):
-					group.raw_approval = group.approval
+				if group is Dictionary:
+					if parsed.version == 2 and group.has("approval"):
+						group.raw_approval = group.approval
+					group.service_bonus = 0.0
 		if not loaded_politics.import_state(political_data) or absf(loaded_politics.approval() - float(c.approval)) > 0.001:
 			return "Save has invalid political data."
 	else:
 		for group in loaded_politics.groups:
 			group.approval = float(c.approval)
 			group.raw_approval = float(c.approval)
+	if parsed.version == 5:
+		var bonuses: Array = loaded_services.group_bonuses()
+		for i in range(loaded_politics.groups.size()):
+			if absf(loaded_politics.groups[i].service_bonus - bonuses[i]) > 0.001:
+				return "Save has inconsistent service effects."
 	date = {"year": year, "month": month, "day": day}
 	country = c.duplicate(true)
 	country.population = int(c.population)
 	politics = loaded_politics
+	services = loaded_services
 	events.clear()
 	for event in e:
 		events.append(event)

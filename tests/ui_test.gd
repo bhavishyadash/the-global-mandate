@@ -99,6 +99,7 @@ func run_checks() -> void:
 	assert(screen.world.date == before)
 	screen._toggle_pause()
 	screen.speed = 30
+	screen.simulation_budget_usec = 10000000
 	screen._process(2.0)
 	assert(is_equal_approx(screen.elapsed, 30.0))
 	screen._toggle_pause()
@@ -108,6 +109,18 @@ func run_checks() -> void:
 	screen.speed = 1
 	screen._process(0.0)
 	assert(is_equal_approx(screen.elapsed, 0.0))
+	screen.speed = 30
+	screen.simulation_budget_usec = 0
+	screen._process(1.0)
+	assert(is_equal_approx(screen.elapsed, 29.0))
+	assert("29 simulation days queued" in screen.speed_status.text)
+	screen._toggle_pause()
+	screen._process(1.0)
+	assert(is_equal_approx(screen.elapsed, 29.0) and "Paused" in screen.speed_status.text)
+	screen._toggle_pause()
+	screen.simulation_budget_usec = 10000000
+	screen._process(0.0)
+	assert(is_zero_approx(screen.elapsed))
 	var before_invalid: Dictionary = screen.world.country.duplicate(true)
 	assert(not screen._start_scenario("res://data/scenarios/missing.json"))
 	assert(screen.world.country == before_invalid)

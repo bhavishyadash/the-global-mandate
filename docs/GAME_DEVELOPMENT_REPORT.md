@@ -449,6 +449,10 @@ PR #80. Accepted cooperation talks now produce renewable, time-limited agreement
 
 PR #81. Added a separately displayed fictional partner contribution for active cooperation agreements, integrated with budget previews, cash flow, ledger and forecasts. Existing v11 agreements acquire this new rule when loaded; previous ledger entries remain unchanged. Headless checks cover accounting and expiry. The assumed payments are placeholders, not a trade model. See [Session 43](SESSION_43.md).
 
+### Session 44 — executive consequences
+
+PR #82. The fictional reporting directive now affects the Administration service target and budget after implementation; revocation stops future effects but preserves prior service changes. Tests cover timing, public response and save/load. Previously implemented directives acquire the new fictional rules on load. See [Session 44](SESSION_44.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

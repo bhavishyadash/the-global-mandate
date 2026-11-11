@@ -214,9 +214,27 @@ func _initialize() -> void:
 	for i in range(30):
 		lawful.advance_day()
 	assert(lawful.institutions.status == "upheld" and lawful.institutions.progress == 30)
+	assert(lawful.policy_annual_cost() == 0.0)
 	for i in range(30):
 		lawful.advance_day()
 	assert(lawful.institutions.status == "implemented" and lawful.institutions.progress == 60)
+	assert(lawful.policy_annual_cost() == 5000000.0)
+	assert(is_equal_approx(lawful.service_target("Administration", 110000000.0), 60.0))
+	assert(is_equal_approx(lawful.services.levels.Administration, 50.0))
+	var directive_path := "res://tests/directive_effect_test.json"
+	assert(not FileAccess.file_exists(directive_path))
+	assert(lawful.save_game(directive_path).is_empty())
+	var directive_loaded = World.new()
+	assert(directive_loaded.load_game(directive_path).is_empty())
+	assert(directive_loaded.policy_annual_cost() == 5000000.0)
+	for i in range(180):
+		directive_loaded.advance_day()
+	assert(directive_loaded.services.levels.Administration > 55.0)
+	assert(directive_loaded.country.approval > 50.0)
+	assert(directive_loaded.revoke_directive())
+	assert(directive_loaded.policy_annual_cost() == 0.0)
+	assert(is_equal_approx(directive_loaded.service_target("Administration", 110000000.0), 50.0))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(directive_path))
 	assert(lawful.revoke_directive())
 	assert(lawful.institutions.status == "revoked")
 	assert(not lawful.revoke_directive())

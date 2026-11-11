@@ -5,6 +5,8 @@ const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
+const REPORTING_ANNUAL_COST := 5000000.0
+const REPORTING_ADMIN_TARGET_BONUS := 10.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
 const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate", "base": 1500000000.0}, "corporate": {"field": "corporate_tax_rate", "base": 1000000000.0}}
@@ -55,7 +57,14 @@ func additional_tax_revenue(kind: String) -> float:
 
 func policy_annual_cost() -> float:
 	var procurement: float = PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
-	return procurement + diplomacy.annual_agreement_cost()
+	var reporting: float = REPORTING_ANNUAL_COST if reporting_effect_active() else 0.0
+	return procurement + reporting + diplomacy.annual_agreement_cost()
+
+func reporting_effect_active() -> bool:
+	return institutions.kind == "reporting" and institutions.status == "implemented"
+
+func service_target(category: String, spending: float) -> float:
+	return services.target(category, spending, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0)
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -123,7 +132,7 @@ func advance_day() -> void:
 		country.debt -= repayment
 		fiscal.repaid += repayment
 		country.treasury += balance - repayment
-	services.advance_day(country.spending_categories, country.population)
+	services.advance_day(country.spending_categories, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0)
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
 	if politics.advance_day():

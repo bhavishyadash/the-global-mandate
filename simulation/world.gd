@@ -28,6 +28,8 @@ var country := {
 	"corporate_tax_rate": 0.0,
 	"approval": 50.0,
 }
+var fiscal: Dictionary = _new_fiscal_period(false)
+var previous_fiscal: Dictionary = {}
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
 const MAX_EVENTS := 200
 
@@ -53,7 +55,17 @@ func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
 
 func advance_day() -> void:
-	var balance := daily_balance()
+	var divisor := 366.0 if is_leap_year(date.year) else 365.0
+	var revenue: float = country.annual_revenue / divisor
+	var spending: float = country.annual_spending / divisor
+	var policy: float = policy_annual_cost() / divisor
+	var interest: float = debt_interest() / divisor
+	var balance := revenue - spending - policy - interest
+	fiscal.days += 1
+	fiscal.revenue += revenue
+	fiscal.spending += spending
+	fiscal.policy += policy
+	fiscal.interest += interest
 	if balance < 0.0:
 		var expense := -balance
 		var cash_used: float = minf(country.treasury, expense)
@@ -63,9 +75,11 @@ func advance_day() -> void:
 			if country.debt <= 0.0:
 				add_event("Cash exhausted; government borrowing began.")
 			country.debt += borrowing
+			fiscal.borrowed += borrowing
 	else:
 		var repayment: float = minf(country.debt, balance)
 		country.debt -= repayment
+		fiscal.repaid += repayment
 		country.treasury += balance - repayment
 	services.advance_day(country.spending_categories, country.population)
 	politics.apply_service_bonuses(services.group_bonuses())
@@ -81,6 +95,8 @@ func advance_day() -> void:
 		date.month += 1
 		if date.month > 12:
 			date.month = 1
+			previous_fiscal = fiscal.duplicate(true)
+			fiscal = _new_fiscal_period(false)
 			date.year += 1
 			if date.year >= 2030 and (date.year - 2030) % 4 == 0:
 				_conduct_election()
@@ -108,7 +124,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 7, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 8, "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -158,7 +174,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -236,7 +252,18 @@ func load_game(path: String) -> String:
 		for i in range(loaded_politics.groups.size()):
 			if absf(loaded_politics.groups[i].service_bonus - bonuses[i]) > 0.001:
 				return "Save has inconsistent service effects."
+	var loaded_fiscal: Dictionary = _new_fiscal_period(true)
+	var loaded_previous: Dictionary = {}
+	if parsed.version >= 8:
+		if not _valid_fiscal_period(parsed.get("fiscal")) or not parsed.get("previous_fiscal") is Dictionary:
+			return "Save has invalid fiscal history."
+		if not parsed.previous_fiscal.is_empty() and not _valid_fiscal_period(parsed.previous_fiscal):
+			return "Save has invalid fiscal history."
+		loaded_fiscal = parsed.fiscal.duplicate(true)
+		loaded_previous = parsed.previous_fiscal.duplicate(true)
 	date = {"year": year, "month": month, "day": day}
+	fiscal = loaded_fiscal
+	previous_fiscal = loaded_previous
 	country = c.duplicate(true)
 	country.population = int(c.population)
 	politics = loaded_politics
@@ -246,6 +273,17 @@ func load_game(path: String) -> String:
 	for event in e:
 		events.append(event)
 	return ""
+
+static func _new_fiscal_period(partial: bool) -> Dictionary:
+	return {"days": 0, "partial": partial, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "borrowed": 0.0, "repaid": 0.0}
+
+static func _valid_fiscal_period(period: Variant) -> bool:
+	if not period is Dictionary or not period.get("partial") is bool or not _is_whole_number(period.get("days")) or period.days < 0 or period.days > 366:
+		return false
+	for key in ["revenue", "spending", "policy", "interest", "borrowed", "repaid"]:
+		if not _is_number(period.get(key)) or period[key] < 0.0:
+			return false
+	return true
 
 static func _is_whole_number(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floorf(float(value))

@@ -306,6 +306,12 @@ func _refresh() -> void:
 	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
 	for category in World.CATEGORY_SHARES:
 		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.services.target(category, c.spending_categories[category], c.population)])
+	var ledger: Dictionary = world.fiscal
+	budget_lines.append("RECORDED THIS YEAR: %d days%s | Revenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f" % [ledger.days, " (partial history)" if ledger.partial else "", ledger.revenue, ledger.spending, ledger.policy, ledger.interest])
+	budget_lines.append("Borrowed $%.0f | Repaid $%.0f | Recorded balance $%.0f" % [ledger.borrowed, ledger.repaid, ledger.revenue - ledger.spending - ledger.policy - ledger.interest])
+	if not world.previous_fiscal.is_empty():
+		var previous: Dictionary = world.previous_fiscal
+		budget_lines.append("PREVIOUS YEAR: %d days%s | Revenue $%.0f | Total expenses $%.0f | Borrowed $%.0f | Repaid $%.0f" % [previous.days, " (partial history)" if previous.partial else "", previous.revenue, previous.spending + previous.policy + previous.interest, previous.borrowed, previous.repaid])
 	summary.text += "\n" + "\n".join(budget_lines)
 	var lines := PackedStringArray(["POLITICS — fictional test model"])
 	for group in world.politics.groups:

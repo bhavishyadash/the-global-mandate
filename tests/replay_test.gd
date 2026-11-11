@@ -2,6 +2,7 @@ extends SceneTree
 
 const World = preload("res://simulation/world.gd")
 const Replay = preload("res://simulation/replay.gd")
+const Record = preload("res://simulation/replay_record.gd")
 
 func _initialize() -> void:
 	var scenario: Variant = World.Scenario.read_file(World.DEFAULT_SCENARIO)
@@ -39,5 +40,38 @@ func _initialize() -> void:
 	var coastal_run: Dictionary = Replay.run(coastal, [], 365)
 	assert(coastal_run.ok and coastal_run.world.scenario_id == "coastal_test")
 	assert(coastal_run.world.country.population == 8000000)
+	var recorder = Record.new()
+	assert(recorder.begin(scenario).is_empty())
+	assert(recorder.decide({"id": "vote_healthcare", "args": {"funding": 100000000.0}}).ok)
+	for day in range(25):
+		assert(recorder.advance())
+	assert(recorder.decide({"id": "set_healthcare_appropriation", "args": {"fraction": 0.5}}).ok)
+	assert(not recorder.decide({"id": "set_healthcare_appropriation", "args": {"fraction": 0.5}}).ok)
+	var record: Dictionary = recorder.export_record()
+	assert(record.scenario.version == scenario.version and record.scenario.seed == World.Scenario.DEFAULT_SEED)
+	var round_trip: Variant = JSON.parse_string(JSON.stringify(record))
+	var reproduction: Dictionary = Record.reproduce(round_trip)
+	assert(reproduction.ok)
+	assert(reproduction.world.export_snapshot() == recorder.world.export_snapshot())
+	var minority: Dictionary = scenario.duplicate(true)
+	minority.politics.parties[0].seats = 20
+	minority.politics.parties[1].seats = 20
+	minority.politics.parties[2].seats = 60
+	var rejection = Record.new()
+	assert(rejection.begin(minority).is_empty())
+	assert(rejection.decide({"id": "vote_healthcare", "args": {"funding": 200000000.0}}).ok)
+	assert(not rejection.decide({"id": "set_healthcare_appropriation", "args": {"fraction": 0.5}}).ok)
+	assert("failed" in rejection.world.events[0])
+	var replayed_rejection: Dictionary = Record.reproduce(JSON.parse_string(JSON.stringify(rejection.export_record())))
+	assert(replayed_rejection.ok and replayed_rejection.world.export_snapshot() == rejection.world.export_snapshot())
+	var tampered: Dictionary = record.duplicate(true)
+	tampered.actions[0].code = "unavailable"
+	assert(not Record.reproduce(tampered).ok)
+	tampered = record.duplicate(true)
+	tampered.actions[1].day = -1
+	assert(not Record.reproduce(tampered).ok)
+	tampered = record.duplicate(true)
+	tampered.scenario.erase("seed")
+	assert(not Record.reproduce(tampered).ok)
 	print("Replay checks passed")
 	quit(0)

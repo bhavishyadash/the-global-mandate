@@ -1,0 +1,3 @@
+# Session 47: validated decision contracts
+
+Added a shared `simulation/decisions.gd` command entry point for the existing tax, spending, legislative, executive and diplomatic actions. Requests have stable IDs and exact argument shapes, reject malformed, unknown or non-finite input before calling the simulation, and return explicit result codes and player-facing messages. The interface now routes these actions through the entry point. Rejected legislative votes may still log a failed vote, as intended. Tests exercise malformed inputs, non-mutation, valid changes, unavailable actions and existing UI workflows. Existing direct domain methods and publicly mutable dictionaries remain; this is an initial boundary, not full encapsulation or a data-driven law catalog.

@@ -1,6 +1,7 @@
 extends Control
 
 const World = preload("res://simulation/world.gd")
+const Decisions = preload("res://simulation/decisions.gd")
 const MAX_DAYS_PER_FRAME := 30
 var world = World.new()
 var running := false
@@ -350,23 +351,23 @@ func _advance_day() -> void:
 	_refresh()
 
 func _apply_tax() -> void:
-	status.text = "Income tax updated." if world.set_income_tax(tax.value / 100.0) else "Income tax change is unavailable."
+	status.text = Decisions.execute(world, {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}}).message
 	_refresh()
 
 func _start_talks() -> void:
 	var keys: Array = world.diplomacy.PARTNERS.keys()
 	var partner: String = keys[diplomacy_picker.selected]
 	var choice: String = world.diplomacy.PROPOSALS.keys()[proposal_picker.selected]
-	status.text = "Diplomatic talks opened." if world.start_diplomatic_talks(partner, choice) else "Talks unavailable: another negotiation is active or the partner is on cooldown."
+	status.text = Decisions.execute(world, {"id": "start_talks", "args": {"partner": partner, "proposal": choice}}).message
 	_refresh()
 
 func _cancel_talks() -> void:
-	status.text = "Diplomatic talks cancelled." if world.cancel_diplomatic_talks() else "No talks are active."
+	status.text = Decisions.execute(world, {"id": "cancel_talks", "args": {}}).message
 	_refresh()
 
 func _end_cooperation() -> void:
 	var partner: String = world.diplomacy.PARTNERS.keys()[diplomacy_picker.selected]
-	status.text = "Cooperation ended; relations reduced." if world.end_cooperation(partner) else "No cooperation agreement with selected partner."
+	status.text = Decisions.execute(world, {"id": "end_cooperation", "args": {"partner": partner}}).message
 	_refresh()
 
 func _additional_tax_kind() -> String:
@@ -379,11 +380,11 @@ func _additional_tax_selected(_index: int) -> void:
 
 func _apply_additional_tax() -> void:
 	var kind := _additional_tax_kind()
-	status.text = "%s tax updated." % kind.capitalize() if world.set_additional_tax(kind, additional_tax.value / 100.0) else "Tax change is unavailable."
+	status.text = Decisions.execute(world, {"id": "set_additional_tax", "args": {"kind": kind, "rate": additional_tax.value / 100.0}}).message
 	_refresh()
 
 func _apply_spending() -> void:
-	world.set_annual_spending(spending.value * 1000000.0)
+	status.text = Decisions.execute(world, {"id": "set_total_spending", "args": {"amount": spending.value * 1000000.0}}).message
 	_category_selected(category_picker.selected)
 	_refresh()
 
@@ -394,7 +395,8 @@ func _category_selected(index: int) -> void:
 
 func _apply_category() -> void:
 	var name := category_picker.get_item_text(category_picker.selected)
-	if world.set_category_spending(name, category_amount.value * 1000000.0):
+	var decision: Dictionary = Decisions.execute(world, {"id": "set_category_spending", "args": {"category": name, "amount": category_amount.value * 1000000.0}})
+	if decision.ok:
 		spending.value = world.country.annual_spending / 1000000.0
 		status.text = "%s budget updated." % name
 	else:
@@ -402,20 +404,20 @@ func _apply_category() -> void:
 	_refresh()
 
 func _vote_policy() -> void:
-	world.vote_procurement()
+	status.text = Decisions.execute(world, {"id": "vote_procurement", "args": {}}).message
 	_refresh()
 
 func _repeal_policy() -> void:
-	world.vote_procurement_repeal()
+	status.text = Decisions.execute(world, {"id": "repeal_procurement", "args": {}}).message
 	_refresh()
 
 func _issue_directive() -> void:
 	var kind := "reporting" if directive_picker.selected == 0 else "override"
-	status.text = "Directive issued." if world.issue_directive(kind) else "Finish or revoke the active directive first."
+	status.text = Decisions.execute(world, {"id": "issue_directive", "args": {"kind": kind}}).message
 	_refresh()
 
 func _revoke_directive() -> void:
-	status.text = "Directive revoked." if world.revoke_directive() else "No active directive to revoke."
+	status.text = Decisions.execute(world, {"id": "revoke_directive", "args": {}}).message
 	_refresh()
 
 func _save_game() -> void:

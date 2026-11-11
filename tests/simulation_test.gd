@@ -1,9 +1,23 @@
 extends SceneTree
 
 const World = preload("res://simulation/world.gd")
+const Decisions = preload("res://simulation/decisions.gd")
 
 func _initialize() -> void:
 	var world = World.new()
+	var decision_world = World.new()
+	var decision_before: Dictionary = decision_world.country.duplicate(true)
+	var events_before: Array = decision_world.events.duplicate()
+	assert(Decisions.execute(decision_world, {"id": "unknown", "args": {}}).code == "unknown_decision")
+	assert(Decisions.execute(decision_world, {"id": "set_income_tax", "args": {"rate": NAN}}).code == "invalid_arguments")
+	assert(Decisions.execute(decision_world, {"id": "set_income_tax", "args": {"rate": "0.3"}}).code == "invalid_arguments")
+	assert(Decisions.execute(decision_world, {"id": "set_income_tax", "args": {"rate": 0.3, "extra": 1}}).code == "invalid_arguments")
+	assert(Decisions.execute(decision_world, {"id": "set_income_tax", "args": {"rate": 0.9}}).code == "unavailable")
+	assert(decision_world.country == decision_before and decision_world.events == events_before)
+	assert(Decisions.execute(decision_world, {"id": "set_income_tax", "args": {"rate": 0.3}}).ok)
+	assert(is_equal_approx(decision_world.country.income_tax_rate, 0.3))
+	assert(Decisions.execute(decision_world, {"id": "start_talks", "args": {"partner": "maritime", "proposal": "dialogue"}}).ok)
+	assert(not Decisions.execute(decision_world, {"id": "start_talks", "args": {"partner": "northern", "proposal": "dialogue"}}).ok)
 	var scenario_data: Variant = World.Scenario.read_file(World.DEFAULT_SCENARIO)
 	assert(World.Scenario.validate(scenario_data).is_empty())
 	assert(world.scenario_id == "test_republic" and world.country.id == "test_republic")

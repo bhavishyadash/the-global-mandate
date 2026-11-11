@@ -409,6 +409,10 @@ Related to issues #12, #18, #19, #20, #45 and #48; PR #70. Added five fictional 
 
 Related to issues #10, #11, #13, #20, #45 and #48; PR #71. Added separately adjustable fictional consumption and corporate taxes, fixed taxable bases, revenue breakdowns, group-specific reactions and non-mutating UI previews. Version-6 saves persist rates; earlier saves receive zero rates without changing prior revenue or opinions. Local simulation, UI and integration suites passed, including invalid inputs, old-save migration, v6 round trip and invalid-save rejection. Fixed bases and reaction coefficients are placeholders; tax compliance, economic feedback, realistic incidence and visual testing remain open.
 
+### Session 34 — executive action and court review
+
+Related to issues #21, #23, #24, #25, #45 and #48; PR #72. Added a fictional directive lifecycle with two authority cases, delayed agency progress, automatic court review, injunction, revocation, event logging and a UI display. Version-7 saves validate and preserve institutional state; v1–v6 start without a directive. Local simulation, UI and integrated checks passed for both court outcomes, injunction, revocation, migration and invalid-state rejection. Cases and outcomes are deterministic placeholders, not actual country law; fiscal, political and economic consequences and visual playtesting remain open.
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

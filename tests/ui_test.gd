@@ -36,6 +36,11 @@ func run_checks() -> void:
 	assert("Repeal support" in screen.politics_summary.text)
 	screen._repeal_policy()
 	assert(screen.world.politics.procurement_policy)
+	screen._issue_directive()
+	assert(screen.world.institutions.status == "under_review")
+	assert("reporting" in screen.directive_summary.text.to_lower())
+	screen._revoke_directive()
+	assert(screen.world.institutions.status == "revoked")
 	screen.world.date = {"year": 2029, "month": 12, "day": 31}
 	screen._advance_day()
 	assert(screen.world.politics.election_count == 1)

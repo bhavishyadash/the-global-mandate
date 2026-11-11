@@ -1,6 +1,7 @@
 extends SceneTree
 
 const World = preload("res://simulation/world.gd")
+const WorldMap = preload("res://ui/world_map.gd")
 
 func _initialize() -> void:
 	var world = World.new()
@@ -18,5 +19,11 @@ func _initialize() -> void:
 		push_error("Packaged alternate scenario did not initialize.")
 		quit(1)
 		return
+	var map = WorldMap.new()
+	if not map.load_map().is_empty() or map.countries.size() < 170:
+		push_error("Packaged world map data could not be loaded.")
+		quit(1)
+		return
+	map.free()
 	print("Packaged scenario checks passed")
 	quit(0)

@@ -3,6 +3,7 @@ extends Control
 const World = preload("res://simulation/world.gd")
 const Decisions = preload("res://simulation/decisions.gd")
 const Diagnostics = preload("res://simulation/diagnostics.gd")
+const WorldMap = preload("res://ui/world_map.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -49,6 +50,8 @@ var event_filter: OptionButton
 var scenario_picker: OptionButton
 var new_game_confirmation: ConfirmationDialog
 var diagnostic_steps: TextEdit
+var world_map: Control
+var map_selection: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -245,6 +248,40 @@ func _ready() -> void:
 	var diplomacy_tab := _make_dashboard_tab("Diplomacy")
 	var decisions := _make_dashboard_tab("History")
 	var laws := _make_dashboard_tab("Laws")
+	var map_tab := _make_dashboard_tab("World Map")
+	var map_controls := HBoxContainer.new()
+	map_tab.add_child(map_controls)
+	var map_help := Label.new()
+	map_help.text = "Drag / arrows: pan  •  Wheel / + / −: zoom  •  Select a country or city"
+	map_help.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_controls.add_child(map_help)
+	var zoom_in := Button.new()
+	zoom_in.text = "+"
+	map_controls.add_child(zoom_in)
+	var zoom_out := Button.new()
+	zoom_out.text = "−"
+	map_controls.add_child(zoom_out)
+	var reset_map := Button.new()
+	reset_map.text = "Reset map"
+	map_controls.add_child(reset_map)
+	var map_layout := HBoxContainer.new()
+	map_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_tab.add_child(map_layout)
+	world_map = WorldMap.new()
+	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_layout.add_child(world_map)
+	map_selection = Label.new()
+	map_selection.custom_minimum_size = Vector2(220, 0)
+	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is real-world reference data. The current playable scenario is fictional and is not linked to these countries yet."
+	map_layout.add_child(map_selection)
+	world_map.country_selected.connect(_map_country_selected)
+	world_map.city_selected.connect(_map_city_selected)
+	zoom_in.pressed.connect(func(): world_map.zoom_at(world_map.size / 2.0, 1.25))
+	zoom_out.pressed.connect(func(): world_map.zoom_at(world_map.size / 2.0, 0.8))
+	reset_map.pressed.connect(func(): world_map.reset_view())
+	dashboard_tabs.current_tab = 8
 	for node in [summary, explanation]:
 		node.reparent(overview)
 	var scenario_controls := HBoxContainer.new()
@@ -372,6 +409,12 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	column.add_theme_constant_override("separation", 12)
 	panel.add_child(column)
 	return column
+
+func _map_country_selected(id: String, country_name: String) -> void:
+	map_selection.text = "%s\n\nGeographic ID: %s\n\nReference geography only. Country-specific simulation, regions and data are not yet linked to this map." % [country_name, id]
+
+func _map_city_selected(city: Dictionary) -> void:
+	map_selection.text = "%s\n\n%s\nCountry ID: %s\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country]
 
 func _export_diagnostics() -> void:
 	var report: Dictionary = Diagnostics.report(world, diagnostic_steps.text)

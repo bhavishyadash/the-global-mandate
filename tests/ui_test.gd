@@ -20,6 +20,10 @@ func run_checks() -> void:
 	assert(is_equal_approx(screen.world.country.annual_spending, 1100000000.0))
 	screen._apply_spending()
 	assert(is_equal_approx(screen.world.country.annual_spending, 1500000000.0))
+	screen.category_amount.value = 500
+	screen._apply_category()
+	assert(is_equal_approx(screen.world.country.spending_categories.Health, 500000000.0))
+	assert(is_equal_approx(screen.world.country.annual_spending, 1550000000.0))
 	screen._vote_policy()
 	assert(screen.world.politics.procurement_policy)
 	assert("Repeal support" in screen.politics_summary.text)

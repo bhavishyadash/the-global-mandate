@@ -247,19 +247,14 @@ func export_snapshot() -> Dictionary:
 	# an exported snapshot. The same representation is used for save files.
 	return {"version": 20, "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
-func save_game(path: String, rename_operation: Callable = Callable()) -> String:
+func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
-	if FileAccess.file_exists(temporary):
+	if FileAccess.file_exists(temporary) or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(temporary)):
 		return "A temporary save already exists; inspect it before saving."
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify(export_snapshot()))
-	file.flush()
-	var error := file.get_error()
-	file.close()
+	var error := _save_write(temporary, JSON.stringify(export_snapshot()), write_operation)
 	if error != OK:
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary))
+		if FileAccess.file_exists(temporary):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary))
 		return "Could not finish writing the save file."
 	var absolute_path := ProjectSettings.globalize_path(path)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
@@ -312,6 +307,18 @@ static func _save_rename(source: String, destination: String, operation: Callabl
 	# The optional callable allows deterministic filesystem failure tests; the
 	# production path always uses the OS rename implementation.
 	return operation.call(source, destination) if operation.is_valid() else DirAccess.rename_absolute(source, destination)
+
+static func _save_write(path: String, contents: String, operation: Callable) -> Error:
+	if operation.is_valid():
+		return operation.call(path, contents)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return FileAccess.get_open_error()
+	file.store_string(contents)
+	file.flush()
+	var error := file.get_error()
+	file.close()
+	return error
 
 func load_game(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)

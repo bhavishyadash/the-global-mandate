@@ -97,20 +97,15 @@ func load_game(path: String) -> String:
 		return "World save contains invalid JSON."
 	return import_snapshot(json.data)
 
-func save_game(path: String) -> String:
+func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
-	if FileAccess.file_exists(temporary):
+	if FileAccess.file_exists(temporary) or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(temporary)):
 		return "A temporary world save already exists; inspect it before saving."
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return "Could not open the temporary world save."
-	file.store_string(JSON.stringify(export_snapshot()))
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
+	var write_error := World._save_write(temporary, JSON.stringify(export_snapshot()), write_operation)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
 	if write_error != OK:
-		DirAccess.remove_absolute(absolute_temp)
+		if FileAccess.file_exists(temporary):
+			DirAccess.remove_absolute(absolute_temp)
 		return "Could not finish writing the world save."
 	var candidate = get_script().new()
 	var validation_error: String = candidate.load_game(temporary)
@@ -129,7 +124,7 @@ func save_game(path: String) -> String:
 				DirAccess.remove_absolute(absolute_temp)
 				return "An interrupted world backup rotation needs manual recovery."
 			if FileAccess.file_exists(backup):
-				if DirAccess.rename_absolute(backup, previous) != OK:
+				if World._save_rename(backup, previous, rename_operation) != OK:
 					DirAccess.remove_absolute(absolute_temp)
 					return "Could not preserve the previous world backup."
 				retained = true
@@ -139,16 +134,16 @@ func save_game(path: String) -> String:
 			if FileAccess.file_exists(displaced):
 				DirAccess.remove_absolute(absolute_temp)
 				return "A previous invalid world save needs manual recovery."
-		if DirAccess.rename_absolute(primary, displaced) != OK:
+		if World._save_rename(primary, displaced, rename_operation) != OK:
 			if retained:
-				DirAccess.rename_absolute(previous, backup)
+				World._save_rename(previous, backup, rename_operation)
 			DirAccess.remove_absolute(absolute_temp)
 			return "Could not preserve the existing world save."
-	if DirAccess.rename_absolute(absolute_temp, primary) != OK:
+	if World._save_rename(absolute_temp, primary, rename_operation) != OK:
 		if not displaced.is_empty() and FileAccess.file_exists(displaced):
-			DirAccess.rename_absolute(displaced, primary)
+			World._save_rename(displaced, primary, rename_operation)
 		if retained and not FileAccess.file_exists(backup):
-			DirAccess.rename_absolute(previous, backup)
+			World._save_rename(previous, backup, rename_operation)
 		return "Could not finish saving; prior files were retained if possible."
 	if retained and DirAccess.remove_absolute(previous) != OK:
 		return "World saved, but older backup cleanup needs manual attention."

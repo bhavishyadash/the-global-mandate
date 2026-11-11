@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "id": "test_republic",
+  "description": "Fictional baseline for testing; not real-world data.",
+  "date": {"year": 2026, "month": 1, "day": 1},
+  "country": {
+    "id": "test_republic",
+    "name": "Federal Republic (test scenario)",
+    "population": 10000000,
+    "treasury": 1000000000.0,
+    "debt": 0.0,
+    "annual_revenue": 1200000000.0,
+    "annual_spending": 1100000000.0,
+    "spending_categories": {"Health": 330000000.0, "Education": 275000000.0, "Security": 220000000.0, "Infrastructure": 165000000.0, "Administration": 110000000.0},
+    "income_tax_rate": 0.20,
+    "consumption_tax_rate": 0.0,
+    "corporate_tax_rate": 0.0,
+    "approval": 50.0
+  }
+}

@@ -457,6 +457,10 @@ PR #82. The fictional reporting directive now affects the Administration service
 
 PR #83. Forecasts and comparisons now flag stale results; a combined scenario tests negotiations, agreement accounting, executive implementation, services, approval, save/load and forecast consistency. Normalized diplomatic numeric types after a save/load discrepancy was found. Local headless checks pass. See [Session 45](SESSION_45.md).
 
+### Session 46 — versioned scenario foundation
+
+PR #84. Moved the initial fictional country and date into validated versioned scenario data; added stable scenario/country IDs, version-12 save migration, a startup error for invalid default data and tests. Other institutions and population definitions remain hard-coded. See [Session 46](SESSION_46.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

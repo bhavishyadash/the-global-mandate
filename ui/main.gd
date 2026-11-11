@@ -36,6 +36,13 @@ var proposal_picker: OptionButton
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
+	if not world.initialization_error.is_empty():
+		var failure := Label.new()
+		failure.text = "Cannot start: the default scenario is missing or invalid. " + world.initialization_error
+		failure.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		add_child(failure)
+		set_process(false)
+		return
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:

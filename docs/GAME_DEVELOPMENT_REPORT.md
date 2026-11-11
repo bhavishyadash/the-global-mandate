@@ -465,6 +465,10 @@ PR #84. Moved the initial fictional country and date into validated versioned sc
 
 PR #85. Added a validated common command interface and migrated existing UI decisions to it, with explicit result codes and tests. The lower-level world methods and mutable data remain accessible; a complete policy catalog is future work. See [Session 47](SESSION_47.md).
 
+### Session 48 — reproducibility and initial benchmark
+
+PR #86. Added a bounded deterministic decision replay harness and automated repeatability test, plus a synthetic independent-copy benchmark. A local 200-copy/30-day run took 94.908 ms for ticks; it is not a coupled-world or frame-rate benchmark. Details and measurement limits: [Session 48](SESSION_48.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

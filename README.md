@@ -18,6 +18,8 @@ In **Laws**, search the selected category and choose an implemented law. Healthc
 
 The **Executive Orders** tab contains two fictional directive options with automatic court review under prototype rules. Submitting a law or directive opens a review first; canceling does not submit it. Opening a review pauses a running game and leaves it paused. These fictional institutions are not a model of US constitutional procedure.
 
+**World Lab** is a separate experimental world with two fictional countries. Its manual day button advances both together; you can select a country, change its income tax and open a simple 30-day dialogue. Lab save/load uses a separate slot, and loading confirms before replacing lab progress. The main game's clock, map, policies and save are independent. See [session 85](docs/SESSION_85.md).
+
 The **Government** tab also offers a separate US-inspired healthcare bill demonstration. Choose a proposal, introduce it, vote in the House and Senate, then sign or veto it. After a veto, both chambers may vote on an override. The screen shows available actions, expected votes, projected costs and recorded results. The seats, party control and vote support are fictional and all members are assumed to vote. Signing or overriding changes the existing healthcare policy. The older single-chamber actions remain available separately. This demonstration omits important US procedures; see [session 80](docs/SESSION_80.md) and [session 81](docs/SESSION_81.md).
 
 The source-controlled project is this repository's `project.godot`. The earlier project in `Documents/the-global-mandate` is a separate copy; changes in it do not automatically appear here. To compare them without changing either folder, run `python tools/compare_projects.py "C:\Users\Shadow\Documents\the-global-mandate"` from this repository. The comparison ignores generated Godot data, documentation and tooling; it reports differences but never synchronizes files. Review differences before manually copying anything.
@@ -42,7 +44,7 @@ godot --headless --path . --script res://tests/institution_rules_test.gd
 godot --headless --path . --script res://tests/budget_breakdown_test.gd
 ```
 
-For a timeout-protected run of all eleven checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
+For a timeout-protected run of all twelve checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
 The `Windows Development` export preset includes scenario, rules and compact world-map JSON data. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario and map from an empty directory. The check reports failure if Godot reports an error or the packaged data does not load.
 
@@ -50,7 +52,7 @@ On Windows with matching Godot 4.7.2 Windows export templates installed, `python
 
 GitHub Actions runs the Python utility tests, Godot headless checks and resource-pack smoke test on pull requests and pushes to `main`; its Godot 4.7.2 download is checksum-verified. This hosted check does not replace visual playtesting or Windows-specific compatibility testing.
 
-The experimental multi-country registry is headless and not yet integrated into the playable screen. Its synthetic benchmark can be run with `godot --headless --path . --script res://tools/benchmark_registry.gd`; it is not a real-world balance or target-hardware test.
+The experimental multi-country registry is exposed separately in World Lab, not integrated into the main game or map. Its synthetic benchmark can be run with `godot --headless --path . --script res://tools/benchmark_registry.gd`; it is not a real-world balance or target-hardware test.
 
 See [performance targets and benchmarks](docs/PERFORMANCE_TARGETS.md) for the playable scheduler, save/load and 720p graphical measurement procedures. Results from other hardware do not validate the provisional low-end target.
 

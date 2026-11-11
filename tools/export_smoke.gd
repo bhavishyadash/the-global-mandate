@@ -3,6 +3,7 @@ extends SceneTree
 const World = preload("res://simulation/world.gd")
 const WorldMap = preload("res://ui/world_map.gd")
 const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
+const Registry = preload("res://simulation/world_registry.gd")
 
 func _initialize() -> void:
 	var world = World.new()
@@ -23,6 +24,16 @@ func _initialize() -> void:
 	var usa: Variant = World.Scenario.read_file("res://data/scenarios/usa_sandbox.json")
 	if not world.apply_scenario(usa).is_empty() or world.scenario_id != "usa_sandbox":
 		push_error("Packaged US sandbox did not initialize.")
+		quit(1)
+		return
+	var registry = Registry.new()
+	if not registry.initialize([usa, alternate]).is_empty():
+		push_error("Packaged world lab could not initialize.")
+		quit(1)
+		return
+	registry.advance_day()
+	if registry.country_snapshot("usa_sandbox").date.day != 2 or registry.country_snapshot("coastal_republic").date.day != 2:
+		push_error("Packaged world lab did not advance together.")
 		quit(1)
 		return
 	var map = WorldMap.new()

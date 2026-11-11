@@ -1,6 +1,6 @@
 # Recovering a prototype save
 
-The game uses one single-country slot, `prototype_save.json`, in Godot's user data folder for **The Global Mandate**. On Windows the default location is `%APPDATA%\Godot\app_userdata\The Global Mandate\`. The experimental world registry uses a separate save path selected by its caller.
+The game uses one single-country slot, `prototype_save.json`, in Godot's user data folder for **The Global Mandate**. On Windows the default location is `%APPDATA%\Godot\app_userdata\The Global Mandate\`. The World Lab uses the separate `experimental_world_save.json` slot in the same folder, with its own `.bak`, `.tmp`, `.invalid` and `.bak.previous` files. Its load button loads only its primary slot; backup recovery remains manual. Never substitute a lab save for the single-country save or vice versa.
 
 If saving reports an interrupted temporary save or backup rotation:
 

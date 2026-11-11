@@ -22,7 +22,9 @@ godot --headless --path . --script res://tests/stress_test.gd
 
 For a timeout-protected run of all five checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
-The `Windows Development` export preset includes `data/scenarios/*.json`. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario from an empty directory. The check reports failure if Godot reports an error or the packaged scenario does not advance. It does not produce a standalone game executable. Creating a Windows executable additionally requires matching Godot export templates and platform testing.
+The `Windows Development` export preset includes `data/scenarios/*.json`. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario from an empty directory. The check reports failure if Godot reports an error or the packaged scenario does not advance.
+
+On Windows with matching Godot 4.7.2 Windows export templates installed, `python tools/build_windows.py --godot PATH_TO_GODOT_CONSOLE --output artifacts/NEW_EMPTY_FOLDER` produces `TheGlobalMandate.exe` and its accompanying `TheGlobalMandate.pck` and checks headless startup. Keep both files together. It refuses to overwrite an existing build; choose a new output folder. These development builds are ignored by Git. Headless startup does not replace graphical or target-hardware testing.
 
 GitHub Actions runs the Python utility tests, Godot headless checks and resource-pack smoke test on pull requests and pushes to `main`; its Godot 4.7.2 download is checksum-verified. This hosted check does not replace visual playtesting or Windows-specific compatibility testing.
 

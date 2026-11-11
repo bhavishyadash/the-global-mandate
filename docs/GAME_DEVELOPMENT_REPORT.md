@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; foundation validation and M0 decisions remain open
-**Report status:** Living record; updated through session 55
+**Report status:** Living record; updated through session 56
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -115,9 +115,9 @@ The graphical layer displays the world and sends player decisions. The simulatio
 - [x] Add a predictable tick/update loop, pause and speed controls.
 - [x] Add versioned saves, candidate validation, backup handling, seeded state and deterministic replay. Crash/fault injection is not exhaustive.
 - [x] Add event history, user-visible errors and a bounded headless test runner.
-- [x] Automate headless tests and a resource-pack build; record an initial independent-copy performance measurement. A standalone executable and coupled-world performance remain unverified.
+- [x] Automate headless tests and a resource-pack build; record an initial independent-copy performance measurement. A Windows executable has passed local headless and basic graphical startup checks; coupled-world performance remains unverified.
 - [ ] Complete visual playtesting of the tracked project, including save/load and different window sizes. A limited smoke test covered day advancement, an executive action, history and the scenario confirmation.
-- [ ] Verify a standalone build on target hardware and define acceptable performance targets.
+- [ ] Verify the standalone build on target hardware and define simulation speed targets. A Windows executable and PCK were built, started and advanced one day on the current machine in session 56.
 
 **Evidence:** Test worlds advance, accept decisions, save/reload, replay deterministically and pass a ten-year stress scenario; build/test instructions are in the README and a synthetic performance measurement is in session 48. **Foundation signoff is still open** for the unchecked visual and platform checks; these results do not imply that the broader game is complete.
 
@@ -498,6 +498,10 @@ PR #92. Validate the candidate save with the loader before replacing the primary
 ### Session 55 — foundation acceptance audit
 
 PR #93. Reconciled the milestone checklist with implemented evidence, documented remaining platform and usability gaps, improved timed-out test diagnostics, and visually exercised the tracked project in Godot: day advancement, an executive directive, its history entry and the scenario-change confirmation. Save/load and layout testing remain open. See [foundation acceptance](FOUNDATION_ACCEPTANCE.md) and [Session 55](SESSION_55.md).
+
+### Session 56 — Windows development build
+
+PR #94. Installed the checksum-verified Windows Godot export templates, added a non-overwriting build/smoke script and built a Windows executable plus PCK. Headless startup and a basic graphical day advance passed on the current machine; the default window was very small and provisional low-end hardware verification remains open. The downloaded archive was removed after verification. See [Session 56](SESSION_56.md).
 
 ## 12. Immediate next actions
 

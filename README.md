@@ -10,7 +10,7 @@ The header shows the current fictional scenario, date, cash, annual balance and 
 
 **Budget & services** shows current annual expenses as a chart and text table. Enter a category proposal and select **Proposed category** to preview it; use **Apply category** to change the budget. Policy costs and debt interest appear separately from category spending. The available categories and values are fictional.
 
-The **World Map** tab displays offline Natural Earth reference geography. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom. Select a country or city on the map, or search for its name and choose a result to zoom to it. The map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
+The **World Map** tab displays offline Natural Earth reference geography. Hover to identify a country or city; click to select, double-click or choose **Focus** to zoom to it. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom. Search by name or choose which cities are visible. **Clear** removes the selection and **Reset map** restores the world view. The sidebar reports reference data, not game simulation values; the map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
 
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
 

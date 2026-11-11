@@ -4,6 +4,38 @@ const World = preload("res://simulation/world.gd")
 
 func _initialize() -> void:
 	var world = World.new()
+	var scenario_data: Variant = World.Scenario.read_file(World.DEFAULT_SCENARIO)
+	assert(World.Scenario.validate(scenario_data).is_empty())
+	assert(world.scenario_id == "test_republic" and world.country.id == "test_republic")
+	assert(World.Scenario.read_file("res://data/scenarios/missing.json") == null)
+	var invalid_scenario: Dictionary = scenario_data.duplicate(true)
+	invalid_scenario.country.spending_categories.Health = -1.0
+	var before_scenario: Dictionary = world.country.duplicate(true)
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	assert(world.country == before_scenario and world.scenario_id == "test_republic")
+	invalid_scenario = scenario_data.duplicate(true)
+	invalid_scenario.date = {"year": 2027, "month": 2, "day": 29}
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	invalid_scenario = scenario_data.duplicate(true)
+	invalid_scenario.country.annual_revenue = 0.0
+	assert(not world.apply_scenario(invalid_scenario).is_empty())
+	var alternate: Dictionary = scenario_data.duplicate(true)
+	alternate.id = "custom_scenario"
+	alternate.country.id = "custom_country"
+	alternate.country.name = "Custom Test Country"
+	alternate.date.month = 3
+	var scenario_world = World.new()
+	assert(scenario_world.apply_scenario(alternate).is_empty())
+	assert(scenario_world.country.name == "Custom Test Country" and scenario_world.fiscal.partial)
+	alternate.country.name = "Changed externally"
+	assert(scenario_world.country.name == "Custom Test Country")
+	var scenario_path := "res://tests/scenario_test.json"
+	assert(not FileAccess.file_exists(scenario_path))
+	assert(scenario_world.save_game(scenario_path).is_empty())
+	var scenario_restored = World.new()
+	assert(scenario_restored.load_game(scenario_path).is_empty())
+	assert(scenario_restored.scenario_id == "custom_scenario" and scenario_restored.country.id == "custom_country")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(scenario_path))
 	var foreign = World.new()
 	var declined = World.new()
 	assert(not declined.diplomacy.will_accept("northern", "cooperation"))

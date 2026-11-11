@@ -4,6 +4,8 @@ const Politics = preload("res://simulation/politics.gd")
 const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
+const Scenario = preload("res://simulation/scenario.gd")
+const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
 const PROCUREMENT_ANNUAL_COST := 10000000.0
 const REPORTING_ANNUAL_COST := 5000000.0
 const REPORTING_ADMIN_TARGET_BONUS := 10.0
@@ -19,23 +21,38 @@ var diplomacy = Diplomacy.new()
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
 var date: Dictionary = INITIAL_DATE.duplicate()
-var country := {
-	"name": "Federal Republic (test scenario)",
-	"population": 10000000,
-	"treasury": 1000000000.0,
-	"debt": 0.0,
-	"annual_revenue": 1200000000.0,
-	"annual_spending": 1100000000.0,
-	"spending_categories": {"Health": 330000000.0, "Education": 275000000.0, "Security": 220000000.0, "Infrastructure": 165000000.0, "Administration": 110000000.0},
-	"income_tax_rate": 0.20,
-	"consumption_tax_rate": 0.0,
-	"corporate_tax_rate": 0.0,
-	"approval": 50.0,
-}
+var country: Dictionary = {}
+var scenario_id := ""
+var initialization_error := ""
 var fiscal: Dictionary = _new_fiscal_period(false)
 var previous_fiscal: Dictionary = {}
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
 const MAX_EVENTS := 200
+
+func _init() -> void:
+	var error := apply_scenario(Scenario.read_file(DEFAULT_SCENARIO))
+	if not error.is_empty():
+		initialization_error = error
+		push_error("Default scenario could not be loaded: " + error)
+
+func apply_scenario(data: Variant) -> String:
+	var error: String = Scenario.validate(data)
+	if not error.is_empty():
+		return error
+	# Validate all data before replacing any live state.
+	scenario_id = data.id
+	initialization_error = ""
+	date = {"year": int(data.date.year), "month": int(data.date.month), "day": int(data.date.day)}
+	country = data.country.duplicate(true)
+	country.population = int(country.population)
+	politics = Politics.new()
+	services = Services.new()
+	institutions = Institutions.new()
+	diplomacy = Diplomacy.new()
+	fiscal = _new_fiscal_period(date.month != 1 or date.day != 1)
+	previous_fiscal = {}
+	events = ["Scenario started. All figures are fictional test data."]
+	return ""
 
 func annual_balance() -> float:
 	return total_annual_revenue() - country.annual_spending - policy_annual_cost() - debt_interest()
@@ -76,6 +93,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	var future = get_script().new()
 	future.date = date.duplicate(true)
 	future.country = country.duplicate(true)
+	future.scenario_id = scenario_id
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()):
 		return {}
 	for key in changes:
@@ -178,7 +196,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 11, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 12, "scenario_id": scenario_id, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -228,7 +246,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9 and parsed.get("version") != 10 and parsed.get("version") != 11):
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 12:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -251,6 +269,13 @@ func load_game(path: String) -> String:
 	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > 10000000000.0 or e.size() > MAX_EVENTS:
 		return "Save has out-of-range policy or approval data."
 	c = c.duplicate(true)
+	var loaded_scenario_id := "test_republic"
+	if parsed.version < 12:
+		c.id = "test_republic"
+	else:
+		if not Scenario._id(parsed.get("scenario_id")) or not Scenario._id(c.get("id")):
+			return "Save has invalid scenario or country identity."
+		loaded_scenario_id = parsed.scenario_id
 	if parsed.version < 6:
 		c.consumption_tax_rate = 0.0
 		c.corporate_tax_rate = 0.0
@@ -327,6 +352,7 @@ func load_game(path: String) -> String:
 		loaded_fiscal = parsed.fiscal.duplicate(true)
 		loaded_previous = parsed.previous_fiscal.duplicate(true)
 	date = {"year": year, "month": month, "day": day}
+	scenario_id = loaded_scenario_id
 	fiscal = loaded_fiscal
 	previous_fiscal = loaded_previous
 	country = c.duplicate(true)

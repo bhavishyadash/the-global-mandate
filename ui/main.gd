@@ -30,6 +30,8 @@ var additional_tax_preview: Label
 var directive_picker: OptionButton
 var directive_summary: Label
 var dashboard_tabs: TabContainer
+var healthcare_picker: OptionButton
+var healthcare_summary: Label
 var forecast_label: Label
 var comparison_label: Label
 var forecast_current := false
@@ -235,6 +237,7 @@ func _ready() -> void:
 	var population := _make_dashboard_tab("Population")
 	var diplomacy_tab := _make_dashboard_tab("Diplomacy")
 	var decisions := _make_dashboard_tab("History")
+	var laws := _make_dashboard_tab("Laws")
 	for node in [summary, explanation]:
 		node.reparent(overview)
 	var scenario_controls := HBoxContainer.new()
@@ -312,6 +315,23 @@ func _ready() -> void:
 	event_filter.item_selected.connect(func(_index: int): _refresh_history())
 	decisions.add_child(event_filter)
 	decisions.move_child(event_filter, 1)
+	healthcare_picker = OptionButton.new()
+	for amount in World.Healthcare.FUNDING_OPTIONS:
+		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
+	healthcare_picker.select(1)
+	laws.add_child(healthcare_picker)
+	healthcare_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
+	var healthcare_vote := Button.new()
+	healthcare_vote.text = "Submit or amend healthcare law"
+	healthcare_vote.pressed.connect(_vote_healthcare)
+	laws.add_child(healthcare_vote)
+	var healthcare_repeal := Button.new()
+	healthcare_repeal.text = "Vote to repeal healthcare law"
+	healthcare_repeal.pressed.connect(_repeal_healthcare)
+	laws.add_child(healthcare_repeal)
+	healthcare_summary = Label.new()
+	healthcare_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	laws.add_child(healthcare_summary)
 	_refresh()
 
 func _make_dashboard_tab(title: String) -> VBoxContainer:
@@ -469,6 +489,31 @@ func _vote_policy() -> void:
 	status.text = Decisions.execute(world, {"id": "vote_procurement", "args": {}}).message
 	_refresh()
 
+func _vote_healthcare() -> void:
+	var amount: float = World.Healthcare.FUNDING_OPTIONS[healthcare_picker.selected]
+	status.text = Decisions.execute(world, {"id": "vote_healthcare", "args": {"funding": amount}}).message
+	_refresh()
+
+func _repeal_healthcare() -> void:
+	status.text = Decisions.execute(world, {"id": "repeal_healthcare", "args": {}}).message
+	_refresh()
+
+func _refresh_healthcare() -> void:
+	var amount: float = World.Healthcare.FUNDING_OPTIONS[healthcare_picker.selected]
+	var preview: Dictionary = world.preview_healthcare(amount)
+	var law = world.healthcare
+	var lines := PackedStringArray(["HEALTHCARE LAW — fictional test model", "Current: %s | rollout %.1f%% | annual cost $%.0f million" % ["active" if law.active else "inactive", law.progress, law.funding / 1000000.0], "Administration %.1f/100 | health condition %.1f/100 | current health target %.1f/100" % [world.services.levels.Administration, world.services.levels.Health, world.service_target("Health", world.country.spending_categories.Health)], "PROPOSAL: %d/100 seats support; %s (51 required)." % [preview.votes, "passes" if preview.passes else "fails"]])
+	for party in preview.positions:
+		lines.append("%s: %d seats — %s" % [party.name, party.seats, "supports" if party.support else "opposes"])
+	lines.append("If enacted: $%.0f million/year, annual balance $%.0f million at current rates; up to +%.1f health target points, subject to the 100-point cap." % [amount / 1000000.0, preview.annual_balance / 1000000.0, preview.full_health_target_bonus])
+	if law.active:
+		var repeal: Dictionary = world.preview_healthcare(law.funding, true)
+		lines.append("Repeal support: %d/100 seats — %s." % [repeal.votes, "passes" if repeal.passes else "fails"])
+	lines.append("Costs start on the next day. Deficits are automatically borrowed; no separate appropriation is modeled. Rollout takes 120 days at administration 50/100, slower with less capacity; expanding funding stretches remaining rollout. Health conditions and population approval respond gradually. Party positions and effects are fictional placeholders.")
+	for group in world.politics.groups:
+		lines.append("%s: %.1f%% approval (service contribution %+.1f points)" % [group.name, group.approval, group.service_bonus])
+	healthcare_summary.text = "\n".join(lines)
+
 func _repeal_policy() -> void:
 	status.text = Decisions.execute(world, {"id": "repeal_procurement", "args": {}}).message
 	_refresh()
@@ -554,6 +599,7 @@ func _refresh() -> void:
 	diplomatic_lines.append("Selected: %s — %s | current test response: %s | cooperation threshold %.0f." % [world.diplomacy.PARTNERS[chosen_partner], world.diplomacy.PROPOSALS[chosen_proposal].name, "accept" if world.diplomacy.will_accept(chosen_partner, chosen_proposal) else "decline", world.diplomacy.COOPERATION_MINIMUM[chosen_partner]])
 	diplomacy_summary.text = "\n".join(diplomatic_lines)
 	_refresh_directive()
+	_refresh_healthcare()
 	_refresh_history()
 	_update_tax_preview(tax.value)
 	_update_additional_tax_preview(additional_tax.value)

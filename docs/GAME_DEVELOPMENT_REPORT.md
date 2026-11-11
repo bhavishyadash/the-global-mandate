@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 61
+**Report status:** Living record; updated through session 62
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -18,7 +18,7 @@
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
 | Simulation | Framework prototype in tracked project | Gregorian calendar, fictional budget, population, institutions, diplomacy and single-slot save/load |
 | World data | Fictional scenarios only | Real-country research sources, licensing, dates, gaps and uncertainty remain open |
-| Political systems | Early fictional prototype | Three population groups, a three-party legislature, one test law and a simplified election; real country institutions remain future work |
+| Political systems | Early fictional prototype | Three population groups, a three-party legislature, procurement and healthcare test laws, and a simplified election; real country institutions remain future work |
 | Economy | Early fictional budget prototype | Sectors, households, employment, prices and trade remain open |
 | Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
 | GPS feature inventory | Initial partial survey | Installed manual reviewed; actual menus and formulas remain incomplete |
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 62:** The first healthcare governing loop connects a parliamentary vote, annual spending, administrative rollout, services and group approval. [Detailed session record](SESSION_62.md). All rules are illustrative; real-world calibration, broader political systems and director playtesting remain upcoming.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

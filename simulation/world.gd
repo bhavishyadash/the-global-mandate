@@ -4,6 +4,7 @@ const Politics = preload("res://simulation/politics.gd")
 const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
+const Healthcare = preload("res://simulation/healthcare.gd")
 const Scenario = preload("res://simulation/scenario.gd")
 const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
 const PROCUREMENT_ANNUAL_COST := 10000000.0
@@ -17,6 +18,7 @@ var politics = Politics.new()
 var services = Services.new()
 var institutions = Institutions.new()
 var diplomacy = Diplomacy.new()
+var healthcare = Healthcare.new()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -55,6 +57,7 @@ func apply_scenario(data: Variant) -> String:
 	services = Services.new()
 	institutions = Institutions.new()
 	diplomacy = Diplomacy.new()
+	healthcare = Healthcare.new()
 	if data.version == 2:
 		politics.import_state(data.politics)
 		services.import_state(data.services)
@@ -96,13 +99,13 @@ func additional_tax_revenue(kind: String) -> float:
 func policy_annual_cost() -> float:
 	var procurement: float = PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
 	var reporting: float = REPORTING_ANNUAL_COST if reporting_effect_active() else 0.0
-	return procurement + reporting + diplomacy.annual_agreement_cost()
+	return procurement + reporting + diplomacy.annual_agreement_cost() + (healthcare.funding if healthcare.active else 0.0)
 
 func reporting_effect_active() -> bool:
 	return institutions.kind == "reporting" and institutions.status == "implemented"
 
 func service_target(category: String, spending: float) -> float:
-	return services.target(category, spending, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0)
+	return services.target(category, spending, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0, healthcare.health_bonus())
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -117,7 +120,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.scenario_id = scenario_id
 	future.random_seed_value = random_seed_value
 	future.random_state = random_state
-	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()):
+	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
 		return {}
 	for key in changes:
 		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending"] or not _is_number(changes[key]):
@@ -173,11 +176,13 @@ func advance_day() -> void:
 		country.debt -= repayment
 		fiscal.repaid += repayment
 		country.treasury += balance - repayment
-	services.advance_day(country.spending_categories, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0)
+	services.advance_day(country.spending_categories, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0, healthcare.health_bonus())
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
 	if politics.advance_day():
 		add_event("Procurement policy implementation completed.", "policy")
+	if healthcare.advance_day(services.levels.Administration):
+		add_event("Healthcare program reached full implementation.", "policy")
 	var institutional_event: String = institutions.advance_day()
 	if not institutional_event.is_empty():
 		add_event(institutional_event, "institution")
@@ -229,7 +234,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 14, "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 15, "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String) -> String:
 	var temporary := path + ".tmp"
@@ -296,7 +301,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 14:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 15:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -376,6 +381,9 @@ func import_snapshot(parsed: Variant) -> String:
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
+	var loaded_healthcare = Healthcare.new()
+	if parsed.version >= 15 and not loaded_healthcare.import_state(parsed.get("healthcare")):
+		return "Save has invalid healthcare policy data."
 	var loaded_diplomacy = Diplomacy.new()
 	if parsed.version >= 9:
 		var diplomatic_data: Variant = parsed.get("diplomacy")
@@ -431,6 +439,7 @@ func import_snapshot(parsed: Variant) -> String:
 	politics = loaded_politics
 	services = loaded_services
 	institutions = loaded_institutions
+	healthcare = loaded_healthcare
 	diplomacy = loaded_diplomacy
 	events.clear()
 	for event in e:
@@ -546,6 +555,43 @@ func set_additional_tax(kind: String, rate: float) -> bool:
 	country.approval = politics.approval()
 	country[spec.field] = rate
 	add_event("%s tax changed from %.1f%% to %.1f%%." % [kind.capitalize(), previous * 100.0, rate * 100.0], "finance")
+	return true
+
+func preview_healthcare(amount: float, repeal: bool = false) -> Dictionary:
+	if not Healthcare.valid_funding(amount) or (repeal and (not healthcare.active or amount != healthcare.funding)):
+		return {}
+	var positions: Array = healthcare.support(politics.parties, amount, repeal)
+	var seats: int = healthcare.votes(positions)
+	var current_cost: float = healthcare.funding if healthcare.active else 0.0
+	var next_cost := 0.0 if repeal else amount
+	return {"positions": positions, "votes": seats, "passes": seats > 50, "annual_cost": next_cost, "annual_balance": annual_balance() + current_cost - next_cost, "administration": services.levels.Administration, "progress": healthcare.progress, "full_health_target_bonus": Healthcare.TARGET_PER_100M * amount / 100000000.0 if not repeal else 0.0}
+
+func vote_healthcare(amount: float) -> bool:
+	var preview := preview_healthcare(amount)
+	if preview.is_empty() or (healthcare.active and healthcare.funding == amount):
+		return false
+	if not preview.passes:
+		add_event("Healthcare proposal failed with %d of 100 seats." % preview.votes, "policy")
+		return false
+	var amending: bool = healthcare.active
+	if amending and amount > healthcare.funding:
+		healthcare.progress *= healthcare.funding / amount
+	healthcare.active = true
+	healthcare.funding = amount
+	add_event("Healthcare %s passed with %d of 100 seats; annual funding is $%.0f." % ["amendment" if amending else "proposal", preview.votes, amount], "policy")
+	return true
+
+func repeal_healthcare() -> bool:
+	if not healthcare.active:
+		return false
+	var preview := preview_healthcare(healthcare.funding, true)
+	if not preview.passes:
+		add_event("Healthcare repeal failed with %d of 100 seats." % preview.votes, "policy")
+		return false
+	healthcare.active = false
+	healthcare.funding = 0.0
+	healthcare.progress = 0.0
+	add_event("Healthcare repeal passed with %d of 100 seats; future costs stopped." % preview.votes, "policy")
 	return true
 
 func vote_procurement() -> bool:

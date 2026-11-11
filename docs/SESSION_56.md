@@ -1,1 +1,5 @@
 # Session 56: Windows standalone build verification
+
+Downloaded the official Godot 4.7.2 export-template archive and verified its SHA-256 (`f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011`) against the [official release assets](https://github.com/godotengine/godot-builds/releases/expanded_assets/4.7.2-stable). Installed only the Windows x86-64 debug/release templates to Godot's user template directory without replacing existing files, and removed the downloaded archive afterward.
+
+Added `tools/build_windows.py`, which exports to a chosen empty directory, refuses to overwrite an existing executable or pack, and starts the exported executable headlessly for five frames, rejecting startup errors. The local release export and headless startup passed; the executable and PCK are in ignored `artifacts/windows-build/` and must stay together. This is a development build, not a release candidate. Graphical startup of the exported executable, install/upgrade, target-laptop performance, accessibility, other platforms and distribution remain unverified. The regular CI resource-pack check does not build the standalone binary.

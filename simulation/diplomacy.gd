@@ -9,6 +9,7 @@ const PROPOSALS := {"dialogue": {"name": "Open dialogue", "gain": 5.0}, "coopera
 const COOPERATION_MINIMUM := {"maritime": 15.0, "northern": 0.0}
 const AGREEMENT_DAYS := 365
 const AGREEMENT_ANNUAL_COST := 10000000.0
+const AGREEMENT_ANNUAL_CONTRIBUTION := 20000000.0
 var relations := {"maritime": 30.0, "northern": -10.0}
 var cooldowns := {"maritime": 0, "northern": 0}
 var active := ""
@@ -65,6 +66,9 @@ func annual_agreement_cost() -> float:
 		if agreements[partner] > 0:
 			count += 1
 	return count * AGREEMENT_ANNUAL_COST
+
+func annual_partner_contribution() -> float:
+	return annual_agreement_cost() / AGREEMENT_ANNUAL_COST * AGREEMENT_ANNUAL_CONTRIBUTION
 
 func end_agreement(partner: String) -> bool:
 	if not PARTNERS.has(partner) or agreements[partner] <= 0:

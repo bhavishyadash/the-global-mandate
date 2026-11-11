@@ -473,6 +473,10 @@ PR #86. Added a bounded deterministic decision replay harness and automated repe
 
 PR #87. Added bounded, dated and categorized event records, History filtering and save-v13 migration. Older text is preserved as legacy records with unknown structured metadata. Tests cover filtering, copying, invalid saves, migration and replay. Structured actors and causal payloads remain future work. See [Session 49](SESSION_49.md).
 
+### Session 50 — package validation
+
+PR #88. Added a development export preset that includes scenario data, resource identity metadata, a packaged-scenario smoke test and CI coverage. The local resource pack was exported and loaded successfully from an empty directory. This does not establish a working standalone Windows export or visual rendering. See [Session 50](SESSION_50.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

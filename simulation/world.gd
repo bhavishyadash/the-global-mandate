@@ -51,7 +51,8 @@ func additional_tax_revenue(kind: String) -> float:
 	return float(country[spec.field]) * float(spec.base)
 
 func policy_annual_cost() -> float:
-	return PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
+	var procurement: float = PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
+	return procurement + diplomacy.annual_agreement_cost()
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -165,7 +166,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 10, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 11, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -215,7 +216,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9 and parsed.get("version") != 10):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9 and parsed.get("version") != 10 and parsed.get("version") != 11):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -275,6 +276,9 @@ func load_game(path: String) -> String:
 		if parsed.version == 9 and diplomatic_data is Dictionary and diplomatic_data.get("active") is String:
 			diplomatic_data = diplomatic_data.duplicate(true)
 			diplomatic_data.proposal = "" if diplomatic_data.get("active", "").is_empty() else "dialogue"
+		if parsed.version < 11 and diplomatic_data is Dictionary:
+			diplomatic_data = diplomatic_data.duplicate(true)
+			diplomatic_data.agreements = {"maritime": 0, "northern": 0}
 		if not loaded_diplomacy.import_state(diplomatic_data):
 			return "Save has invalid diplomatic data."
 	if parsed.version >= 7 and not loaded_institutions.import_state(parsed.get("institutions")):
@@ -436,6 +440,12 @@ func cancel_diplomatic_talks() -> bool:
 	if not diplomacy.cancel_talks():
 		return false
 	add_event("Cancelled diplomatic talks with %s." % diplomacy.PARTNERS[partner])
+	return true
+
+func end_cooperation(partner: String) -> bool:
+	if not diplomacy.end_agreement(partner):
+		return false
+	add_event("Ended cooperation agreement with %s; relations fell by 5 test points." % diplomacy.PARTNERS[partner])
 	return true
 
 func revoke_directive() -> bool:

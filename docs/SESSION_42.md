@@ -1,0 +1,3 @@
+# Session 42: cooperation agreements
+
+An accepted cooperation proposal creates or renews a 365-day agreement. Each active agreement adds an illustrative $10 million annual cost to policy costs, accruing from the following simulated day through expiry; players may terminate early for a five-point relationship penalty. Expiry and termination are logged. Agreements are reflected in fiscal forecasts, budget previews and recorded policy costs. Version-11 saves persist and validate remaining days; older saves begin with no agreements. Tests cover cost timing, cancellation, expiry, forecast agreement and save/load. This flat cost and relationship effect are fictional; trade, enforcement, domestic approval and treaty law are not modeled.

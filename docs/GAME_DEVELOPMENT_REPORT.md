@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 80
+**Report status:** Living record; updated through session 81
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 81:** Improved the healthcare bill screen with stage-aware actions, vote and fiscal previews, and saved chamber/presidential results. [Detailed session record](SESSION_81.md). Positions remain fictional and fixed; realistic country-specific institutions and appropriations remain upcoming.
 
 **Session 80:** Added a US-inspired bicameral healthcare bill path with House and Senate votes, presidential action, veto overrides and saved bill progress. [Detailed session record and sources](SESSION_80.md). Votes and party control are fictional, and the existing single-chamber controls remain separate.
 

@@ -3,6 +3,7 @@ extends RefCounted
 const Politics = preload("res://simulation/politics.gd")
 const Services = preload("res://simulation/services.gd")
 const Institutions = preload("res://simulation/institutions.gd")
+const Diplomacy = preload("res://simulation/diplomacy.gd")
 const PROCUREMENT_ANNUAL_COST := 10000000.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
@@ -11,6 +12,7 @@ const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "
 var politics = Politics.new()
 var services = Services.new()
 var institutions = Institutions.new()
+var diplomacy = Diplomacy.new()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -61,7 +63,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	var future = get_script().new()
 	future.date = date.duplicate(true)
 	future.country = country.duplicate(true)
-	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()):
+	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()):
 		return {}
 	for key in changes:
 		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending"] or not _is_number(changes[key]):
@@ -125,6 +127,9 @@ func advance_day() -> void:
 	var institutional_event: String = institutions.advance_day()
 	if not institutional_event.is_empty():
 		add_event(institutional_event)
+	var diplomatic_event: String = diplomacy.advance_day()
+	if not diplomatic_event.is_empty():
+		add_event(diplomatic_event)
 	date.day += 1
 	if date.day > days_in_month(date.year, date.month):
 		date.day = 1
@@ -160,7 +165,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 8, "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 9, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -210,7 +215,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -264,6 +269,9 @@ func load_game(path: String) -> String:
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
+	var loaded_diplomacy = Diplomacy.new()
+	if parsed.version >= 9 and not loaded_diplomacy.import_state(parsed.get("diplomacy")):
+		return "Save has invalid diplomatic data."
 	if parsed.version >= 7 and not loaded_institutions.import_state(parsed.get("institutions")):
 		return "Save has invalid institutional data."
 	if parsed.version >= 5 and not loaded_services.import_state(parsed.get("services")):
@@ -305,6 +313,7 @@ func load_game(path: String) -> String:
 	politics = loaded_politics
 	services = loaded_services
 	institutions = loaded_institutions
+	diplomacy = loaded_diplomacy
 	events.clear()
 	for event in e:
 		events.append(event)
@@ -409,6 +418,19 @@ func issue_directive(kind: String) -> bool:
 	if not institutions.issue(kind):
 		return false
 	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name)
+	return true
+
+func start_diplomatic_talks(partner: String) -> bool:
+	if not diplomacy.start_talks(partner):
+		return false
+	add_event("Opened diplomatic talks with %s." % diplomacy.PARTNERS[partner])
+	return true
+
+func cancel_diplomatic_talks() -> bool:
+	var partner: String = diplomacy.active
+	if not diplomacy.cancel_talks():
+		return false
+	add_event("Cancelled diplomatic talks with %s." % diplomacy.PARTNERS[partner])
 	return true
 
 func revoke_directive() -> bool:

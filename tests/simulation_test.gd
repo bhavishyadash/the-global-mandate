@@ -4,6 +4,33 @@ const World = preload("res://simulation/world.gd")
 
 func _initialize() -> void:
 	var world = World.new()
+	var foreign = World.new()
+	assert(not foreign.start_diplomatic_talks("unknown"))
+	assert(foreign.start_diplomatic_talks("northern"))
+	assert(not foreign.start_diplomatic_talks("maritime"))
+	for i in range(29):
+		foreign.advance_day()
+	assert(foreign.diplomacy.progress == 29 and foreign.diplomacy.relations.northern == -10.0)
+	var diplomatic_path := "res://tests/diplomacy_test.json"
+	assert(not FileAccess.file_exists(diplomatic_path))
+	assert(foreign.save_game(diplomatic_path).is_empty())
+	var diplomatic_reload = World.new()
+	assert(diplomatic_reload.load_game(diplomatic_path).is_empty())
+	assert(diplomatic_reload.diplomacy.progress == 29)
+	diplomatic_reload.advance_day()
+	assert(diplomatic_reload.diplomacy.relations.northern == -5.0)
+	var invalid_diplomacy: Dictionary = foreign.diplomacy.export_state()
+	invalid_diplomacy.relations.northern = 101.0
+	assert(not diplomatic_reload.diplomacy.import_state(invalid_diplomacy))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(diplomatic_path))
+	foreign.advance_day()
+	assert(foreign.diplomacy.active.is_empty() and foreign.diplomacy.relations.northern == -5.0)
+	assert(not foreign.start_diplomatic_talks("northern"))
+	for i in range(90):
+		foreign.advance_day()
+	assert(foreign.start_diplomatic_talks("northern"))
+	assert(foreign.cancel_diplomatic_talks())
+	assert(foreign.diplomacy.cooldowns.northern == 90)
 	var initial_treasury: float = world.country.treasury
 	var forecast: Dictionary = world.forecast_fiscal(365)
 	assert(not forecast.is_empty() and world.date == World.INITIAL_DATE)

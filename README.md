@@ -41,6 +41,8 @@ GitHub Actions runs the Python utility tests, Godot headless checks and resource
 
 The experimental multi-country registry is headless and not yet integrated into the playable screen. Its synthetic benchmark can be run with `godot --headless --path . --script res://tools/benchmark_registry.gd`; it is not a real-world balance or target-hardware test.
 
+See [performance targets and benchmarks](docs/PERFORMANCE_TARGETS.md) for the playable scheduler, save/load and 720p graphical measurement procedures. Results from other hardware do not validate the provisional low-end target.
+
 Developers can use `simulation/replay_record.gd` to record a versioned scenario, seed and decisions into a JSON-compatible reproduction record. The recorder must own all decision and day-advance calls; it is not yet wired into the game UI. See [session 66](docs/SESSION_66.md) for limitations.
 
 Save files are stored in Godot's user data directory, not in the repository.

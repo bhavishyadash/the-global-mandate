@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 77
+**Report status:** Living record; updated through session 78
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -59,6 +59,8 @@
 **Session 76:** Added offline country and city search, result lists and focus-on-selection to the map. [Detailed session record](SESSION_76.md). The dataset remains a limited geographic reference rather than a playable world.
 
 **Session 77:** Applied the first navy-and-teal interface theme, added a live scenario and fiscal status line, and grouped income-tax controls with their previews. [Detailed session record](SESSION_77.md). Full law tables, budget charts and the U.S.-specific UI remain upcoming.
+
+**Session 78:** Added an annual spending donut chart and a matching current/proposed table connected to the fictional fiscal model. [Detailed session record](SESSION_78.md). The prototype still lacks distinct family and defence categories and agency drilldown.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

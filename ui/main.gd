@@ -5,6 +5,8 @@ const Decisions = preload("res://simulation/decisions.gd")
 const Diagnostics = preload("res://simulation/diagnostics.gd")
 const WorldMap = preload("res://ui/world_map.gd")
 const GovernmentTheme = preload("res://ui/government_theme.gd")
+const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
+const BudgetChart = preload("res://ui/budget_chart.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -57,6 +59,10 @@ var map_search: LineEdit
 var map_results: ItemList
 var map_search_status: Label
 var government_status: Label
+var budget_chart: Control
+var budget_mode: OptionButton
+var budget_chart_note: Label
+var budget_rows: Dictionary = {}
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -162,6 +168,9 @@ func _ready() -> void:
 	budget_controls.add_child(speed_picker)
 	var category_controls := HBoxContainer.new()
 	layout.add_child(category_controls)
+	var category_label := Label.new()
+	category_label.text = "Category proposal ($ millions)"
+	category_controls.add_child(category_label)
 	category_picker = OptionButton.new()
 	for category in World.CATEGORY_SHARES:
 		category_picker.add_item(category)
@@ -339,6 +348,58 @@ func _ready() -> void:
 	new_game_confirmation.confirmed.connect(_confirm_new_scenario)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
+	var chart_controls := HBoxContainer.new()
+	finances.add_child(chart_controls)
+	finances.move_child(chart_controls, 0)
+	var chart_heading := Label.new()
+	chart_heading.text = "ANNUAL EXPENDITURE BREAKDOWN"
+	chart_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chart_controls.add_child(chart_heading)
+	budget_mode = OptionButton.new()
+	budget_mode.add_item("Current")
+	budget_mode.add_item("Proposed category")
+	budget_mode.item_selected.connect(func(_index: int): _refresh_budget_breakdown())
+	chart_controls.add_child(budget_mode)
+	finances.move_child(category_controls, 1)
+	var chart_layout := HBoxContainer.new()
+	chart_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	finances.add_child(chart_layout)
+	finances.move_child(chart_layout, 2)
+	budget_chart = BudgetChart.new()
+	chart_layout.add_child(budget_chart)
+	var table := GridContainer.new()
+	table.columns = 4
+	table.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	table.add_theme_constant_override("h_separation", 16)
+	table.add_theme_constant_override("v_separation", 6)
+	chart_layout.add_child(table)
+	for heading_text in ["Category", "Current", "Proposed", "Share"]:
+		var table_header := Label.new()
+		table_header.text = heading_text
+		if heading_text != "Category":
+			table_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			table_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		table_header.add_theme_color_override("font_color", GovernmentTheme.MUTED)
+		table.add_child(table_header)
+	var chart_index := 0
+	for name in ["Health", "Education", "Security", "Infrastructure", "Administration", "Policy costs", "Debt interest"]:
+		var name_label := Label.new()
+		name_label.text = name
+		name_label.add_theme_color_override("font_color", BudgetChart.COLORS[chart_index])
+		table.add_child(name_label)
+		var columns: Array = []
+		for column in range(3):
+			var cell := Label.new()
+			cell.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			table.add_child(cell)
+			columns.append(cell)
+		budget_rows[name] = columns
+		chart_index += 1
+	budget_chart_note = Label.new()
+	budget_chart_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	finances.add_child(budget_chart_note)
+	finances.move_child(budget_chart_note, 3)
 	var forecast_button := Button.new()
 	forecast_button.text = "Forecast next 365 days"
 	forecast_button.pressed.connect(_forecast_budget)
@@ -833,8 +894,27 @@ func _update_spending_preview(value: float) -> void:
 func _update_category_preview(value: float) -> void:
 	var name := category_picker.get_item_text(category_picker.selected)
 	var preview: Dictionary = world.preview_category_spending(name, value * 1000000.0)
+	if budget_chart != null:
+		_refresh_budget_breakdown()
 	if preview.is_empty():
 		category_preview.text = "Category preview unavailable: total exceeds budget limit."
 		return
 	var service_target: float = world.service_target(name, value * 1000000.0)
 	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f | long-run service target %.1f/100 (fictional)" % [name, preview.annual_balance, preview.daily_balance, service_target]
+
+func _refresh_budget_breakdown() -> void:
+	var category := category_picker.get_item_text(category_picker.selected)
+	var result: Dictionary = BudgetBreakdown.calculate(world, category, category_amount.value * 1000000.0)
+	var proposed_view := budget_mode.selected == 1
+	var shown: Dictionary = result.proposed if proposed_view else result.current
+	var shown_total: float = result.proposed_total if proposed_view else result.current_total
+	if proposed_view and not result.valid:
+		budget_chart.set_data({}, 0.0, "Unavailable")
+	else:
+		budget_chart.set_data(shown, shown_total, "Proposed" if proposed_view else "Current")
+	for name in result.current:
+		var cells: Array = budget_rows[name]
+		cells[0].text = "$%.1fM" % (float(result.current[name]) / 1000000.0)
+		cells[1].text = "$%.1fM" % (float(result.proposed[name]) / 1000000.0) if result.valid else "—"
+		cells[2].text = "%.1f%%" % (100.0 * float(shown[name]) / shown_total) if shown_total > 0.0 and (result.valid or not proposed_view) else "—"
+	budget_chart_note.text = "Share uses %s annual expenses. Proposed changes apply only to the selected category and are not enacted. Policy costs and debt interest are separate from the five category budgets. Figures are fictional." % ("proposed" if proposed_view else "current") if result.valid else "Proposed category amount is unavailable because the total exceeds the budget limit. Current spending remains unchanged."

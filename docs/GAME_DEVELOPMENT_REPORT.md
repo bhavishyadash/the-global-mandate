@@ -461,6 +461,10 @@ PR #83. Forecasts and comparisons now flag stale results; a combined scenario te
 
 PR #84. Moved the initial fictional country and date into validated versioned scenario data; added stable scenario/country IDs, version-12 save migration, a startup error for invalid default data and tests. Other institutions and population definitions remain hard-coded. See [Session 46](SESSION_46.md).
 
+### Session 47 — decision contracts
+
+PR #85. Added a validated common command interface and migrated existing UI decisions to it, with explicit result codes and tests. The lower-level world methods and mutable data remain accessible; a complete policy catalog is future work. See [Session 47](SESSION_47.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

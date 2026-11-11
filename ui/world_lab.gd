@@ -2,6 +2,7 @@ extends VBoxContainer
 
 const Registry = preload("res://simulation/world_registry.gd")
 const World = preload("res://simulation/world.gd")
+const WorldMap = preload("res://ui/world_map.gd")
 const LAB_SAVE := "user://experimental_world_save.json"
 const USA := "usa_sandbox"
 const COAST := "coastal_republic"
@@ -12,7 +13,10 @@ var overview: Label
 var selected_details: Label
 var message: Label
 var load_confirmation: ConfirmationDialog
+var pending_load_path := ""
 var dialogue_button: Button
+var lab_map: Control
+var map_status: Label
 var initialized := false
 
 func _ready() -> void:
@@ -35,7 +39,7 @@ func _ready() -> void:
 	initialized = true
 	var actions := HBoxContainer.new()
 	add_child(actions)
-	for spec in [["Advance lab one day", "advance"], ["Save lab world", "save"], ["Load lab world", "load"]]:
+	for spec in [["Advance lab one day", "advance"], ["Save lab world", "save"], ["Load lab world", "load"], ["Load lab backup", "backup"]]:
 		var button := Button.new()
 		button.text = spec[0]
 		var action: String = spec[1]
@@ -44,7 +48,8 @@ func _ready() -> void:
 	load_confirmation = ConfirmationDialog.new()
 	load_confirmation.title = "Load experimental world?"
 	load_confirmation.dialog_text = "Loading replaces the current lab world. Save it first if you want to keep it. The main game is not changed."
-	load_confirmation.confirmed.connect(func(): load_from(LAB_SAVE))
+	load_confirmation.confirmed.connect(_confirm_load)
+	load_confirmation.canceled.connect(func(): pending_load_path = "")
 	add_child(load_confirmation)
 	overview = Label.new()
 	overview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -79,6 +84,28 @@ func _ready() -> void:
 	dialogue_button.pressed.connect(start_dialogue)
 	add_child(dialogue_button)
 	add_child(message)
+	var map_title := Label.new()
+	map_title.text = "LAB MAP — click the US to select its sandbox"
+	add_child(map_title)
+	map_status = Label.new()
+	map_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_status.text = "US is mapped to the lab sandbox. Coastal Republic is fictional and has no geographic location."
+	add_child(map_status)
+	var map_controls := HBoxContainer.new()
+	add_child(map_controls)
+	for spec in [["+", "in"], ["−", "out"], ["Reset lab map", "reset"]]:
+		var button := Button.new()
+		button.text = spec[0]
+		var action: String = spec[1]
+		button.pressed.connect(func(): _map_action(action))
+		map_controls.add_child(button)
+	lab_map = WorldMap.new()
+	lab_map.custom_minimum_size = Vector2(0, 400)
+	lab_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(lab_map)
+	lab_map.set_scenario_layer(1, ["USA"], "USA")
+	lab_map.country_selected.connect(_on_map_country)
+	lab_map.city_selected.connect(func(city: Dictionary): _on_map_country(city.get("country", ""), city.name))
 	_selection_changed()
 
 func selected_id() -> String:
@@ -89,7 +116,28 @@ func _selection_changed() -> void:
 	if state.is_empty():
 		return
 	tax.value = state.country.income_tax_rate * 100.0
+	if lab_map != null:
+		lab_map.selected_id = "USA" if selected_id() == USA else ""
+		lab_map.selected_city_name = ""
+		lab_map.queue_redraw()
+		map_status.text = "US sandbox selected in the lab." if selected_id() == USA else "Coastal Republic is fictional and has no geographic location."
 	refresh()
+
+func _on_map_country(id: String, display_name: String) -> void:
+	if id != "USA":
+		map_status.text = "%s is reference geography only; the selected lab country did not change." % display_name
+		return
+	for index in range(picker.item_count):
+		if picker.get_item_metadata(index) == USA:
+			picker.select(index)
+			_selection_changed()
+			return
+
+func _map_action(action: String) -> void:
+	match action:
+		"in": lab_map.zoom_at(lab_map.size / 2.0, 1.25)
+		"out": lab_map.zoom_at(lab_map.size / 2.0, 0.8)
+		"reset": lab_map.reset_view()
 
 func refresh() -> void:
 	if not initialized:
@@ -110,7 +158,19 @@ func _action(action: String) -> void:
 	match action:
 		"advance": advance_day()
 		"save": save_to(LAB_SAVE)
-		"load": load_confirmation.popup_centered()
+		"load": _request_load(false)
+		"backup": _request_load(true)
+
+func _request_load(backup: bool) -> void:
+	pending_load_path = LAB_SAVE + (".bak" if backup else "")
+	load_confirmation.dialog_text = "Loading the lab %s replaces the current lab world. Save it first if you want to keep it. The main game is not changed." % ("backup" if backup else "save")
+	load_confirmation.popup_centered()
+
+func _confirm_load() -> void:
+	var path := pending_load_path
+	pending_load_path = ""
+	if not path.is_empty():
+		load_from(path)
 
 func advance_day() -> void:
 	if not initialized:

@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 85
+**Report status:** Living record; updated through session 86
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 86:** Connected World Lab's US sandbox to an independent map and added confirmed lab-backup loading. [Detailed session record](SESSION_86.md). The lab remains independent of the main game; Coastal Republic is fictional and has no geographic location.
 
 **Session 85:** Added an independent two-country World Lab with synchronized days, isolated tax changes, dialogue and a separate save slot. [Detailed session record](SESSION_85.md). It remains separate from the main game and map; its countries and numbers are fictional.
 

@@ -9,6 +9,7 @@ func run_checks() -> void:
 	root.add_child(screen)
 	screen.set_process(false)
 	assert(screen.dashboard_tabs.get_tab_count() == 9)
+	assert("2026-01-01" in screen.government_status.text and "Approval 50.0%" in screen.government_status.text)
 	assert(screen.dashboard_tabs.get_tab_title(8) == "World Map")
 	assert(screen.world_map.load_error.is_empty() and screen.world_map.countries.size() >= 170)
 	screen.world_map.size = Vector2(1000, 500)
@@ -99,6 +100,7 @@ func run_checks() -> void:
 	assert(is_equal_approx(screen.world.country.income_tax_rate, 0.20))
 	screen._apply_tax()
 	assert(is_equal_approx(screen.world.country.approval, 8.0))
+	assert("Approval 8.0%" in screen.government_status.text)
 	screen.additional_tax.value = 10
 	assert("CONSUMPTION" in screen.additional_tax_preview.text)
 	assert(is_zero_approx(screen.world.country.consumption_tax_rate))

@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 84
+**Report status:** Living record; updated through session 85
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 85:** Added an independent two-country World Lab with synchronized days, isolated tax changes, dialogue and a separate save slot. [Detailed session record](SESSION_85.md). It remains separate from the main game and map; its countries and numbers are fictional.
 
 **Session 84:** Added a validated map-to-scenario catalogue and an optional map layer distinguishing available, active and reference-only countries. [Detailed session record](SESSION_84.md). This remains a single-country sandbox; the experimental multi-country world is not yet player-facing.
 

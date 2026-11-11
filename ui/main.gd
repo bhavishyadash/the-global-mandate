@@ -5,6 +5,7 @@ const Decisions = preload("res://simulation/decisions.gd")
 const Diagnostics = preload("res://simulation/diagnostics.gd")
 const WorldMap = preload("res://ui/world_map.gd")
 const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
+const WorldLab = preload("res://ui/world_lab.gd")
 const GovernmentTheme = preload("res://ui/government_theme.gd")
 const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
 const BudgetChart = preload("res://ui/budget_chart.gd")
@@ -74,6 +75,7 @@ var map_layer_picker: OptionButton
 var map_legend: Label
 var map_bindings: Array = []
 var map_binding_error := ""
+var world_lab: VBoxContainer
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -308,6 +310,9 @@ func _ready() -> void:
 	var laws := _make_dashboard_tab("Laws")
 	var map_tab := _make_dashboard_tab("World Map")
 	var executive := _make_dashboard_tab("Executive Orders")
+	var lab_tab := _make_dashboard_tab("World Lab")
+	world_lab = WorldLab.new()
+	lab_tab.add_child(world_lab)
 	var map_controls := HBoxContainer.new()
 	map_tab.add_child(map_controls)
 	var map_help := Label.new()

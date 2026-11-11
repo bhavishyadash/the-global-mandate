@@ -31,4 +31,6 @@ On Windows with matching Godot 4.7.2 Windows export templates installed, `python
 
 GitHub Actions runs the Python utility tests, Godot headless checks and resource-pack smoke test on pull requests and pushes to `main`; its Godot 4.7.2 download is checksum-verified. This hosted check does not replace visual playtesting or Windows-specific compatibility testing.
 
+The experimental multi-country registry is headless and not yet integrated into the playable screen. Its synthetic benchmark can be run with `godot --headless --path . --script res://tools/benchmark_registry.gd`; it is not a real-world balance or target-hardware test.
+
 Save files are stored in Godot's user data directory, not in the repository.

@@ -63,6 +63,16 @@ var budget_chart: Control
 var budget_mode: OptionButton
 var budget_chart_note: Label
 var budget_rows: Dictionary = {}
+var law_categories: TabBar
+var law_search: LineEdit
+var law_catalog: Tree
+var law_catalog_note: Label
+var healthcare_panel: VBoxContainer
+var procurement_panel: VBoxContainer
+var procurement_detail: Label
+var review_dialog: ConfirmationDialog
+var pending_decision: Dictionary = {}
+var review_snapshot := ""
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -236,11 +246,11 @@ func _ready() -> void:
 	layout.add_child(political_controls)
 	var vote_button := Button.new()
 	vote_button.text = "Vote on procurement policy"
-	vote_button.pressed.connect(_vote_policy)
+	vote_button.pressed.connect(func(): _request_review("vote_procurement", {}))
 	political_controls.add_child(vote_button)
 	var repeal_button := Button.new()
 	repeal_button.text = "Vote to repeal procurement"
-	repeal_button.pressed.connect(_repeal_policy)
+	repeal_button.pressed.connect(func(): _request_review("repeal_procurement", {}))
 	political_controls.add_child(repeal_button)
 	var directive_controls := HBoxContainer.new()
 	layout.add_child(directive_controls)
@@ -248,12 +258,12 @@ func _ready() -> void:
 	_sync_directive_picker()
 	directive_controls.add_child(directive_picker)
 	var directive_button := Button.new()
-	directive_button.text = "Issue directive"
-	directive_button.pressed.connect(_issue_directive)
+	directive_button.text = "Review directive"
+	directive_button.pressed.connect(func(): _request_review("issue_directive", {"kind": "reporting" if directive_picker.selected == 0 else "override"}))
 	directive_controls.add_child(directive_button)
 	var revoke_button := Button.new()
-	revoke_button.text = "Revoke directive"
-	revoke_button.pressed.connect(_revoke_directive)
+	revoke_button.text = "Review revocation"
+	revoke_button.pressed.connect(func(): _request_review("revoke_directive", {}))
 	directive_controls.add_child(revoke_button)
 	directive_summary = Label.new()
 	directive_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -281,6 +291,7 @@ func _ready() -> void:
 	var decisions := _make_dashboard_tab("History")
 	var laws := _make_dashboard_tab("Laws")
 	var map_tab := _make_dashboard_tab("World Map")
+	var executive := _make_dashboard_tab("Executive Orders")
 	var map_controls := HBoxContainer.new()
 	map_tab.add_child(map_controls)
 	var map_help := Label.new()
@@ -418,8 +429,16 @@ func _ready() -> void:
 	finances.add_child(comparison_label)
 	for node in [income_controls, tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
-	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
-		node.reparent(government)
+	politics_summary.reparent(government)
+	var executive_heading := Label.new()
+	executive_heading.text = "EXECUTIVE ORDERS — fictional test scenario"
+	executive.add_child(executive_heading)
+	var executive_note := Label.new()
+	executive_note.text = "Choose a directive and review its authority, implementation and court outcome before issuing it."
+	executive_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	executive.add_child(executive_note)
+	for node in [directive_controls, directive_summary]:
+		node.reparent(executive)
 	population_summary = Label.new()
 	population_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	population.add_child(population_summary)
@@ -469,31 +488,75 @@ func _ready() -> void:
 	diagnostic_button.text = "Export local diagnostic report"
 	diagnostic_button.pressed.connect(_export_diagnostics)
 	decisions.add_child(diagnostic_button)
+	var law_heading := Label.new()
+	law_heading.text = "LAW CATALOGUE — fictional single-chamber scenario"
+	laws.add_child(law_heading)
+	law_categories = TabBar.new()
+	for category in ["Healthcare", "Finance", "Military", "Justice", "Education"]:
+		law_categories.add_tab(category)
+	laws.add_child(law_categories)
+	law_search = LineEdit.new()
+	law_search.placeholder_text = "Search implemented laws"
+	laws.add_child(law_search)
+	law_catalog = Tree.new()
+	law_catalog.columns = 3
+	law_catalog.hide_root = true
+	law_catalog.column_titles_visible = true
+	law_catalog.set_column_title(0, "Law")
+	law_catalog.set_column_title(1, "Status")
+	law_catalog.set_column_title(2, "Annual cost")
+	law_catalog.set_column_expand(0, true)
+	law_catalog.custom_minimum_size = Vector2(0, 90)
+	laws.add_child(law_catalog)
+	law_catalog_note = Label.new()
+	law_catalog_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	laws.add_child(law_catalog_note)
+	healthcare_panel = VBoxContainer.new()
+	healthcare_panel.add_theme_constant_override("separation", 8)
+	laws.add_child(healthcare_panel)
+	procurement_panel = VBoxContainer.new()
+	procurement_panel.add_theme_constant_override("separation", 8)
+	laws.add_child(procurement_panel)
+	political_controls.reparent(procurement_panel)
+	procurement_detail = Label.new()
+	procurement_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	procurement_panel.add_child(procurement_detail)
+	law_categories.tab_changed.connect(func(_index: int): _refresh_law_catalog())
+	law_search.text_changed.connect(func(_text: String): _refresh_law_catalog())
+	law_catalog.item_selected.connect(_law_catalog_selected)
 	healthcare_picker = OptionButton.new()
 	_sync_healthcare_picker()
-	laws.add_child(healthcare_picker)
+	healthcare_panel.add_child(healthcare_picker)
 	healthcare_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
 	var healthcare_vote := Button.new()
-	healthcare_vote.text = "Submit or amend healthcare law"
-	healthcare_vote.pressed.connect(_vote_healthcare)
-	laws.add_child(healthcare_vote)
+	healthcare_vote.text = "Review healthcare proposal or amendment"
+	healthcare_vote.pressed.connect(func(): _request_review("vote_healthcare", {"funding": world.healthcare.rules.funding_options[healthcare_picker.selected]}))
+	healthcare_panel.add_child(healthcare_vote)
 	var healthcare_repeal := Button.new()
-	healthcare_repeal.text = "Vote to repeal healthcare law"
-	healthcare_repeal.pressed.connect(_repeal_healthcare)
-	laws.add_child(healthcare_repeal)
+	healthcare_repeal.text = "Review healthcare repeal"
+	healthcare_repeal.pressed.connect(func(): _request_review("repeal_healthcare", {}))
+	healthcare_panel.add_child(healthcare_repeal)
 	appropriation_picker = OptionButton.new()
 	for percent in [0, 25, 50, 75, 100]:
 		appropriation_picker.add_item("Proposed appropriation: %d%%" % percent)
 	appropriation_picker.select(4)
-	laws.add_child(appropriation_picker)
+	healthcare_panel.add_child(appropriation_picker)
 	appropriation_picker.item_selected.connect(func(_index: int): _refresh_healthcare())
 	var appropriation_button := Button.new()
-	appropriation_button.text = "Vote on healthcare appropriation"
-	appropriation_button.pressed.connect(_apply_healthcare_appropriation)
-	laws.add_child(appropriation_button)
+	appropriation_button.text = "Review healthcare appropriation"
+	appropriation_button.pressed.connect(func(): _request_review("set_healthcare_appropriation", {"fraction": appropriation_picker.selected * 0.25}))
+	healthcare_panel.add_child(appropriation_button)
 	healthcare_summary = Label.new()
 	healthcare_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	laws.add_child(healthcare_summary)
+	healthcare_panel.add_child(healthcare_summary)
+	review_dialog = ConfirmationDialog.new()
+	review_dialog.title = "Review decision"
+	review_dialog.ok_button_text = "Submit decision"
+	review_dialog.dialog_autowrap = true
+	review_dialog.min_size = Vector2i(600, 0)
+	review_dialog.confirmed.connect(_confirm_review)
+	review_dialog.canceled.connect(_cancel_review)
+	add_child(review_dialog)
 	_refresh()
 
 func _make_dashboard_tab(title: String) -> VBoxContainer:
@@ -703,6 +766,117 @@ func _apply_category() -> void:
 		status.text = "Category change exceeds the total budget limit."
 	_refresh()
 
+func _refresh_law_catalog() -> void:
+	if law_catalog == null:
+		return
+	law_catalog.clear()
+	var root_item := law_catalog.create_item()
+	var category := law_categories.get_tab_title(law_categories.current_tab)
+	var query := law_search.text.strip_edges().to_lower()
+	var id := ""
+	var name := ""
+	var state := ""
+	var cost := 0.0
+	if category == "Healthcare":
+		id = "healthcare"
+		name = "Healthcare expansion"
+		state = "Active" if world.healthcare.active else "Not enacted"
+		cost = world.healthcare.annual_cost()
+	elif category == "Finance":
+		id = "procurement"
+		name = "Procurement policy"
+		state = "Active" if world.politics.procurement_policy else "Not enacted"
+		cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
+	if id.is_empty() or (not query.is_empty() and query not in name.to_lower()):
+		law_catalog_note.text = "No implemented laws match this category and search."
+		healthcare_panel.visible = false
+		procurement_panel.visible = false
+		return
+	var row := law_catalog.create_item(root_item)
+	row.set_text(0, name)
+	row.set_text(1, state)
+	row.set_text(2, "$%.1fM / year" % (cost / 1000000.0))
+	row.set_metadata(0, id)
+	row.select(0)
+	law_catalog_note.text = "Select a law to inspect its details. Values and political rules are fictional."
+	_show_law_detail(id)
+
+func _law_catalog_selected() -> void:
+	var selected := law_catalog.get_selected()
+	if selected != null:
+		_show_law_detail(str(selected.get_metadata(0)))
+
+func _show_law_detail(id: String) -> void:
+	healthcare_panel.visible = id == "healthcare"
+	procurement_panel.visible = id == "procurement"
+	if id == "procurement":
+		procurement_detail.text = "PROCUREMENT POLICY — fictional test rules\nCurrent: %s | rollout: %d%% | votes for adoption: %d/100 | votes for repeal: %d/100\nOnce fully implemented, the policy costs $%.1fM per year. A majority is required." % ["active" if world.politics.procurement_policy else "not enacted", world.politics.procurement_progress, world.politics.votes_for_policy(), world.politics.votes_for_repeal(), float(world.policy_rules.procurement_annual_cost) / 1000000.0]
+
+func _review_text(id: String, args: Dictionary) -> String:
+	match id:
+		"vote_healthcare":
+			var amount: float = args.funding
+			var preview: Dictionary = world.preview_healthcare(amount)
+			if preview.is_empty():
+				return ""
+			var party_lines := PackedStringArray()
+			for party in preview.positions:
+				party_lines.append("%s: %d seats — %s" % [party.name, party.seats, "supports" if party.support else "opposes"])
+			return "HEALTHCARE PROPOSAL — fictional rules\n\nAuthorization: $%.1fM / year\nExpected spending at current funding: $%.1fM / year\nProjected annual balance: $%.1fM\nSupport: %d / 100 seats; %s\n%s\n\nImplementation depends on administration and appropriation. Costs begin the next day; deficits are automatically borrowed. The current model does not forecast population approval for this vote." % [amount / 1000000.0, preview.annual_cost / 1000000.0, preview.annual_balance / 1000000.0, preview.votes, "majority" if preview.passes else "no majority", "\n".join(party_lines)]
+		"repeal_healthcare":
+			if not world.healthcare.active:
+				return ""
+			var preview: Dictionary = world.preview_healthcare(world.healthcare.funding, true)
+			return "HEALTHCARE REPEAL — fictional rules\n\nSupport: %d / 100 seats; %s\nIf passed, annual cost stops and the health target bonus ends. Health conditions and approval respond gradually. Projected annual balance: $%.1fM." % [preview.votes, "majority" if preview.passes else "no majority", preview.annual_balance / 1000000.0]
+		"set_healthcare_appropriation":
+			var preview: Dictionary = world.preview_healthcare_appropriation(float(args.fraction))
+			if preview.is_empty():
+				return ""
+			return "HEALTHCARE APPROPRIATION — fictional rules\n\nProposed funding: %.0f%%\nAnnual cost: $%.1fM\nProjected annual balance: $%.1fM\nSupport: %d / 100 seats; %s\nRollout at current administration: %.2f points / day\n\nA failed vote leaves the current appropriation unchanged." % [float(args.fraction) * 100.0, preview.annual_cost / 1000000.0, preview.annual_balance / 1000000.0, preview.votes, "majority" if preview.passes else "no majority", preview.daily_progress]
+		"vote_procurement", "repeal_procurement":
+			var votes: int = world.politics.votes_for_policy() if id == "vote_procurement" else world.politics.votes_for_repeal()
+			return "PROCUREMENT %s — fictional rules\n\nSupport: %d / 100 seats; %s\nCurrent: %s | implementation %d%%\nOnce implemented, annual cost is $%.1fM. A successful repeal stops that cost." % ["PROPOSAL" if id == "vote_procurement" else "REPEAL", votes, "majority" if votes > 50 else "no majority", "active" if world.politics.procurement_policy else "not enacted", world.politics.procurement_progress, float(world.policy_rules.procurement_annual_cost) / 1000000.0]
+		"issue_directive":
+			var kind: String = args.kind
+			if not world.institutions.rules.cases.has(kind):
+				return ""
+			var choice: Dictionary = world.institutions.rules.cases[kind]
+			return "EXECUTIVE DIRECTIVE — fictional rules\n\n%s\n%s\n\nAuthority in this scenario: %s\nCurrent directive status: %s\nCourt review is automatic after %d days in this prototype. Implementation takes %d days if upheld. Reporting costs $%.1fM / year after implementation; override has no modeled effect." % [choice.name, choice.description, "within authority" if choice.within_authority else "exceeds authority", world.institutions.status, world.institutions.rules.review_day, world.institutions.rules.implementation_days, float(world.policy_rules.reporting_annual_cost) / 1000000.0]
+		"revoke_directive":
+			return "REVOKE DIRECTIVE — fictional rules\n\nCurrent: %s | status: %s | implementation: %d / %d\nIf revocation succeeds, implementation and any reporting effect stop." % [world.institutions.kind if not world.institutions.kind.is_empty() else "none", world.institutions.status, world.institutions.progress, world.institutions.rules.implementation_days]
+	return ""
+
+func _request_review(id: String, args: Dictionary) -> bool:
+	var text := _review_text(id, args)
+	if text.is_empty():
+		status.text = "This decision is not available in the current state."
+		return false
+	if running:
+		_toggle_pause()
+		status.text = "Simulation paused for decision review."
+	pending_decision = {"id": id, "args": args.duplicate(true)}
+	review_snapshot = JSON.stringify(world.export_snapshot())
+	review_dialog.dialog_text = text + "\n\nSubmit this decision?"
+	review_dialog.popup_centered()
+	return true
+
+func _cancel_review() -> void:
+	pending_decision.clear()
+	review_snapshot = ""
+
+func _confirm_review() -> void:
+	if pending_decision.is_empty():
+		return
+	if JSON.stringify(world.export_snapshot()) != review_snapshot:
+		_cancel_review()
+		status.text = "State changed since the preview. Review the decision again."
+		_refresh()
+		return
+	var request := pending_decision.duplicate(true)
+	_cancel_review()
+	status.text = Decisions.execute(world, request).message
+	_refresh()
+
 func _vote_policy() -> void:
 	status.text = Decisions.execute(world, {"id": "vote_procurement", "args": {}}).message
 	_refresh()
@@ -833,6 +1007,7 @@ func _refresh() -> void:
 	diplomacy_summary.text = "\n".join(diplomatic_lines)
 	_refresh_directive()
 	_refresh_healthcare()
+	_refresh_law_catalog()
 	_refresh_history()
 	_update_tax_preview(tax.value)
 	_update_additional_tax_preview(additional_tax.value)

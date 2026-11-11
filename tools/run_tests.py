@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES = (
+    ("res://tests/healthcare_test.gd", "Healthcare governing checks passed"),
     ("res://tests/simulation_test.gd", "Simulation checks passed"),
     ("res://tests/ui_test.gd", "UI interaction checks passed"),
     ("res://tests/integration_test.gd", "Integrated scenario checks passed"),

@@ -1,12 +1,13 @@
 # Simulation architecture: prototype baseline
 
-This documents the implemented prototype through session 60, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
+This documents the implemented prototype through session 62, not the final game design. Country values and policy coefficients are fictional placeholders. Country-specific systems, stochastic gameplay, actual economic dynamics and realistic legal constraints are not implemented.
 
 ## Ownership and boundaries
 
 - `simulation/world.gd` owns the date, country dictionary, bounded categorized event history, seeded random state, daily financial update, policy entry points and save/load orchestration.
 - `simulation/politics.gd` owns three fictional population groups, three parties, seat counts, procurement state, implementation progress and illustrative election count.
 - `simulation/services.gd` owns fictional service conditions, spending-per-resident targets and group service contributions.
+- `simulation/healthcare.gd` owns the fictional law's funding, party positions and administrative rollout. The world connects its cost and target bonus to the fiscal and service models. Save format 15 persists this state; older saves start with the law inactive.
 - `simulation/institutions.gd` owns a fictional single-directive lifecycle, fixed authority cases, court outcomes and agency implementation progress.
 - `simulation/diplomacy.gd` owns two fictional partners, talks and agreements; `simulation/scenario.gd` validates versioned single-country scenario data.
 - `simulation/decisions.gd` validates UI command requests and returns explicit results; `simulation/replay.gd` runs ordered commands on an isolated world.

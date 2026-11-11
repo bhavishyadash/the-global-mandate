@@ -7,15 +7,15 @@ const RESPONSE_DAYS := 180.0
 const GROUP_SENSITIVITIES := [0.35, 0.25, 0.15]
 var levels := {"Health": 50.0, "Education": 50.0, "Security": 50.0, "Infrastructure": 50.0, "Administration": 50.0}
 
-func target(category: String, spending: float, population: int, administration_bonus: float = 0.0) -> float:
+func target(category: String, spending: float, population: int, administration_bonus: float = 0.0, health_bonus: float = 0.0) -> float:
 	if not BASELINE.has(category) or population <= 0:
 		return 0.0
 	var baseline_for_population: float = BASELINE[category] * population / BASE_POPULATION
-	return clampf(50.0 * spending / baseline_for_population + (administration_bonus if category == "Administration" else 0.0), 0.0, 100.0)
+	return clampf(50.0 * spending / baseline_for_population + (administration_bonus if category == "Administration" else 0.0) + (health_bonus if category == "Health" else 0.0), 0.0, 100.0)
 
-func advance_day(categories: Dictionary, population: int, administration_bonus: float = 0.0) -> void:
+func advance_day(categories: Dictionary, population: int, administration_bonus: float = 0.0, health_bonus: float = 0.0) -> void:
 	for category in BASELINE:
-		var desired := target(category, float(categories[category]), population, administration_bonus)
+		var desired := target(category, float(categories[category]), population, administration_bonus, health_bonus)
 		levels[category] += (desired - levels[category]) / RESPONSE_DAYS
 
 func group_bonuses() -> Array:

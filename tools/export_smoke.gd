@@ -13,5 +13,10 @@ func _initialize() -> void:
 		push_error("Packaged simulation did not advance.")
 		quit(1)
 		return
+	var alternate: Variant = World.Scenario.read_file("res://data/scenarios/coastal_test.json")
+	if not world.apply_scenario(alternate).is_empty() or world.scenario_id != "coastal_test":
+		push_error("Packaged alternate scenario did not initialize.")
+		quit(1)
+		return
 	print("Packaged scenario checks passed")
 	quit(0)

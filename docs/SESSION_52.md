@@ -1,1 +1,3 @@
 # Session 52: scenario selection and startup
+
+Added a second fictional coastal starting scenario with different population, political approval, party seats and partner relations. The Overview tab lets the player select either built-in scenario and explicitly confirm before replacing a current session. Initialization validates before resetting world state and pauses the game; controls are synchronized, and a failed load leaves the current world intact. Existing saves retain their scenario ID; unlisted IDs do not silently select another scenario. Tests cover reset, failure, replay and packaged availability. Both scenarios share the same simplified institutional rules, parties and partner identities; this is not a multi-country world or researched country content.

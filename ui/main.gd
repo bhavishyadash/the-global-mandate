@@ -2,6 +2,10 @@ extends Control
 
 const World = preload("res://simulation/world.gd")
 const Decisions = preload("res://simulation/decisions.gd")
+const SCENARIOS := [
+	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
+	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
+]
 const MAX_DAYS_PER_FRAME := 30
 var world = World.new()
 var running := false
@@ -35,6 +39,8 @@ var diplomacy_picker: OptionButton
 var diplomacy_summary: Label
 var proposal_picker: OptionButton
 var event_filter: OptionButton
+var scenario_picker: OptionButton
+var new_game_confirmation: ConfirmationDialog
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -231,6 +237,22 @@ func _ready() -> void:
 	var decisions := _make_dashboard_tab("History")
 	for node in [summary, explanation]:
 		node.reparent(overview)
+	var scenario_controls := HBoxContainer.new()
+	overview.add_child(scenario_controls)
+	overview.move_child(scenario_controls, 0)
+	scenario_picker = OptionButton.new()
+	for entry in SCENARIOS:
+		scenario_picker.add_item(entry.name)
+	scenario_controls.add_child(scenario_picker)
+	var new_game_button := Button.new()
+	new_game_button.text = "Start selected scenario"
+	scenario_controls.add_child(new_game_button)
+	new_game_confirmation = ConfirmationDialog.new()
+	new_game_confirmation.title = "Start a new scenario?"
+	new_game_confirmation.dialog_text = "This replaces your current session. Save first if you want to keep your progress."
+	add_child(new_game_confirmation)
+	new_game_button.pressed.connect(func(): new_game_confirmation.popup_centered())
+	new_game_confirmation.confirmed.connect(_confirm_new_scenario)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var forecast_button := Button.new()
@@ -358,6 +380,38 @@ func _advance_day() -> void:
 	world.advance_day()
 	_refresh()
 
+func _confirm_new_scenario() -> void:
+	if scenario_picker.selected < 0:
+		status.text = "Select a built-in scenario first."
+		return
+	_start_scenario(SCENARIOS[scenario_picker.selected].path)
+
+func _start_scenario(path: String) -> bool:
+	var error: String = world.apply_scenario(World.Scenario.read_file(path))
+	if not error.is_empty():
+		status.text = "Could not start scenario: " + error
+		return false
+	running = false
+	elapsed = 0.0
+	pause_button.text = "Resume"
+	tax.value = world.country.income_tax_rate * 100.0
+	_additional_tax_selected(additional_tax_picker.selected)
+	spending.value = world.country.annual_spending / 1000000.0
+	_category_selected(category_picker.selected)
+	event_filter.select(0)
+	_sync_scenario_picker()
+	status.text = "Scenario started and paused."
+	_refresh()
+	return true
+
+func _sync_scenario_picker() -> void:
+	for i in range(SCENARIOS.size()):
+		if SCENARIOS[i].id == world.scenario_id:
+			scenario_picker.select(i)
+			return
+	# An externally authored saved scenario may not be in the built-in catalog.
+	scenario_picker.select(-1)
+
 func _apply_tax() -> void:
 	status.text = Decisions.execute(world, {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}}).message
 	_refresh()
@@ -448,6 +502,7 @@ func _load_from(path: String) -> void:
 		_additional_tax_selected(additional_tax_picker.selected)
 		spending.value = world.country.annual_spending / 1000000.0
 		_category_selected(category_picker.selected)
+		_sync_scenario_picker()
 		status.text = "Game loaded and paused."
 		_refresh()
 	else:

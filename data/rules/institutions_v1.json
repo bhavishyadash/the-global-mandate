@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "review_day": 30,
+  "injunction_day": 10,
+  "implementation_days": 60,
+  "cases": {
+    "reporting": {"name": "Procurement reporting", "within_authority": true, "description": "Direct an agency to publish procurement reports under assumed existing authority."},
+    "override": {"name": "Override spending limit", "within_authority": false, "description": "Direct an agency to exceed a fictional statutory spending limit."}
+  }
+}

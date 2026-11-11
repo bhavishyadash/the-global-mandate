@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 70
+**Report status:** Living record; updated through session 71
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -45,6 +45,8 @@
 **Session 69:** Added a cooperative per-frame simulation budget and visible backlog, with pause and catch-up tests. [Detailed session record](SESSION_69.md). This is not a guarantee of frame rate or a benchmark of the future full world.
 
 **Session 70:** Healthcare coefficients and party thresholds are now versioned scenario data, persisted in saves and forecasts. [Detailed session record](SESSION_70.md). Other policy and institutional definitions still require configuration work.
+
+**Session 71:** Directive names, authority and fictional court timings now use versioned scenario data and persist through saves and forecasts. [Detailed session record](SESSION_71.md). The two directive effects and procurement policy remain fixed code.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

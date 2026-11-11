@@ -28,9 +28,10 @@ godot --headless --path . --script res://tests/world_registry_test.gd
 godot --headless --path . --script res://tests/healthcare_test.gd
 godot --headless --path . --script res://tests/save_failure_test.gd
 godot --headless --path . --script res://tests/diagnostics_test.gd
+godot --headless --path . --script res://tests/institution_rules_test.gd
 ```
 
-For a timeout-protected run of all nine checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
+For a timeout-protected run of all ten checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
 The `Windows Development` export preset includes `data/scenarios/*.json` and `data/rules/*.json`. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario from an empty directory. The check reports failure if Godot reports an error or the packaged scenario does not advance.
 

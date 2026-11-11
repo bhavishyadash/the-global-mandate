@@ -437,6 +437,10 @@ PR #77, related to #18, #19, #20, #45 and #48. Added a Population tab explaining
 
 PR #78. Added two fictional partners, bilateral relations, one active 30-day negotiation, cancellation, cooldown, event history and a Diplomacy tab. Version-9 saves preserve and validate state; older saves get test defaults. Local simulation, interface and integration checks passed. See [Session 40](SESSION_40.md) for simplified rules and gaps.
 
+### Session 41 — negotiation choices
+
+PR #79. Added dialogue and cooperation proposals, partner-specific acceptance thresholds, accepted/declined outcomes and visible previews. Version-10 migration preserves version-9 active talks as dialogue. Tests cover both outcomes and migration. These are deterministic test rules, not treaties or real diplomacy. See [Session 41](SESSION_41.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

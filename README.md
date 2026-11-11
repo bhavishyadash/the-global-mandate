@@ -8,6 +8,8 @@ The prototype starts maximized for readability; the normal window controls can r
 
 The header shows the current fictional scenario, date, cash, annual balance and approval. Income-tax controls and their previews are grouped in **Tax previews**.
 
+**Budget & services** shows current annual expenses as a chart and text table. Enter a category proposal and select **Proposed category** to preview it; use **Apply category** to change the budget. Policy costs and debt interest appear separately from category spending. The available categories and values are fictional.
+
 The **World Map** tab displays offline Natural Earth reference geography. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom. Select a country or city on the map, or search for its name and choose a result to zoom to it. The map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
 
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
@@ -33,9 +35,10 @@ godot --headless --path . --script res://tests/healthcare_test.gd
 godot --headless --path . --script res://tests/save_failure_test.gd
 godot --headless --path . --script res://tests/diagnostics_test.gd
 godot --headless --path . --script res://tests/institution_rules_test.gd
+godot --headless --path . --script res://tests/budget_breakdown_test.gd
 ```
 
-For a timeout-protected run of all ten checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
+For a timeout-protected run of all eleven checks, use `python tools/run_tests.py --godot PATH_TO_GODOT_CONSOLE`. The runner requires Python 3 and returns a nonzero exit code if a test times out, fails, or does not report its completion marker.
 
 The `Windows Development` export preset includes scenario, rules and compact world-map JSON data. After importing assets with `godot --headless --path . --editor --quit`, run `python tools/check_export.py --godot PATH_TO_GODOT_CONSOLE` to export a temporary resource pack and run its scenario and map from an empty directory. The check reports failure if Godot reports an error or the packaged data does not load.
 

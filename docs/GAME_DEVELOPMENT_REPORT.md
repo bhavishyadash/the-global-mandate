@@ -413,6 +413,10 @@ Related to issues #10, #11, #13, #20, #45 and #48; PR #71. Added separately adju
 
 Related to issues #21, #23, #24, #25, #45 and #48; PR #72. Added a fictional directive lifecycle with two authority cases, delayed agency progress, automatic court review, injunction, revocation, event logging and a UI display. Version-7 saves validate and preserve institutional state; v1–v6 start without a directive. Local simulation, UI and integrated checks passed for both court outcomes, injunction, revocation, migration and invalid-state rejection. Cases and outcomes are deterministic placeholders, not actual country law; fiscal, political and economic consequences and visual playtesting remain open.
 
+### Session 35 — fiscal ledger and annual history
+
+Related to #10, #45 and #48; PR #73. Added daily recorded fiscal flows, borrowing and repayment, current and previous year displays, and version-8 save migration. Tests cover rollover, accounting, debt, persistence and malformed history. Older saves show a partial ledger because historical flows cannot be reconstructed. This is an illustrative aggregate, not a calibrated national accounting model. Details: [Session 35](SESSION_35.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

@@ -52,6 +52,9 @@ var new_game_confirmation: ConfirmationDialog
 var diagnostic_steps: TextEdit
 var world_map: Control
 var map_selection: Label
+var map_search: LineEdit
+var map_results: ItemList
+var map_search_status: Label
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -271,11 +274,25 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
+	var map_sidebar := VBoxContainer.new()
+	map_sidebar.custom_minimum_size = Vector2(250, 0)
+	map_layout.add_child(map_sidebar)
+	map_search = LineEdit.new()
+	map_search.placeholder_text = "Search countries or cities"
+	map_sidebar.add_child(map_search)
+	map_search_status = Label.new()
+	map_search_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_sidebar.add_child(map_search_status)
+	map_results = ItemList.new()
+	map_results.custom_minimum_size = Vector2(0, 150)
+	map_results.visible = false
+	map_sidebar.add_child(map_results)
+	map_search.text_changed.connect(_search_map)
+	map_results.item_selected.connect(_select_map_result)
 	map_selection = Label.new()
-	map_selection.custom_minimum_size = Vector2(220, 0)
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is real-world reference data. The current playable scenario is fictional and is not linked to these countries yet."
-	map_layout.add_child(map_selection)
+	map_sidebar.add_child(map_selection)
 	world_map.country_selected.connect(_map_country_selected)
 	world_map.city_selected.connect(_map_city_selected)
 	zoom_in.pressed.connect(func(): world_map.zoom_at(world_map.size / 2.0, 1.25))
@@ -415,6 +432,32 @@ func _map_country_selected(id: String, country_name: String) -> void:
 
 func _map_city_selected(city: Dictionary) -> void:
 	map_selection.text = "%s\n\n%s\nCountry ID: %s\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country]
+
+func _search_map(query: String) -> void:
+	map_results.clear()
+	var text := query.strip_edges().to_lower()
+	map_results.visible = not text.is_empty()
+	map_search_status.text = ""
+	if text.is_empty():
+		return
+	var matches := 0
+	for kind in ["country", "city"]:
+		var entries: Array = world_map.countries if kind == "country" else world_map.cities
+		for i in range(entries.size()):
+			if text not in entries[i].name.to_lower():
+				continue
+			matches += 1
+			if map_results.item_count < 30:
+				map_results.add_item("%s • %s" % ["Country" if kind == "country" else "City", entries[i].name])
+				map_results.set_item_metadata(map_results.item_count - 1, {"kind": kind, "index": i})
+	map_search_status.text = "No matches." if matches == 0 else ("Showing 30 of %d results." % matches if matches > 30 else "%d result(s)." % matches)
+
+func _select_map_result(index: int) -> void:
+	var selection: Dictionary = map_results.get_item_metadata(index)
+	if selection.kind == "country":
+		world_map.focus_country(world_map.countries[selection.index])
+	else:
+		world_map.focus_city(world_map.cities[selection.index])
 
 func _export_diagnostics() -> void:
 	var report: Dictionary = Diagnostics.report(world, diagnostic_steps.text)

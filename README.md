@@ -6,7 +6,7 @@ Open `project.godot` in Godot 4.7 and press F5. Use the on-screen controls to ad
 
 The prototype starts maximized for readability; the normal window controls can restore or resize it.
 
-The **World Map** tab displays offline Natural Earth reference geography. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom; select a country or city for its reference panel. The map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
+The **World Map** tab displays offline Natural Earth reference geography. Drag or use arrow keys to pan; use the mouse wheel, plus/minus keys or buttons to zoom. Select a country or city on the map, or search for its name and choose a result to zoom to it. The map is not yet linked to the fictional playable scenario. See [map data and limitations](data/map/README.md).
 
 The Overview tab offers two fictional starting scenarios. Select one and choose **Start selected scenario**; confirming replaces the current session, so save first if you want to keep it. Both scenarios currently share the same simplified institutional rules.
 

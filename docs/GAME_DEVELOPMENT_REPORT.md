@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 75
+**Report status:** Living record; updated through session 76
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -55,6 +55,8 @@
 **Session 74:** Defined provisional performance targets and added repeatable playable scheduler, save/load and 720p graphical benchmark workloads. [Detailed session record](SESSION_74.md) and [targets and local measurements](PERFORMANCE_TARGETS.md). Low-end target-device testing remains deferred.
 
 **Session 75:** Added an offline selectable flat world map with pan, zoom and representative city markers, using documented Natural Earth reference data. [Detailed session record](SESSION_75.md). The map is not yet connected to playable country simulation; regions, detailed city art and overlays remain future work.
+
+**Session 76:** Added offline country and city search, result lists and focus-on-selection to the map. [Detailed session record](SESSION_76.md). The dataset remains a limited geographic reference rather than a playable world.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

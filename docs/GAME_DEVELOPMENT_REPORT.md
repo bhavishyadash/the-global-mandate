@@ -489,6 +489,10 @@ PR #90. Added a second fictional starting scenario and an in-game selection flow
 
 PR #91. Added a scenario seed and stable 32-bit random state, saved in v14, with replay, forecast isolation and migration tests. Existing simulation outcomes remain deterministic; stochastic game mechanics remain future work. See [Session 53](SESSION_53.md).
 
+### Session 54 — save safety and long-run checks
+
+PR #92. Validate the candidate save with the loader before replacing the primary or backup; added a 3,650-day deterministic stress test with tax, spending, diplomacy, directives, elections and mid-run save/load. Filesystem crash and failure injection remain open. Details: [Session 54](SESSION_54.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

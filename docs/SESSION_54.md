@@ -1,0 +1,5 @@
+# Session 54: save validation and long-run reliability
+
+Before replacing a primary save or rotating its backup, `save_game` now loads the newly written temporary snapshot into a separate world using the existing full validator. If validation fails, it rejects the save and preserves both the existing primary and backup; a test exercises a corrupt in-memory spending category. This complements the earlier backup safeguards but does not prove crash safety or cover every filesystem failure.
+
+Added a deterministic 3,650-day stress scenario that repeatedly changes tax and spending, starts negotiations, issues/revokes directives, crosses elections and leap years, saves and reloads halfway, and checks bounded approval, nonnegative finite cash/debt, event limits, random-state continuity and agreement between continuous and restored runs. It is included in the bounded test runner and CI. The stress scenario tests one fictional country; it is not a balance, graphical or coupled-world performance test.

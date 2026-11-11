@@ -6,10 +6,8 @@ const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
 const Healthcare = preload("res://simulation/healthcare.gd")
 const Scenario = preload("res://simulation/scenario.gd")
+const PolicyRules = preload("res://simulation/policy_rules.gd")
 const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
-const PROCUREMENT_ANNUAL_COST := 10000000.0
-const REPORTING_ANNUAL_COST := 5000000.0
-const REPORTING_ADMIN_TARGET_BONUS := 10.0
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
 const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate", "base": 1500000000.0}, "corporate": {"field": "corporate_tax_rate", "base": 1000000000.0}}
@@ -19,6 +17,7 @@ var services = Services.new()
 var institutions = Institutions.new()
 var diplomacy = Diplomacy.new()
 var healthcare = Healthcare.new()
+var policy_rules: Dictionary = PolicyRules.defaults()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -58,6 +57,7 @@ func apply_scenario(data: Variant) -> String:
 	institutions = Institutions.new()
 	diplomacy = Diplomacy.new()
 	healthcare = Healthcare.new()
+	policy_rules = data.policy_rules.duplicate(true) if data.version >= 5 else PolicyRules.defaults()
 	if data.version >= 3:
 		healthcare.configure(data.healthcare_rules)
 	if data.version >= 4:
@@ -101,15 +101,15 @@ func additional_tax_revenue(kind: String) -> float:
 	return float(country[spec.field]) * float(spec.base)
 
 func policy_annual_cost() -> float:
-	var procurement: float = PROCUREMENT_ANNUAL_COST if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
-	var reporting: float = REPORTING_ANNUAL_COST if reporting_effect_active() else 0.0
+	var procurement: float = policy_rules.procurement_annual_cost if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
+	var reporting: float = policy_rules.reporting_annual_cost if reporting_effect_active() else 0.0
 	return procurement + reporting + diplomacy.annual_agreement_cost() + healthcare.annual_cost()
 
 func reporting_effect_active() -> bool:
 	return institutions.kind == "reporting" and institutions.status == "implemented"
 
 func service_target(category: String, spending: float) -> float:
-	return services.target(category, spending, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0, healthcare.health_bonus())
+	return services.target(category, spending, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus())
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -124,6 +124,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.scenario_id = scenario_id
 	future.random_seed_value = random_seed_value
 	future.random_state = random_state
+	future.policy_rules = policy_rules.duplicate(true)
 	future.healthcare.configure(healthcare.rules)
 	future.institutions.configure(institutions.rules)
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
@@ -182,10 +183,10 @@ func advance_day() -> void:
 		country.debt -= repayment
 		fiscal.repaid += repayment
 		country.treasury += balance - repayment
-	services.advance_day(country.spending_categories, country.population, REPORTING_ADMIN_TARGET_BONUS if reporting_effect_active() else 0.0, healthcare.health_bonus())
+	services.advance_day(country.spending_categories, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus())
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
-	if politics.advance_day():
+	if politics.advance_day(int(policy_rules.procurement_progress_per_day)):
 		add_event("Procurement policy implementation completed.", "policy", "procurement_implemented")
 	if healthcare.advance_day(services.levels.Administration):
 		add_event("Healthcare program reached full implementation.", "policy", "healthcare_implemented")
@@ -244,7 +245,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 19, "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 20, "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -323,7 +324,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 19:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 20:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -408,6 +409,9 @@ func import_snapshot(parsed: Variant) -> String:
 		for event in e:
 			loaded_records.append({"category": "legacy", "date": null, "text": event, "cause": "legacy_unknown", "severity": "info"})
 	var loaded_politics = Politics.new()
+	var loaded_policy_rules: Variant = parsed.get("policy_rules") if parsed.version >= 20 else PolicyRules.defaults()
+	if not PolicyRules.valid(loaded_policy_rules):
+		return "Save has invalid baseline policy rules."
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
 	if parsed.version >= 19 and not loaded_institutions.configure(parsed.get("institution_rules")):
@@ -478,6 +482,7 @@ func import_snapshot(parsed: Variant) -> String:
 	services = loaded_services
 	institutions = loaded_institutions
 	healthcare = loaded_healthcare
+	policy_rules = loaded_policy_rules.duplicate(true)
 	diplomacy = loaded_diplomacy
 	events.clear()
 	for event in e:

@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 71
+**Report status:** Living record; updated through session 72
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -47,6 +47,8 @@
 **Session 70:** Healthcare coefficients and party thresholds are now versioned scenario data, persisted in saves and forecasts. [Detailed session record](SESSION_70.md). Other policy and institutional definitions still require configuration work.
 
 **Session 71:** Directive names, authority and fictional court timings now use versioned scenario data and persist through saves and forecasts. [Detailed session record](SESSION_71.md). The two directive effects and procurement policy remain fixed code.
+
+**Session 72:** Procurement and reporting directive costs and implementation parameters now use validated scenario data. [Detailed session record](SESSION_72.md). The existing policy types still have code-defined behavior; an authoring catalog is a separate milestone.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

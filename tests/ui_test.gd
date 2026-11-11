@@ -12,6 +12,7 @@ func run_checks() -> void:
 	assert(screen.dashboard_tabs.get_tab_title(3) == "Government")
 	assert(screen.dashboard_tabs.get_tab_title(4) == "Population")
 	assert(screen.dashboard_tabs.get_tab_title(5) == "Diplomacy")
+	assert("current test response" in screen.diplomacy_summary.text)
 	screen._start_talks()
 	assert(screen.world.diplomacy.active == "maritime")
 	assert("day 0 / 30" in screen.diplomacy_summary.text)

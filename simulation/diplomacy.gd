@@ -5,15 +5,19 @@ const PARTNERS := {"maritime": "Maritime Union", "northern": "Northern Federatio
 const TALK_DAYS := 30
 const COOLDOWN_DAYS := 90
 const RELATION_GAIN := 5.0
+const PROPOSALS := {"dialogue": {"name": "Open dialogue", "gain": 5.0}, "cooperation": {"name": "Cooperation framework", "gain": 10.0}}
+const COOPERATION_MINIMUM := {"maritime": 15.0, "northern": 0.0}
 var relations := {"maritime": 30.0, "northern": -10.0}
 var cooldowns := {"maritime": 0, "northern": 0}
 var active := ""
 var progress := 0
+var proposal := ""
 
-func start_talks(partner: String) -> bool:
-	if not PARTNERS.has(partner) or not active.is_empty() or cooldowns[partner] > 0:
+func start_talks(partner: String, choice: String = "dialogue") -> bool:
+	if not PARTNERS.has(partner) or not PROPOSALS.has(choice) or not active.is_empty() or cooldowns[partner] > 0:
 		return false
 	active = partner
+	proposal = choice
 	progress = 0
 	return true
 
@@ -22,6 +26,7 @@ func cancel_talks() -> bool:
 		return false
 	cooldowns[active] = COOLDOWN_DAYS
 	active = ""
+	proposal = ""
 	progress = 0
 	return true
 
@@ -34,14 +39,22 @@ func advance_day() -> String:
 	if progress < TALK_DAYS:
 		return ""
 	var name: String = PARTNERS[active]
-	relations[active] = minf(100.0, relations[active] + RELATION_GAIN)
+	var accepted := will_accept(active, proposal)
+	if accepted:
+		relations[active] = minf(100.0, relations[active] + PROPOSALS[proposal].gain)
 	cooldowns[active] = COOLDOWN_DAYS
 	active = ""
+	proposal = ""
 	progress = 0
-	return "Diplomatic talks with %s concluded; relations improved under the test rules." % name
+	return "Diplomatic talks with %s concluded; proposal %s under the test rules." % [name, "accepted" if accepted else "declined"]
+
+func will_accept(partner: String, choice: String) -> bool:
+	if not PARTNERS.has(partner) or not PROPOSALS.has(choice):
+		return false
+	return choice == "dialogue" or relations[partner] >= COOPERATION_MINIMUM[partner]
 
 func export_state() -> Dictionary:
-	return {"relations": relations.duplicate(), "cooldowns": cooldowns.duplicate(), "active": active, "progress": progress}
+	return {"relations": relations.duplicate(), "cooldowns": cooldowns.duplicate(), "active": active, "progress": progress, "proposal": proposal}
 
 func import_state(data: Variant) -> bool:
 	if not data is Dictionary or not data.get("relations") is Dictionary or not data.get("cooldowns") is Dictionary or not data.get("active") is String:
@@ -57,10 +70,13 @@ func import_state(data: Variant) -> bool:
 		return false
 	if (data.active.is_empty() and data.progress != 0) or (not data.active.is_empty() and (not PARTNERS.has(data.active) or data.cooldowns[data.active] != 0)):
 		return false
+	if not data.get("proposal") is String or (data.active.is_empty() and not data.proposal.is_empty()) or (not data.active.is_empty() and not PROPOSALS.has(data.proposal)):
+		return false
 	relations = data.relations.duplicate()
 	cooldowns = data.cooldowns.duplicate()
 	active = data.active
 	progress = int(data.progress)
+	proposal = data.proposal
 	return true
 
 static func _number(value: Variant) -> bool:

@@ -1,1 +1,3 @@
 # Session 41: negotiation choices and outcomes
+
+Diplomatic talks now offer open dialogue (+5 relations when accepted) or a cooperation framework (+10 if the partner's fictional minimum relationship is met). The interface shows the current deterministic expected response and the partner's threshold; the actual response is determined on completion. A declined proposal changes no relations, and both outcomes use the existing cooldown. Version-10 saves persist the proposal; active version-9 talks migrate as dialogue. Tests cover accepted and declined proposals, timing, saved active talks and migration. This does not yet create a treaty, simulate bargaining, or use real data or probabilistic AI.

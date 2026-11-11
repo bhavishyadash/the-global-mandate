@@ -165,7 +165,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 9, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 10, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -215,7 +215,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9):
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != 2 and parsed.get("version") != 3 and parsed.get("version") != 4 and parsed.get("version") != 5 and parsed.get("version") != 6 and parsed.get("version") != 7 and parsed.get("version") != 8 and parsed.get("version") != 9 and parsed.get("version") != 10):
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -270,8 +270,13 @@ func load_game(path: String) -> String:
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
 	var loaded_diplomacy = Diplomacy.new()
-	if parsed.version >= 9 and not loaded_diplomacy.import_state(parsed.get("diplomacy")):
-		return "Save has invalid diplomatic data."
+	if parsed.version >= 9:
+		var diplomatic_data: Variant = parsed.get("diplomacy")
+		if parsed.version == 9 and diplomatic_data is Dictionary and diplomatic_data.get("active") is String:
+			diplomatic_data = diplomatic_data.duplicate(true)
+			diplomatic_data.proposal = "" if diplomatic_data.get("active", "").is_empty() else "dialogue"
+		if not loaded_diplomacy.import_state(diplomatic_data):
+			return "Save has invalid diplomatic data."
 	if parsed.version >= 7 and not loaded_institutions.import_state(parsed.get("institutions")):
 		return "Save has invalid institutional data."
 	if parsed.version >= 5 and not loaded_services.import_state(parsed.get("services")):
@@ -420,10 +425,10 @@ func issue_directive(kind: String) -> bool:
 	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name)
 	return true
 
-func start_diplomatic_talks(partner: String) -> bool:
-	if not diplomacy.start_talks(partner):
+func start_diplomatic_talks(partner: String, proposal: String = "dialogue") -> bool:
+	if not diplomacy.start_talks(partner, proposal):
 		return false
-	add_event("Opened diplomatic talks with %s." % diplomacy.PARTNERS[partner])
+	add_event("Opened %s talks with %s." % [diplomacy.PROPOSALS[proposal].name, diplomacy.PARTNERS[partner]])
 	return true
 
 func cancel_diplomatic_talks() -> bool:

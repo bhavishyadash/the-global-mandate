@@ -30,6 +30,7 @@ var comparison_label: Label
 var population_summary: Label
 var diplomacy_picker: OptionButton
 var diplomacy_summary: Label
+var proposal_picker: OptionButton
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -248,6 +249,12 @@ func _ready() -> void:
 	for partner in world.diplomacy.PARTNERS:
 		diplomacy_picker.add_item(world.diplomacy.PARTNERS[partner])
 	diplomacy_tab.add_child(diplomacy_picker)
+	proposal_picker = OptionButton.new()
+	for option in world.diplomacy.PROPOSALS:
+		proposal_picker.add_item(world.diplomacy.PROPOSALS[option].name)
+	diplomacy_tab.add_child(proposal_picker)
+	proposal_picker.item_selected.connect(func(_index: int): _refresh())
+	diplomacy_picker.item_selected.connect(func(_index: int): _refresh())
 	var talk_button := Button.new()
 	talk_button.text = "Open diplomatic talks"
 	talk_button.pressed.connect(_start_talks)
@@ -321,7 +328,8 @@ func _apply_tax() -> void:
 func _start_talks() -> void:
 	var keys: Array = world.diplomacy.PARTNERS.keys()
 	var partner: String = keys[diplomacy_picker.selected]
-	status.text = "Diplomatic talks opened." if world.start_diplomatic_talks(partner) else "Talks unavailable: another negotiation is active or the partner is on cooldown."
+	var choice: String = world.diplomacy.PROPOSALS.keys()[proposal_picker.selected]
+	status.text = "Diplomatic talks opened." if world.start_diplomatic_talks(partner, choice) else "Talks unavailable: another negotiation is active or the partner is on cooldown."
 	_refresh()
 
 func _cancel_talks() -> void:
@@ -434,13 +442,16 @@ func _refresh() -> void:
 		people.append("%s | %.0f%% of population (~%.0f people) | approval %.1f%%\n  Raw %.1f + services %+.1f points | sensitivity to +1 percentage point tax: income -%.2f, consumption -%.2f, corporate -%.2f points before limits." % [group.name, group.share * 100.0, c.population * group.share, group.approval, group.raw_approval, group.service_bonus, group.tax_sensitivity / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.consumption[i] / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.corporate[i] / 100.0])
 	people.append("Service contribution responds gradually to the average condition of the five services. The three groups and all sensitivities are placeholders, not real demographic data or a model of individual personalities.")
 	population_summary.text = "\n\n".join(people)
-	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days and improve relations by 5 points, capped at 100. Completion or cancellation starts a 90-day cooldown. Only one negotiation can run at a time. No treaties, conflict or economic effects are modeled."])
+	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue is accepted and adds 5 relations. Cooperation adds 10 if relations meet the partner's threshold; otherwise it is declined. Only one negotiation can run at a time. No treaties, conflict or economic effects are modeled."])
 	for partner in world.diplomacy.PARTNERS:
 		diplomatic_lines.append("%s: relations %.1f / 100 | cooldown %d days" % [world.diplomacy.PARTNERS[partner], world.diplomacy.relations[partner], world.diplomacy.cooldowns[partner]])
 	if not world.diplomacy.active.is_empty():
-		diplomatic_lines.append("Active: %s | day %d / 30" % [world.diplomacy.PARTNERS[world.diplomacy.active], world.diplomacy.progress])
+		diplomatic_lines.append("Active: %s — %s | day %d / 30" % [world.diplomacy.PARTNERS[world.diplomacy.active], world.diplomacy.PROPOSALS[world.diplomacy.proposal].name, world.diplomacy.progress])
 	else:
 		diplomatic_lines.append("No active talks.")
+	var chosen_partner: String = world.diplomacy.PARTNERS.keys()[diplomacy_picker.selected]
+	var chosen_proposal: String = world.diplomacy.PROPOSALS.keys()[proposal_picker.selected]
+	diplomatic_lines.append("Selected: %s — %s | current test response: %s | cooperation threshold %.0f." % [world.diplomacy.PARTNERS[chosen_partner], world.diplomacy.PROPOSALS[chosen_proposal].name, "accept" if world.diplomacy.will_accept(chosen_partner, chosen_proposal) else "decline", world.diplomacy.COOPERATION_MINIMUM[chosen_partner]])
 	diplomacy_summary.text = "\n".join(diplomatic_lines)
 	_refresh_directive()
 	history.text = "\n".join(world.events.slice(0, 8))

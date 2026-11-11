@@ -5,6 +5,22 @@ const Decisions = preload("res://simulation/decisions.gd")
 
 func _initialize() -> void:
 	var world = World.new()
+	var detached_snapshot: Dictionary = world.export_snapshot()
+	detached_snapshot.country.treasury = -1.0
+	assert(world.country.treasury >= 0.0)
+	var live_before: Dictionary = world.export_snapshot()
+	assert(not world.import_snapshot(detached_snapshot).is_empty())
+	assert(world.export_snapshot() == live_before)
+	var snapshot_world = World.new()
+	assert(snapshot_world.import_snapshot(live_before).is_empty())
+	var input_copy: Dictionary = live_before.duplicate(true)
+	assert(snapshot_world.import_snapshot(input_copy).is_empty())
+	input_copy.country.name = "Changed after import"
+	assert(snapshot_world.country.name != input_copy.country.name)
+	world.advance_day()
+	snapshot_world.advance_day()
+	assert(world.export_snapshot() == snapshot_world.export_snapshot())
+	world = World.new()
 	var rng_world = World.new()
 	var rng_twin = World.new()
 	for i in range(20):

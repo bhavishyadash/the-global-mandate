@@ -22,6 +22,7 @@ func _initialize() -> void:
 	assert(a.world.diplomacy.export_state() == b.world.diplomacy.export_state())
 	assert(a.world.services.export_state() == b.world.services.export_state())
 	assert(a.world.fiscal == b.world.fiscal and a.world.events == b.world.events)
+	assert(a.world.event_records == b.world.event_records)
 	assert(not Replay.run(scenario, actions, 20).ok)
 	assert(not Replay.run(scenario, [{"day": 1, "decision": {"id": "unknown", "args": {}}}], 2).ok)
 	assert(not Replay.run(scenario, [{"day": 0, "decision": {"id": "set_income_tax", "args": {"rate": 0.9}}}], 1).ok)

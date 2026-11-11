@@ -18,6 +18,9 @@ func run_checks() -> void:
 	assert("day 0 / 30" in screen.diplomacy_summary.text)
 	screen._cancel_talks()
 	assert(screen.world.diplomacy.active.is_empty())
+	screen.event_filter.select(5)
+	screen._refresh_history()
+	assert("diplomatic" in screen.history.text.to_lower())
 	assert("Raw" in screen.population_summary.text and "placeholders" in screen.population_summary.text)
 	screen.dashboard_tabs.current_tab = 3
 	assert(screen.dashboard_tabs.current_tab == 3)

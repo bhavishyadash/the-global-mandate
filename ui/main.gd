@@ -34,6 +34,7 @@ var population_summary: Label
 var diplomacy_picker: OptionButton
 var diplomacy_summary: Label
 var proposal_picker: OptionButton
+var event_filter: OptionButton
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -282,6 +283,13 @@ func _ready() -> void:
 	diplomacy_tab.add_child(diplomacy_summary)
 	for node in [heading, history]:
 		node.reparent(decisions)
+	event_filter = OptionButton.new()
+	event_filter.add_item("All events")
+	for category in World.EVENT_CATEGORIES:
+		event_filter.add_item(category.capitalize())
+	event_filter.item_selected.connect(func(_index: int): _refresh_history())
+	decisions.add_child(event_filter)
+	decisions.move_child(event_filter, 1)
 	_refresh()
 
 func _make_dashboard_tab(title: String) -> VBoxContainer:
@@ -491,11 +499,19 @@ func _refresh() -> void:
 	diplomatic_lines.append("Selected: %s — %s | current test response: %s | cooperation threshold %.0f." % [world.diplomacy.PARTNERS[chosen_partner], world.diplomacy.PROPOSALS[chosen_proposal].name, "accept" if world.diplomacy.will_accept(chosen_partner, chosen_proposal) else "decline", world.diplomacy.COOPERATION_MINIMUM[chosen_partner]])
 	diplomacy_summary.text = "\n".join(diplomatic_lines)
 	_refresh_directive()
-	history.text = "\n".join(world.events.slice(0, 8))
+	_refresh_history()
 	_update_tax_preview(tax.value)
 	_update_additional_tax_preview(additional_tax.value)
 	_update_spending_preview(spending.value)
 	_update_category_preview(category_amount.value)
+
+func _refresh_history() -> void:
+	var category: String = "" if event_filter.selected == 0 else World.EVENT_CATEGORIES[event_filter.selected - 1]
+	var records: Array = world.filtered_events(category)
+	var lines := PackedStringArray()
+	for record in records.slice(0, 30):
+		lines.append(record.text)
+	history.text = "\n".join(lines) if not lines.is_empty() else "No events in this category."
 
 func _refresh_directive() -> void:
 	var model = world.institutions

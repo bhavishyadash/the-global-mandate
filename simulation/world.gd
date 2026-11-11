@@ -27,7 +27,9 @@ var initialization_error := ""
 var fiscal: Dictionary = _new_fiscal_period(false)
 var previous_fiscal: Dictionary = {}
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
+var event_records: Array = []
 const MAX_EVENTS := 200
+const EVENT_CATEGORIES := ["scenario", "finance", "policy", "institution", "diplomacy", "election", "general", "legacy"]
 
 func _init() -> void:
 	var error := apply_scenario(Scenario.read_file(DEFAULT_SCENARIO))
@@ -52,6 +54,7 @@ func apply_scenario(data: Variant) -> String:
 	fiscal = _new_fiscal_period(date.month != 1 or date.day != 1)
 	previous_fiscal = {}
 	events = ["Scenario started. All figures are fictional test data."]
+	event_records = [{"category": "scenario", "date": date.duplicate(), "text": events[0]}]
 	return ""
 
 func annual_balance() -> float:
@@ -142,7 +145,7 @@ func advance_day() -> void:
 		var borrowing := expense - cash_used
 		if borrowing > 0.0:
 			if country.debt <= 0.0:
-				add_event("Cash exhausted; government borrowing began.")
+				add_event("Cash exhausted; government borrowing began.", "finance")
 			country.debt += borrowing
 			fiscal.borrowed += borrowing
 	else:
@@ -154,13 +157,13 @@ func advance_day() -> void:
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
 	if politics.advance_day():
-		add_event("Procurement policy implementation completed.")
+		add_event("Procurement policy implementation completed.", "policy")
 	var institutional_event: String = institutions.advance_day()
 	if not institutional_event.is_empty():
-		add_event(institutional_event)
+		add_event(institutional_event, "institution")
 	var diplomatic_event: String = diplomacy.advance_day()
 	if not diplomatic_event.is_empty():
-		add_event(diplomatic_event)
+		add_event(diplomatic_event, "diplomacy")
 	date.day += 1
 	if date.day > days_in_month(date.year, date.month):
 		date.day = 1
@@ -178,10 +181,22 @@ func next_election_year() -> int:
 		return 2030
 	return date.year + 4 - ((date.year - 2030) % 4)
 
-func add_event(message: String) -> void:
-	events.push_front("%04d-%02d-%02d: %s" % [date.year, date.month, date.day, message])
+func add_event(message: String, category: String = "general") -> void:
+	var text := "%04d-%02d-%02d: %s" % [date.year, date.month, date.day, message]
+	if category not in EVENT_CATEGORIES or category == "legacy":
+		category = "general"
+	events.push_front(text)
+	event_records.push_front({"category": category, "date": date.duplicate(), "text": text})
 	if events.size() > MAX_EVENTS:
 		events.resize(MAX_EVENTS)
+		event_records.resize(MAX_EVENTS)
+
+func filtered_events(category: String = "") -> Array:
+	var result: Array = []
+	for record in event_records:
+		if category.is_empty() or record.category == category:
+			result.append(record.duplicate(true))
+	return result
 
 static func is_leap_year(year: int) -> bool:
 	return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
@@ -196,7 +211,7 @@ func save_game(path: String) -> String:
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
-	file.store_string(JSON.stringify({"version": 12, "scenario_id": scenario_id, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
+	file.store_string(JSON.stringify({"version": 13, "scenario_id": scenario_id, "event_records": event_records, "diplomacy": diplomacy.export_state(), "fiscal": fiscal, "previous_fiscal": previous_fiscal, "date": date, "country": country, "events": events, "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}))
 	file.flush()
 	var error := file.get_error()
 	file.close()
@@ -246,7 +261,7 @@ func load_game(path: String) -> String:
 	if json.parse(file.get_as_text()) != OK:
 		return "Save contains invalid JSON."
 	var parsed: Variant = json.data
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 12:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 13:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -304,6 +319,17 @@ func load_game(path: String) -> String:
 	for event in e:
 		if not event is String:
 			return "Save has invalid event data."
+	var loaded_records: Array = []
+	if parsed.version >= 13:
+		if not _valid_event_records(parsed.get("event_records"), e):
+			return "Save has invalid structured event data."
+		loaded_records = parsed.event_records.duplicate(true)
+		for record in loaded_records:
+			if record.date is Dictionary:
+				record.date = {"year": int(record.date.year), "month": int(record.date.month), "day": int(record.date.day)}
+	else:
+		for event in e:
+			loaded_records.append({"category": "legacy", "date": null, "text": event})
 	var loaded_politics = Politics.new()
 	var loaded_services = Services.new()
 	var loaded_institutions = Institutions.new()
@@ -364,7 +390,31 @@ func load_game(path: String) -> String:
 	events.clear()
 	for event in e:
 		events.append(event)
+	event_records = loaded_records
 	return ""
+
+static func _valid_event_records(records: Variant, texts: Array) -> bool:
+	if not records is Array or records.size() != texts.size():
+		return false
+	for i in range(records.size()):
+		var record: Variant = records[i]
+		if not record is Dictionary or record.size() != 3 or not record.get("category") is String or record.category not in EVENT_CATEGORIES or not record.get("text") is String or record.text != texts[i] or not record.has("date"):
+			return false
+		var d: Variant = record.date
+		if record.category == "legacy":
+			if d != null:
+				return false
+			continue
+		if not d is Dictionary:
+			return false
+		for key in ["year", "month", "day"]:
+			if not _is_whole_number(d.get(key)):
+				return false
+		var year := int(d.year)
+		var month := int(d.month)
+		if year < 1 or year > 9999 or month < 1 or month > 12 or d.day < 1 or d.day > days_in_month(year, month):
+			return false
+	return true
 
 static func _new_fiscal_period(partial: bool) -> Dictionary:
 	return {"days": 0, "partial": partial, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "borrowed": 0.0, "repaid": 0.0}
@@ -422,7 +472,7 @@ func set_income_tax(rate: float) -> bool:
 	politics.apply_tax_change(rate - previous)
 	country.approval = politics.approval()
 	country.income_tax_rate = rate
-	add_event("Income tax changed from %.1f%% to %.1f%%." % [previous * 100.0, rate * 100.0])
+	add_event("Income tax changed from %.1f%% to %.1f%%." % [previous * 100.0, rate * 100.0], "finance")
 	return true
 
 func preview_additional_tax(kind: String, rate: float) -> Dictionary:
@@ -450,59 +500,59 @@ func set_additional_tax(kind: String, rate: float) -> bool:
 	politics.apply_additional_tax_change(kind, rate - previous)
 	country.approval = politics.approval()
 	country[spec.field] = rate
-	add_event("%s tax changed from %.1f%% to %.1f%%." % [kind.capitalize(), previous * 100.0, rate * 100.0])
+	add_event("%s tax changed from %.1f%% to %.1f%%." % [kind.capitalize(), previous * 100.0, rate * 100.0], "finance")
 	return true
 
 func vote_procurement() -> bool:
 	var votes: int = politics.votes_for_policy()
 	if politics.vote_procurement():
-		add_event("Procurement policy passed with %d of 100 seats; implementation begins." % votes)
+		add_event("Procurement policy passed with %d of 100 seats; implementation begins." % votes, "policy")
 		return true
-	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes)
+	add_event("Procurement vote failed or policy already active (%d of 100 seats)." % votes, "policy")
 	return false
 
 func issue_directive(kind: String) -> bool:
 	if not institutions.issue(kind):
 		return false
-	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name)
+	add_event("Executive issued the %s directive; the fictional court review began." % institutions.CASES[kind].name, "institution")
 	return true
 
 func start_diplomatic_talks(partner: String, proposal: String = "dialogue") -> bool:
 	if not diplomacy.start_talks(partner, proposal):
 		return false
-	add_event("Opened %s talks with %s." % [diplomacy.PROPOSALS[proposal].name, diplomacy.PARTNERS[partner]])
+	add_event("Opened %s talks with %s." % [diplomacy.PROPOSALS[proposal].name, diplomacy.PARTNERS[partner]], "diplomacy")
 	return true
 
 func cancel_diplomatic_talks() -> bool:
 	var partner: String = diplomacy.active
 	if not diplomacy.cancel_talks():
 		return false
-	add_event("Cancelled diplomatic talks with %s." % diplomacy.PARTNERS[partner])
+	add_event("Cancelled diplomatic talks with %s." % diplomacy.PARTNERS[partner], "diplomacy")
 	return true
 
 func end_cooperation(partner: String) -> bool:
 	if not diplomacy.end_agreement(partner):
 		return false
-	add_event("Ended cooperation agreement with %s; relations fell by 5 test points." % diplomacy.PARTNERS[partner])
+	add_event("Ended cooperation agreement with %s; relations fell by 5 test points." % diplomacy.PARTNERS[partner], "diplomacy")
 	return true
 
 func revoke_directive() -> bool:
 	if not institutions.revoke():
 		return false
-	add_event("Executive revoked the %s directive; implementation stopped." % institutions.CASES[institutions.kind].name)
+	add_event("Executive revoked the %s directive; implementation stopped." % institutions.CASES[institutions.kind].name, "institution")
 	return true
 
 func vote_procurement_repeal() -> bool:
 	var votes: int = politics.votes_for_repeal()
 	if politics.repeal_procurement():
-		add_event("Procurement repeal passed with %d of 100 seats; implementation and recurring costs stopped." % votes)
+		add_event("Procurement repeal passed with %d of 100 seats; implementation and recurring costs stopped." % votes, "policy")
 		return true
-	add_event("Procurement repeal failed or policy not active (%d of 100 seats)." % votes)
+	add_event("Procurement repeal failed or policy not active (%d of 100 seats)." % votes, "policy")
 	return false
 
 func _conduct_election() -> void:
 	politics.election()
-	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats)
+	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats, "election")
 
 func preview_annual_spending(amount: float) -> Dictionary:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
@@ -519,7 +569,7 @@ func set_annual_spending(amount: float) -> bool:
 		return true
 	country.annual_spending = amount
 	country.spending_categories = _split_spending(amount)
-	add_event("Annual spending changed from $%.0f to $%.0f." % [previous, amount])
+	add_event("Annual spending changed from $%.0f to $%.0f." % [previous, amount], "finance")
 	return true
 
 func preview_category_spending(category: String, amount: float) -> Dictionary:
@@ -536,5 +586,5 @@ func set_category_spending(category: String, amount: float) -> bool:
 		return true
 	country.spending_categories[category] = amount
 	country.annual_spending += amount - previous
-	add_event("%s annual spending changed from $%.0f to $%.0f." % [category, previous, amount])
+	add_event("%s annual spending changed from $%.0f to $%.0f." % [category, previous, amount], "finance")
 	return true

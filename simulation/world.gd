@@ -238,6 +238,8 @@ func export_snapshot() -> Dictionary:
 
 func save_game(path: String) -> String:
 	var temporary := path + ".tmp"
+	if FileAccess.file_exists(temporary):
+		return "A temporary save already exists; inspect it before saving."
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
 		return "Could not open the save file for writing."
@@ -246,6 +248,7 @@ func save_game(path: String) -> String:
 	var error := file.get_error()
 	file.close()
 	if error != OK:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temporary))
 		return "Could not finish writing the save file."
 	var absolute_path := ProjectSettings.globalize_path(path)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
@@ -266,19 +269,23 @@ func save_game(path: String) -> String:
 		var probe = get_script().new()
 		if probe.load_game(path).is_empty():
 			if FileAccess.file_exists(previous_backup):
+				DirAccess.remove_absolute(absolute_temp)
 				return "An interrupted backup rotation needs manual recovery before saving."
 			if FileAccess.file_exists(backup):
 				if DirAccess.rename_absolute(backup, previous_backup) != OK:
+					DirAccess.remove_absolute(absolute_temp)
 					return "Could not preserve the previous backup."
 				retained_backup = true
 			displaced = backup
 		else:
 			displaced = absolute_path + ".invalid"
 			if FileAccess.file_exists(displaced):
+				DirAccess.remove_absolute(absolute_temp)
 				return "A previous invalid save already exists; move it before saving again."
 		if DirAccess.rename_absolute(absolute_path, displaced) != OK:
 			if retained_backup:
 				DirAccess.rename_absolute(previous_backup, backup)
+			DirAccess.remove_absolute(absolute_temp)
 			return "Could not preserve the existing save."
 	if DirAccess.rename_absolute(absolute_temp, absolute_path) != OK:
 		if not displaced.is_empty() and FileAccess.file_exists(displaced):

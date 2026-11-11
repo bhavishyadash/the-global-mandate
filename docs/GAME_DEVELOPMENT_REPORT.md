@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 64
+**Report status:** Living record; updated through session 65
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -33,6 +33,8 @@
 **Session 63:** Healthcare authorization and actual funding are now separate. Partial or zero funding changes spending, rollout and service targets, with an annual budget preview and save migration. [Detailed session record](SESSION_63.md). The appropriation is a direct player decision; parliamentary budget procedures remain upcoming.
 
 **Session 64:** Healthcare appropriation changes now go to an immediate parliamentary vote with visible party positions and financial and implementation previews. This supersedes session 63's direct-change rule; initial passage still provides full funding. [Detailed session record](SESSION_64.md). A full annual budget process remains upcoming.
+
+**Session 65:** Hardened interrupted-save handling, tested a failed backup rotation, added recovery instructions and measured synthetic tick percentiles. [Detailed session record](SESSION_65.md). Full foundation validation remains open for target hardware, 720p and broader usability.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

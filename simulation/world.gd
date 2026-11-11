@@ -36,7 +36,10 @@ var events: Array[String] = ["Scenario started. All figures are fictional test d
 const MAX_EVENTS := 200
 
 func annual_balance() -> float:
-	return country.annual_revenue - country.annual_spending - policy_annual_cost() - debt_interest()
+	return total_annual_revenue() - country.annual_spending - policy_annual_cost() - debt_interest()
+
+func total_annual_revenue() -> float:
+	return country.annual_revenue + diplomacy.annual_partner_contribution()
 
 func debt_interest() -> float:
 	return country.debt * ANNUAL_DEBT_RATE
@@ -80,7 +83,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
 	for i in range(days):
 		var divisor := 366.0 if is_leap_year(future.date.year) else 365.0
-		result.revenue += future.country.annual_revenue / divisor
+		result.revenue += future.total_annual_revenue() / divisor
 		result.spending += future.country.annual_spending / divisor
 		result.policy += future.policy_annual_cost() / divisor
 		result.interest += future.debt_interest() / divisor
@@ -95,7 +98,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 
 func advance_day() -> void:
 	var divisor := 366.0 if is_leap_year(date.year) else 365.0
-	var revenue: float = country.annual_revenue / divisor
+	var revenue: float = total_annual_revenue() / divisor
 	var spending: float = country.annual_spending / divisor
 	var policy: float = policy_annual_cost() / divisor
 	var interest: float = debt_interest() / divisor
@@ -368,7 +371,7 @@ func preview_income_tax(rate: float) -> Dictionary:
 		return {}
 	preview_politics.apply_tax_change(delta)
 	return {
-		"annual_revenue": projected_revenue,
+		"annual_revenue": projected_revenue + diplomacy.annual_partner_contribution(),
 		"approval": preview_politics.approval(),
 		"groups": preview_politics.groups.duplicate(true),
 	}
@@ -399,7 +402,7 @@ func preview_additional_tax(kind: String, rate: float) -> Dictionary:
 	if not preview_politics.import_state(politics.export_state()):
 		return {}
 	preview_politics.apply_additional_tax_change(kind, delta)
-	return {"annual_revenue": projected_revenue, "approval": preview_politics.approval(), "groups": preview_politics.groups.duplicate(true)}
+	return {"annual_revenue": projected_revenue + diplomacy.annual_partner_contribution(), "approval": preview_politics.approval(), "groups": preview_politics.groups.duplicate(true)}
 
 func set_additional_tax(kind: String, rate: float) -> bool:
 	if preview_additional_tax(kind, rate).is_empty():
@@ -469,7 +472,7 @@ func _conduct_election() -> void:
 func preview_annual_spending(amount: float) -> Dictionary:
 	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
 		return {}
-	var balance: float = country.annual_revenue - amount - policy_annual_cost() - debt_interest()
+	var balance: float = total_annual_revenue() - amount - policy_annual_cost() - debt_interest()
 	var year_days := 366.0 if is_leap_year(date.year) else 365.0
 	return {"annual_balance": balance, "daily_balance": balance / year_days}
 

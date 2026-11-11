@@ -422,11 +422,12 @@ func _load_from(path: String) -> void:
 func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
-	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, c.annual_revenue, c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")
 	var corporate_revenue: float = world.additional_tax_revenue("corporate")
 	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
+	budget_lines.append("Fictional partner contributions: $%.0f/year | cooperation costs: $%.0f/year" % [world.diplomacy.annual_partner_contribution(), world.diplomacy.annual_agreement_cost()])
 	for category in World.CATEGORY_SHARES:
 		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.services.target(category, c.spending_categories[category], c.population)])
 	var ledger: Dictionary = world.fiscal
@@ -451,7 +452,7 @@ func _refresh() -> void:
 		people.append("%s | %.0f%% of population (~%.0f people) | approval %.1f%%\n  Raw %.1f + services %+.1f points | sensitivity to +1 percentage point tax: income -%.2f, consumption -%.2f, corporate -%.2f points before limits." % [group.name, group.share * 100.0, c.population * group.share, group.approval, group.raw_approval, group.service_bonus, group.tax_sensitivity / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.consumption[i] / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.corporate[i] / 100.0])
 	people.append("Service contribution responds gradually to the average condition of the five services. The three groups and all sensitivities are placeholders, not real demographic data or a model of individual personalities.")
 	population_summary.text = "\n\n".join(people)
-	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue adds 5 relations. Accepted cooperation adds 10 and creates or renews a 365-day agreement costing $10 million per year; ending it early costs 5 relations. Only one negotiation can run at a time. No trade or conflict effects are modeled."])
+	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue adds 5 relations. Accepted cooperation adds 10 and creates or renews a 365-day agreement with a $20 million annual partner contribution and $10 million annual cost; ending it early costs 5 relations. These are fictional assumptions, not trade estimates. Only one negotiation can run at a time. No trade or conflict effects are modeled."])
 	for partner in world.diplomacy.PARTNERS:
 		diplomatic_lines.append("%s: relations %.1f / 100 | cooldown %d days | cooperation %d days remaining" % [world.diplomacy.PARTNERS[partner], world.diplomacy.relations[partner], world.diplomacy.cooldowns[partner], world.diplomacy.agreements[partner]])
 	if not world.diplomacy.active.is_empty():

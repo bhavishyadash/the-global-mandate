@@ -445,6 +445,10 @@ PR #79. Added dialogue and cooperation proposals, partner-specific acceptance th
 
 PR #80. Accepted cooperation talks now produce renewable, time-limited agreements with an illustrative budget cost, early termination and expiry. Save v11, forecasts, fiscal accounting and tests include the lifecycle. The costs and effects are fictional; trade and treaty law remain open. See [Session 42](SESSION_42.md).
 
+### Session 43 — agreement fiscal effects
+
+PR #81. Added a separately displayed fictional partner contribution for active cooperation agreements, integrated with budget previews, cash flow, ledger and forecasts. Existing v11 agreements acquire this new rule when loaded; previous ledger entries remain unchanged. Headless checks cover accounting and expiry. The assumed payments are placeholders, not a trade model. See [Session 43](SESSION_43.md).
+
 ## 12. Immediate next actions
 
 1. Visually review the expanded UI and manually test saving, loading and the new political controls.

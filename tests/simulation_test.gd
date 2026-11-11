@@ -19,6 +19,10 @@ func _initialize() -> void:
 	assert(declined.diplomacy.relations.maritime == 40.0)
 	assert(declined.diplomacy.agreements.maritime == 365)
 	assert(is_equal_approx(declined.policy_annual_cost(), 10000000.0))
+	assert(is_equal_approx(declined.diplomacy.annual_partner_contribution(), 20000000.0))
+	assert(is_equal_approx(declined.total_annual_revenue(), 1220000000.0))
+	assert(is_equal_approx(declined.preview_income_tax(0.20).annual_revenue, declined.total_annual_revenue()))
+	assert(is_equal_approx(declined.preview_annual_spending(1100000000.0).annual_balance, declined.annual_balance()))
 	var agreement_path := "res://tests/agreement_test.json"
 	assert(not FileAccess.file_exists(agreement_path))
 	assert(declined.save_game(agreement_path).is_empty())
@@ -30,12 +34,15 @@ func _initialize() -> void:
 		agreement_reload.advance_day()
 	assert(agreement_reload.diplomacy.agreements.maritime == 0)
 	assert(agreement_reload.policy_annual_cost() == 0.0)
+	assert(agreement_reload.diplomacy.annual_partner_contribution() == 0.0)
 	assert(absf(agreement_forecast.cash - agreement_reload.country.treasury) < 0.1)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(agreement_path))
 	var before_agreement_cash: float = declined.country.treasury
+	var before_agreement_revenue: float = declined.fiscal.revenue
 	var expected_agreement_flow: float = declined.daily_balance()
 	declined.advance_day()
 	assert(absf(declined.country.treasury - before_agreement_cash - expected_agreement_flow) < 0.01)
+	assert(absf(declined.fiscal.revenue - before_agreement_revenue - declined.total_annual_revenue() / 365.0) < 0.01)
 	assert(declined.diplomacy.agreements.maritime == 364)
 	assert(declined.end_cooperation("maritime"))
 	assert(declined.diplomacy.relations.maritime == 35.0 and declined.policy_annual_cost() == 0.0)

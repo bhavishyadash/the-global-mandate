@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 66
+**Report status:** Living record; updated through session 67
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -37,6 +37,8 @@
 **Session 65:** Hardened interrupted-save handling, tested a failed backup rotation, added recovery instructions and measured synthetic tick percentiles. [Detailed session record](SESSION_65.md). Full foundation validation remains open for target hardware, 720p and broader usability.
 
 **Session 66:** Added a portable deterministic replay recorder API that captures the versioned scenario, seed, days and ordered decision results. [Detailed session record](SESSION_66.md). Player-facing recording and reports remain open.
+
+**Session 67:** Added a single-country save rotation failure matrix covering each rename and combined rollback failures. [Detailed session record](SESSION_67.md). Hardware power-loss durability and the separate registry save remain outside this test.
 
 ```text
 M0  Project foundation and scope       IN PROGRESS — hardware, map and scope open

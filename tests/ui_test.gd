@@ -10,6 +10,7 @@ func run_checks() -> void:
 	screen.set_process(false)
 	assert(screen.dashboard_tabs.get_tab_count() == 8)
 	assert(screen.dashboard_tabs.get_tab_title(7) == "Laws")
+	assert(screen.diagnostic_steps.placeholder_text.contains("reproduced"))
 	assert("70/100" in screen.healthcare_summary.text)
 	screen._vote_healthcare()
 	assert(screen.world.healthcare.active and "active" in screen.healthcare_summary.text)

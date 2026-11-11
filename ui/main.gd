@@ -2,6 +2,7 @@ extends Control
 
 const World = preload("res://simulation/world.gd")
 const Decisions = preload("res://simulation/decisions.gd")
+const Diagnostics = preload("res://simulation/diagnostics.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -44,6 +45,7 @@ var proposal_picker: OptionButton
 var event_filter: OptionButton
 var scenario_picker: OptionButton
 var new_game_confirmation: ConfirmationDialog
+var diagnostic_steps: TextEdit
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -316,6 +318,18 @@ func _ready() -> void:
 	event_filter.item_selected.connect(func(_index: int): _refresh_history())
 	decisions.add_child(event_filter)
 	decisions.move_child(event_filter, 1)
+	var diagnostic_note := Label.new()
+	diagnostic_note.text = "Optional reproduction steps (review before sharing). Reports are saved locally and never sent automatically."
+	diagnostic_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	decisions.add_child(diagnostic_note)
+	diagnostic_steps = TextEdit.new()
+	diagnostic_steps.custom_minimum_size = Vector2(0, 80)
+	diagnostic_steps.placeholder_text = "What happened and how can it be reproduced?"
+	decisions.add_child(diagnostic_steps)
+	var diagnostic_button := Button.new()
+	diagnostic_button.text = "Export local diagnostic report"
+	diagnostic_button.pressed.connect(_export_diagnostics)
+	decisions.add_child(diagnostic_button)
 	healthcare_picker = OptionButton.new()
 	for amount in World.Healthcare.FUNDING_OPTIONS:
 		healthcare_picker.add_item("Healthcare funding: $%.0f million / year" % (amount / 1000000.0))
@@ -356,6 +370,12 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	column.add_theme_constant_override("separation", 12)
 	panel.add_child(column)
 	return column
+
+func _export_diagnostics() -> void:
+	var report: Dictionary = Diagnostics.report(world, diagnostic_steps.text)
+	var path := "user://diagnostic_%d.json" % Time.get_ticks_usec()
+	var error: String = Diagnostics.write_new(path, report)
+	status.text = "Report saved: " + ProjectSettings.globalize_path(path) if error.is_empty() else error
 
 func _forecast_budget() -> void:
 	forecast_current = false

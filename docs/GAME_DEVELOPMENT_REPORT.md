@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 82
+**Report status:** Living record; updated through session 83
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 83:** Linked the US map feature to an optional fictional single-country sandbox, with confirmation, live status and a Government shortcut. [Detailed session record](SESSION_83.md). Values are copied fictional test data, not real US data; other map countries and the multi-country registry remain unlinked.
 
 **Session 82:** Improved map pointer interactions, hover and selection feedback, city visibility controls, zoom and the geographic sidebar. [Detailed session record](SESSION_82.md). The map remains reference geography and is not yet connected to the playable fictional scenario.
 

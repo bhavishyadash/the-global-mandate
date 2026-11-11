@@ -24,6 +24,7 @@ var additional_tax: SpinBox
 var additional_tax_preview: Label
 var directive_picker: OptionButton
 var directive_summary: Label
+var dashboard_tabs: TabContainer
 const SAVE_PATH := "user://prototype_save.json"
 
 func _ready() -> void:
@@ -197,7 +198,41 @@ func _ready() -> void:
 	history = Label.new()
 	history.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(history)
+	# Keep the clock, income tax and save controls visible while grouping the
+	# growing decision panels into independently scrollable sections.
+	dashboard_tabs = TabContainer.new()
+	dashboard_tabs.custom_minimum_size = Vector2(0, 520)
+	dashboard_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dashboard_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(dashboard_tabs)
+	var overview := _make_dashboard_tab("Overview")
+	var finances := _make_dashboard_tab("Budget & services")
+	var taxes := _make_dashboard_tab("Tax previews")
+	var government := _make_dashboard_tab("Government")
+	var decisions := _make_dashboard_tab("History")
+	for node in [summary, explanation]:
+		node.reparent(overview)
+	for node in [budget_controls, category_controls, spending_preview, category_preview]:
+		node.reparent(finances)
+	for node in [tax_controls, tax_preview, additional_tax_preview]:
+		node.reparent(taxes)
+	for node in [politics_summary, political_controls, directive_controls, directive_summary]:
+		node.reparent(government)
+	for node in [heading, history]:
+		node.reparent(decisions)
 	_refresh()
+
+func _make_dashboard_tab(title: String) -> VBoxContainer:
+	var panel := ScrollContainer.new()
+	panel.name = title
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dashboard_tabs.add_child(panel)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 12)
+	panel.add_child(column)
+	return column
 
 func _process(delta: float) -> void:
 	if running:

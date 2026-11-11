@@ -7,6 +7,11 @@ func run_checks() -> void:
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
 	screen.set_process(false)
+	assert(screen.dashboard_tabs.get_tab_count() == 5)
+	assert(screen.dashboard_tabs.get_tab_title(1) == "Budget & services")
+	assert(screen.dashboard_tabs.get_tab_title(3) == "Government")
+	screen.dashboard_tabs.current_tab = 3
+	assert(screen.dashboard_tabs.current_tab == 3)
 	assert(screen.world.date.day == 1)
 	screen._advance_day()
 	assert(screen.world.date.day == 2)

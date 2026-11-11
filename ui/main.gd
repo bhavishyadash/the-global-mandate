@@ -10,6 +10,7 @@ const BudgetChart = preload("res://ui/budget_chart.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
+	{"id": "usa_sandbox", "name": "United States sandbox (fictional values)", "path": "res://data/scenarios/usa_sandbox.json", "map_id": "USA"},
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
@@ -55,6 +56,7 @@ var proposal_picker: OptionButton
 var event_filter: OptionButton
 var scenario_picker: OptionButton
 var new_game_confirmation: ConfirmationDialog
+var pending_scenario_index := -1
 var diagnostic_steps: TextEdit
 var world_map: Control
 var map_selection: Label
@@ -65,6 +67,8 @@ var map_hover: Label
 var map_zoom_label: Label
 var map_focus_button: Button
 var map_clear_button: Button
+var map_simulation: Label
+var map_scenario_button: Button
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -363,6 +367,13 @@ func _ready() -> void:
 	selection_controls.add_child(map_clear_button)
 	map_focus_button.pressed.connect(func(): world_map.focus_selection())
 	map_clear_button.pressed.connect(func(): world_map.clear_selection())
+	map_scenario_button = Button.new()
+	map_scenario_button.visible = false
+	map_scenario_button.pressed.connect(_map_scenario_action)
+	map_sidebar.add_child(map_scenario_button)
+	map_simulation = Label.new()
+	map_simulation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_sidebar.add_child(map_simulation)
 	map_results = ItemList.new()
 	map_results.custom_minimum_size = Vector2(0, 150)
 	map_results.visible = false
@@ -371,7 +382,7 @@ func _ready() -> void:
 	map_results.item_selected.connect(_select_map_result)
 	map_selection = Label.new()
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is real-world reference data. The current playable scenario is fictional and is not linked to these countries yet."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
 	map_sidebar.add_child(map_selection)
 	world_map.country_selected.connect(_map_country_selected)
 	world_map.city_selected.connect(_map_city_selected)
@@ -398,8 +409,9 @@ func _ready() -> void:
 	new_game_confirmation.title = "Start a new scenario?"
 	new_game_confirmation.dialog_text = "This replaces your current session. Save first if you want to keep your progress."
 	add_child(new_game_confirmation)
-	new_game_button.pressed.connect(func(): new_game_confirmation.popup_centered())
+	new_game_button.pressed.connect(func(): _request_new_scenario(scenario_picker.selected))
 	new_game_confirmation.confirmed.connect(_confirm_new_scenario)
+	new_game_confirmation.canceled.connect(func(): pending_scenario_index = -1)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -646,17 +658,52 @@ func _map_country_selected(id: String, country_name: String) -> void:
 				capital = city.name
 	map_focus_button.disabled = false
 	map_clear_button.disabled = false
-	map_selection.text = "%s\n\nCOUNTRY  •  %s\nCapital: %s\nMapped places: %d\n\nReference geography only. Country-specific simulation and regions are not yet linked to this map." % [country_name, id, capital, count]
+	map_selection.text = "%s\n\nCOUNTRY  •  %s\nCapital: %s\nMapped places: %d\n\nGeography and place names are reference data. Regional simulation is not implemented." % [country_name, id, capital, count]
+	_refresh_map_simulation()
 
 func _map_city_selected(city: Dictionary) -> void:
 	map_focus_button.disabled = false
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\n%s  •  %s\nLatitude: %.2f°\nLongitude: %.2f°\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country, float(city.point[1]), float(city.point[0])]
+	_refresh_map_simulation()
 
 func _map_selection_cleared() -> void:
 	map_focus_button.disabled = true
 	map_clear_button.disabled = true
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is real-world reference data. The current playable scenario is fictional and is not linked to these countries yet."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
+	_refresh_map_simulation()
+
+func _map_scenario_index(id: String) -> int:
+	for index in range(SCENARIOS.size()):
+		if SCENARIOS[index].get("map_id", "") == id and not id.is_empty():
+			return index
+	return -1
+
+func _refresh_map_simulation() -> void:
+	if map_simulation == null:
+		return
+	var selected: String = world_map.selected_id
+	var index := _map_scenario_index(selected)
+	map_scenario_button.visible = index >= 0
+	if selected.is_empty():
+		map_simulation.text = ""
+	elif index < 0:
+		map_simulation.text = "REFERENCE ONLY\nNo playable country scenario is linked here yet."
+	elif world.scenario_id == SCENARIOS[index].id and world.country.id == SCENARIOS[index].id:
+		map_scenario_button.text = "Open government"
+		map_simulation.text = "ACTIVE US SANDBOX — FICTIONAL VALUES\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nThese values are simulation placeholders, not US statistics. City-level simulation is not implemented." % [world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+	else:
+		map_scenario_button.text = "Start US sandbox"
+		map_simulation.text = "US SANDBOX AVAILABLE\nUses fictional test values, not US statistics. Starting replaces the current session after confirmation."
+
+func _map_scenario_action() -> void:
+	var index := _map_scenario_index(world_map.selected_id)
+	if index < 0:
+		return
+	if world.scenario_id == SCENARIOS[index].id and world.country.id == SCENARIOS[index].id:
+		dashboard_tabs.current_tab = 3
+	else:
+		_request_new_scenario(index)
 
 func _search_map(query: String) -> void:
 	map_results.clear()
@@ -748,11 +795,19 @@ func _advance_day() -> void:
 	world.advance_day()
 	_refresh()
 
-func _confirm_new_scenario() -> void:
-	if scenario_picker.selected < 0:
+func _request_new_scenario(index: int) -> void:
+	if index < 0 or index >= SCENARIOS.size():
 		status.text = "Select a built-in scenario first."
 		return
-	_start_scenario(SCENARIOS[scenario_picker.selected].path)
+	pending_scenario_index = index
+	new_game_confirmation.dialog_text = "Start %s? This replaces your current session. Save first if you want to keep your progress." % SCENARIOS[index].name
+	new_game_confirmation.popup_centered()
+
+func _confirm_new_scenario() -> void:
+	var index := pending_scenario_index
+	pending_scenario_index = -1
+	if index >= 0 and index < SCENARIOS.size():
+		_start_scenario(SCENARIOS[index].path)
 
 func _start_scenario(path: String) -> bool:
 	var error: String = world.apply_scenario(World.Scenario.read_file(path))
@@ -1104,6 +1159,7 @@ func _load_from(path: String) -> void:
 func _refresh() -> void:
 	_invalidate_forecasts()
 	_update_speed_status()
+	_refresh_map_simulation()
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	government_status.text = "%s   |   %04d-%02d-%02d   |   Cash $%.1fM   |   Annual balance $%.1fM   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, c.treasury / 1000000.0, world.annual_balance() / 1000000.0, c.approval]

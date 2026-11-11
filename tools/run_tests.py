@@ -12,6 +12,7 @@ CASES = (
     ("res://tests/simulation_test.gd", "Simulation checks passed"),
     ("res://tests/ui_test.gd", "UI interaction checks passed"),
     ("res://tests/integration_test.gd", "Integrated scenario checks passed"),
+    ("res://tests/replay_test.gd", "Replay checks passed"),
 )
 
 

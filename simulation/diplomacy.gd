@@ -105,6 +105,10 @@ func import_state(data: Variant) -> bool:
 	relations = data.relations.duplicate()
 	cooldowns = data.cooldowns.duplicate()
 	agreements = data.agreements.duplicate()
+	for partner in PARTNERS:
+		relations[partner] = float(relations[partner])
+		cooldowns[partner] = int(cooldowns[partner])
+		agreements[partner] = int(agreements[partner])
 	active = data.active
 	progress = int(data.progress)
 	proposal = data.proposal

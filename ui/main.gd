@@ -267,8 +267,8 @@ func _ready() -> void:
 	tax.value = 20.0
 	controls.add_child(tax)
 	var apply := Button.new()
-	apply.text = "Apply income tax"
-	apply.pressed.connect(_apply_tax)
+	apply.text = "Review income tax"
+	apply.pressed.connect(func(): _request_review("set_income_tax", {"rate": tax.value / 100.0}))
 	controls.add_child(apply)
 	main_save_button = Button.new()
 	main_save_button.text = "Save"
@@ -318,8 +318,8 @@ func _ready() -> void:
 	spending.value = 1100
 	budget_controls.add_child(spending)
 	var apply_spending := Button.new()
-	apply_spending.text = "Apply spending"
-	apply_spending.pressed.connect(_apply_spending)
+	apply_spending.text = "Review spending"
+	apply_spending.pressed.connect(func(): _request_review("set_total_spending", {"amount": spending.value * 1000000.0}))
 	budget_controls.add_child(apply_spending)
 	var speed_label := Label.new()
 	speed_label.text = "   Speed: "
@@ -345,8 +345,8 @@ func _ready() -> void:
 	category_amount.value = world.country.spending_categories[category_picker.get_item_text(0)] / 1000000.0
 	category_controls.add_child(category_amount)
 	var category_button := Button.new()
-	category_button.text = "Apply category ($ millions)"
-	category_button.pressed.connect(_apply_category)
+	category_button.text = "Review category ($ millions)"
+	category_button.pressed.connect(func(): _request_review("set_category_spending", {"category": category_picker.get_item_text(category_picker.selected), "amount": category_amount.value * 1000000.0}))
 	category_controls.add_child(category_button)
 	var tax_controls := HBoxContainer.new()
 	layout.add_child(tax_controls)
@@ -360,8 +360,8 @@ func _ready() -> void:
 	additional_tax.step = 0.1
 	tax_controls.add_child(additional_tax)
 	var additional_tax_button := Button.new()
-	additional_tax_button.text = "Apply selected tax (%)"
-	additional_tax_button.pressed.connect(_apply_additional_tax)
+	additional_tax_button.text = "Review selected tax (%)"
+	additional_tax_button.pressed.connect(func(): _request_review("set_additional_tax", {"kind": _additional_tax_kind(), "rate": additional_tax.value / 100.0}))
 	tax_controls.add_child(additional_tax_button)
 	var status_row := HBoxContainer.new()
 	layout.add_child(status_row)
@@ -1572,6 +1572,28 @@ func _show_law_detail(id: String) -> void:
 
 func _review_text(id: String, args: Dictionary) -> String:
 	match id:
+		"set_income_tax", "set_additional_tax":
+			var kind: String = "income" if id == "set_income_tax" else str(args.kind)
+			var rate: float = float(args.rate)
+			var preview: Dictionary = world.preview_income_tax(rate) if kind == "income" else world.preview_additional_tax(kind, rate)
+			if preview.is_empty():
+				return ""
+			var field: String = "income_tax_rate" if kind == "income" else world.ADDITIONAL_TAXES[kind].field
+			var lines := PackedStringArray(["%s TAX — fictional fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			for group in preview.groups:
+				lines.append("%s approval: %.1f%%" % [group.name, group.approval])
+			lines.append("This prototype applies the change immediately; legal passage and wider economic effects are not modeled.")
+			return "\n".join(lines)
+		"set_total_spending", "set_category_spending":
+			var amount: float = float(args.amount)
+			var is_total := id == "set_total_spending"
+			var preview: Dictionary = world.preview_annual_spending(amount) if is_total else world.preview_category_spending(str(args.category), amount)
+			if preview.is_empty():
+				return ""
+			var label: String = "Total category spending" if is_total else str(args.category) + " category"
+			var previous: float = world.country.annual_spending if is_total else world.country.spending_categories[args.category]
+			var explanation := "This resets every category to the scenario's default shares." if is_total else "Other category amounts remain unchanged."
+			return "%s — fictional budget model\n\nAnnual amount: $%.1fM → $%.1fM\nAnnual balance: $%.1fM → $%.1fM\nProjected daily flow: $%.2f\n\n%s Service and approval effects develop over time; wider economic effects are not modeled." % [label, previous / 1000000.0, amount / 1000000.0, world.annual_balance() / 1000000.0, preview.annual_balance / 1000000.0, preview.daily_balance, explanation]
 		"introduce_congress_bill":
 			var preview: Dictionary = world.preview_healthcare(float(args.funding))
 			if preview.is_empty():
@@ -1688,7 +1710,15 @@ func _confirm_review() -> void:
 		return
 	var request := pending_decision.duplicate(true)
 	_cancel_review()
-	status.text = Decisions.execute(world, request).message
+	var result: Dictionary = Decisions.execute(world, request)
+	status.text = result.message
+	if result.ok and request.id in ["set_income_tax", "set_additional_tax", "set_total_spending", "set_category_spending"]:
+		tax.value = world.country.income_tax_rate * 100.0
+		_additional_tax_selected(additional_tax_picker.selected)
+		spending.value = world.country.annual_spending / 1000000.0
+		_category_selected(category_picker.selected)
+		if shared_world_active and world_lab.selected_id() == world.country.id:
+			world_lab.tax.value = world.country.income_tax_rate * 100.0
 	_refresh()
 
 func _vote_policy() -> void:

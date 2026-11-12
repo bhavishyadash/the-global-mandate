@@ -7,6 +7,21 @@ func _initialize() -> void:
 
 func run_checks() -> void:
 	assert(ProjectSettings.get_setting("display/window/size/mode") == 2)
+	var catalog = preload("res://ui/law_catalog_data.gd")
+	var catalog_data: Dictionary = catalog.read()
+	assert(catalog.validate(catalog_data).is_empty())
+	var bad_catalog: Dictionary = catalog_data.duplicate(true)
+	bad_catalog.laws.append(bad_catalog.laws[0].duplicate(true))
+	assert(not catalog.validate(bad_catalog).is_empty())
+	bad_catalog = catalog_data.duplicate(true)
+	bad_catalog.laws[0].id = "unimplemented_law"
+	assert(not catalog.validate(bad_catalog).is_empty())
+	bad_catalog = catalog_data.duplicate(true)
+	bad_catalog.laws[0].category = "Finance"
+	assert(not catalog.validate(bad_catalog).is_empty())
+	bad_catalog = catalog_data.duplicate(true)
+	bad_catalog.laws[0].keywords = [42]
+	assert(not catalog.validate(bad_catalog).is_empty())
 	var main_script = preload("res://ui/main.gd")
 	assert(main_script._canvas_size_for_window(Vector2i(2940, 1700)) == Vector2i(1152, 648))
 	assert(main_script._canvas_size_for_window(Vector2i(1152, 720)) == Vector2i(576, 360))
@@ -346,6 +361,15 @@ func run_checks() -> void:
 	assert(screen.world.apply_scenario(World.Scenario.read_file(World.DEFAULT_SCENARIO)).is_empty())
 	screen._refresh()
 	assert(screen.healthcare_panel.visible and not screen.procurement_panel.visible)
+	screen.law_search.text = "medical"
+	screen._refresh_law_catalog()
+	assert(screen.healthcare_panel.visible)
+	screen.law_search.text = ""
+	screen.law_catalog_error = "Catalogue test failure."
+	screen._refresh_law_catalog()
+	assert(not screen.healthcare_panel.visible and not screen.procurement_panel.visible and screen.law_catalog_note.text == "Catalogue test failure.")
+	screen.law_catalog_error = ""
+	screen._refresh_law_catalog()
 	screen.law_categories.current_tab = 1
 	screen._refresh_law_catalog()
 	assert(screen.procurement_panel.visible and not screen.healthcare_panel.visible)

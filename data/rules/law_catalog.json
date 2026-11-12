@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "categories": ["Healthcare", "Finance", "Military", "Justice", "Education"],
+  "laws": [
+    {"id": "healthcare", "name": "Healthcare expansion", "category": "Healthcare", "keywords": ["health", "medical", "care"]},
+    {"id": "procurement", "name": "Procurement policy", "category": "Finance", "keywords": ["public", "purchasing", "procurement"]}
+  ]
+}

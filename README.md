@@ -79,3 +79,5 @@ Use **Small-window UI** near the save controls to choose Compact, Standard or La
 See [session 99](docs/SESSION_99.md) for compact map navigation.
 
 Map search supports country codes and name searches, country/city filters, and Enter to open the first result. With the map focused, arrow keys pan, + and - zoom, and Home resets. Search results are reference geography unless a simulation is linked. See [session 100](docs/SESSION_100.md).
+
+The implemented law catalogue is described in `data/rules/law_catalog.json` and validated against existing policy handlers. Catalogue metadata alone does not add a playable law. See [session 101](docs/SESSION_101.md).

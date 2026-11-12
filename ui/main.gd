@@ -92,6 +92,16 @@ var shared_switch_dialog: ConfirmationDialog
 var pending_shared_switch: Dictionary = {}
 var shared_restore_dialog: ConfirmationDialog
 var pending_shared_restore: Dictionary = {}
+var shared_map_panel: VBoxContainer
+var shared_partner_picker: OptionButton
+var shared_proposal_picker: OptionButton
+var shared_diplomacy_details: Label
+var shared_talk_button: Button
+var shared_cancel_button: Button
+var shared_talk_dialog: ConfirmationDialog
+var pending_shared_talk: Dictionary = {}
+var shared_diplomacy_note: Label
+var legacy_diplomacy_controls: Array = []
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -422,6 +432,30 @@ func _ready() -> void:
 	map_simulation = Label.new()
 	map_simulation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_sidebar.add_child(map_simulation)
+	shared_map_panel = VBoxContainer.new()
+	map_sidebar.add_child(shared_map_panel)
+	var shared_heading := Label.new()
+	shared_heading.text = "SHARED WORLD DIPLOMACY"
+	shared_map_panel.add_child(shared_heading)
+	shared_partner_picker = OptionButton.new()
+	shared_map_panel.add_child(shared_partner_picker)
+	shared_partner_picker.item_selected.connect(func(_index: int): _refresh_shared_diplomacy())
+	shared_proposal_picker = OptionButton.new()
+	shared_proposal_picker.add_item("Open dialogue")
+	shared_proposal_picker.add_item("Cooperation agreement")
+	shared_proposal_picker.item_selected.connect(func(_index: int): _refresh_shared_diplomacy())
+	shared_map_panel.add_child(shared_proposal_picker)
+	shared_diplomacy_details = Label.new()
+	shared_diplomacy_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shared_map_panel.add_child(shared_diplomacy_details)
+	shared_talk_button = Button.new()
+	shared_talk_button.text = "Review talks"
+	shared_talk_button.pressed.connect(_request_shared_talk)
+	shared_map_panel.add_child(shared_talk_button)
+	shared_cancel_button = Button.new()
+	shared_cancel_button.text = "Cancel active talks"
+	shared_cancel_button.pressed.connect(_cancel_shared_talk)
+	shared_map_panel.add_child(shared_cancel_button)
 	map_results = ItemList.new()
 	map_results.custom_minimum_size = Vector2(0, 150)
 	map_results.visible = false
@@ -510,6 +544,13 @@ func _ready() -> void:
 	shared_restore_dialog.confirmed.connect(_confirm_shared_restore)
 	shared_restore_dialog.canceled.connect(func(): pending_shared_restore.clear())
 	add_child(shared_restore_dialog)
+	shared_talk_dialog = ConfirmationDialog.new()
+	shared_talk_dialog.title = "Open shared-world talks?"
+	shared_talk_dialog.dialog_autowrap = true
+	shared_talk_dialog.min_size = Vector2i(600, 0)
+	shared_talk_dialog.confirmed.connect(_confirm_shared_talk)
+	shared_talk_dialog.canceled.connect(func(): pending_shared_talk.clear())
+	add_child(shared_talk_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -642,6 +683,18 @@ func _ready() -> void:
 	diplomacy_summary = Label.new()
 	diplomacy_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	diplomacy_tab.add_child(diplomacy_summary)
+	legacy_diplomacy_controls = [diplomacy_picker, proposal_picker, talk_button, cancel_talks_button, end_agreement_button, diplomacy_summary]
+	shared_diplomacy_note = Label.new()
+	shared_diplomacy_note.text = "SHARED WORLD: open World Map and select a country or use the shared-world country selector in the map panel. Talks and relationships use the live World Lab registry."
+	shared_diplomacy_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	diplomacy_tab.add_child(shared_diplomacy_note)
+	var open_shared_map := Button.new()
+	open_shared_map.text = "Open country diplomacy on map"
+	open_shared_map.pressed.connect(func(): dashboard_tabs.current_tab = 8)
+	shared_diplomacy_note.add_child(open_shared_map)
+	# Keep the button in the layout instead of overlaying the label.
+	open_shared_map.reparent(diplomacy_tab)
+	shared_diplomacy_note.set_meta("map_button", open_shared_map)
 	for node in [heading, history]:
 		node.reparent(decisions)
 	event_filter = OptionButton.new()
@@ -747,6 +800,7 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	return column
 
 func _map_country_selected(id: String, country_name: String) -> void:
+	_select_shared_map_country(id)
 	var capital := "Not in dataset"
 	var count := 0
 	for city in world_map.cities:
@@ -760,12 +814,14 @@ func _map_country_selected(id: String, country_name: String) -> void:
 	_refresh_map_simulation()
 
 func _map_city_selected(city: Dictionary) -> void:
+	_select_shared_map_country(city.get("country", ""))
 	map_focus_button.disabled = false
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\n%s  •  %s\nLatitude: %.2f°\nLongitude: %.2f°\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country, float(city.point[1]), float(city.point[0])]
 	_refresh_map_simulation()
 
 func _map_selection_cleared() -> void:
+	_select_shared_map_country("")
 	map_focus_button.disabled = true
 	map_clear_button.disabled = true
 	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
@@ -788,6 +844,97 @@ func _map_binding(id: String) -> Dictionary:
 
 func _map_binding_active(binding: Dictionary) -> bool:
 	return not binding.is_empty() and world.scenario_id == binding.scenario_id and world.country.id == binding.country_id
+
+func _shared_partner_id() -> String:
+	if shared_partner_picker.item_count == 0 or shared_partner_picker.selected < 0:
+		return ""
+	return str(shared_partner_picker.get_item_metadata(shared_partner_picker.selected))
+
+func _select_shared_map_country(map_id: String) -> void:
+	if not shared_world_active or shared_partner_picker == null:
+		return
+	var binding := _map_binding(map_id)
+	var target: String = binding.get("country_id", "")
+	for index in range(shared_partner_picker.item_count):
+		if str(shared_partner_picker.get_item_metadata(index)) == target:
+			shared_partner_picker.select(index)
+			break
+	_refresh_shared_diplomacy()
+
+func _refresh_shared_diplomacy() -> void:
+	if shared_map_panel == null or shared_diplomacy_note == null:
+		return
+	shared_map_panel.visible = shared_world_active
+	shared_diplomacy_note.visible = shared_world_active
+	shared_diplomacy_note.get_meta("map_button").visible = shared_world_active
+	for control in legacy_diplomacy_controls:
+		control.visible = not shared_world_active
+	if not shared_world_active or not world_lab.initialized:
+		return
+	var ids: Array = world_lab.registry.country_ids()
+	var current := _shared_partner_id()
+	if shared_partner_picker.item_count != ids.size() + 1:
+		shared_partner_picker.clear()
+		shared_partner_picker.add_item("Select a simulated country")
+		shared_partner_picker.set_item_metadata(0, "")
+		for id in ids:
+			var label: String = world_lab.registry.country_snapshot(id).country.name
+			if id == WorldLab.COAST:
+				label += " (fictional, unmapped)"
+			shared_partner_picker.add_item(label)
+			shared_partner_picker.set_item_metadata(shared_partner_picker.item_count - 1, id)
+		shared_partner_picker.select(0)
+		for index in range(shared_partner_picker.item_count):
+			if str(shared_partner_picker.get_item_metadata(index)) == current:
+				shared_partner_picker.select(index)
+	var target := _shared_partner_id()
+	var valid: bool = target in ids and target != world.country.id
+	shared_talk_button.disabled = true
+	shared_cancel_button.disabled = true
+	if not valid:
+		shared_diplomacy_details.text = "Select another simulated country. Coastal Republic is fictional and has no geographic map location." if target.is_empty() else "This is your controlled country. Choose another country for diplomacy."
+		return
+	var registry = world_lab.registry
+	var progress: int = registry.dialogue_progress(world.country.id, target)
+	var remaining: int = registry.agreement_days(world.country.id, target)
+	var kind := "cooperation" if shared_proposal_picker.selected == 1 else "dialogue"
+	var state := "No active talks." if progress < 0 else "%s talks: day %d / %d." % [registry.talk_kind(world.country.id, target).capitalize(), progress, WorldLab.Registry.TALK_DAYS]
+	var rules := "Dialogue completes after 30 days, adding 5 relations without a direct cash cost."
+	if kind == "cooperation":
+		rules = "Cooperation concludes after 30 days. If relations are at least 5 and both countries have $5M, each pays $5M, relations rise by 10, and an agreement lasts 365 days. Eligibility now: %s. Conditions are checked at completion." % ("yes" if registry.cooperation_eligible(world.country.id, target) else "no")
+	shared_diplomacy_details.text = "FICTIONAL TEST VALUES\nRelations: %.1f / 100\n%s\nAgreement: %s\n\n%s" % [registry.relationship(world.country.id, target), state, "%d days remaining" % remaining if remaining > 0 else "none", rules]
+	shared_talk_button.disabled = progress >= 0 or (kind == "cooperation" and remaining > 0)
+	shared_cancel_button.disabled = progress < 0
+
+func _request_shared_talk() -> void:
+	_refresh_shared_diplomacy()
+	if not shared_world_active or shared_talk_button.disabled:
+		return
+	if running:
+		_toggle_pause()
+	var target := _shared_partner_id()
+	var kind := "cooperation" if shared_proposal_picker.selected == 1 else "dialogue"
+	pending_shared_talk = {"controlled": world.country.id, "target": target, "kind": kind, "snapshot": JSON.stringify(world_lab.registry.export_snapshot())}
+	shared_talk_dialog.dialog_text = "Open %s talks between %s and %s? Talks conclude after 30 shared-world days. The clock has been paused. %s" % [kind, world.country.name, world_lab.registry.country_snapshot(target).country.name, shared_diplomacy_details.text]
+	shared_talk_dialog.popup_centered()
+
+func _confirm_shared_talk() -> void:
+	if pending_shared_talk.is_empty():
+		return
+	var request := pending_shared_talk.duplicate(true)
+	pending_shared_talk.clear()
+	if not shared_world_active or running or world.country.id != request.controlled or _shared_partner_id() != request.target or ("cooperation" if shared_proposal_picker.selected == 1 else "dialogue") != request.kind or JSON.stringify(world_lab.registry.export_snapshot()) != request.snapshot:
+		status.text = "Diplomacy review is out of date. Review it again."
+		return
+	status.text = "Shared-world talks opened." if world_lab.registry.start_talks(request.controlled, request.target, request.kind) else "Talks are unavailable."
+	_refresh()
+
+func _cancel_shared_talk() -> void:
+	var target := _shared_partner_id()
+	if not shared_world_active or target.is_empty() or target == world.country.id:
+		return
+	status.text = "Shared-world talks cancelled." if world_lab.registry.cancel_talks(world.country.id, target) else "No shared-world talks are active."
+	_refresh()
 
 func _refresh_map_layer() -> void:
 	if map_layer_picker == null or world_map == null:
@@ -814,6 +961,8 @@ func _refresh_map_simulation() -> void:
 	var index := _map_scenario_index(selected)
 	var binding := _map_binding(selected)
 	map_scenario_button.visible = index >= 0
+	if shared_world_active and not _map_binding_active(binding):
+		map_scenario_button.visible = false
 	if selected.is_empty():
 		map_simulation.text = ""
 	elif not map_binding_error.is_empty():
@@ -823,6 +972,8 @@ func _refresh_map_simulation() -> void:
 	elif _map_binding_active(binding):
 		map_scenario_button.text = "Open government"
 		map_simulation.text = "ACTIVE %s — FICTIONAL VALUES\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nThese values are simulation placeholders, not real statistics. City-level simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+	elif shared_world_active:
+		map_simulation.text = "SHARED WORLD COUNTRY\nUse the diplomacy panel below to inspect this country. Scenario changes are unavailable while sharing a world."
 	else:
 		map_scenario_button.text = "Start " + binding.short_name
 		map_simulation.text = "%s AVAILABLE\nUses fictional test values, not real statistics. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
@@ -1011,6 +1162,8 @@ func _apply_tax() -> void:
 	_refresh()
 
 func _start_talks() -> void:
+	if shared_world_active:
+		return
 	var keys: Array = world.diplomacy.PARTNERS.keys()
 	var partner: String = keys[diplomacy_picker.selected]
 	var choice: String = world.diplomacy.PROPOSALS.keys()[proposal_picker.selected]
@@ -1018,10 +1171,14 @@ func _start_talks() -> void:
 	_refresh()
 
 func _cancel_talks() -> void:
+	if shared_world_active:
+		return
 	status.text = Decisions.execute(world, {"id": "cancel_talks", "args": {}}).message
 	_refresh()
 
 func _end_cooperation() -> void:
+	if shared_world_active:
+		return
 	var partner: String = world.diplomacy.PARTNERS.keys()[diplomacy_picker.selected]
 	status.text = Decisions.execute(world, {"id": "end_cooperation", "args": {"partner": partner}}).message
 	_refresh()
@@ -1526,7 +1683,7 @@ func _update_shared_controls() -> void:
 	main_load_button.disabled = shared_world_active
 	main_backup_button.disabled = shared_world_active
 	scenario_start_button.disabled = shared_world_active
-	mode_notice.text = "SHARED WORLD  ·  Main clock advances both fictional countries  ·  Bilateral talks in World Lab" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+	mode_notice.text = "SHARED WORLD  ·  Main clock advances both fictional countries  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
 
 func _refresh() -> void:
 	_invalidate_forecasts()
@@ -1534,6 +1691,7 @@ func _refresh() -> void:
 	if shared_world_active:
 		world_lab.refresh()
 	_refresh_map_simulation()
+	_refresh_shared_diplomacy()
 	world_lab.set_main_import_available(world.scenario_id == "usa_sandbox" and world.country.id == "usa_sandbox" and world.date.year <= 9998)
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date

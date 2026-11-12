@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 92
+**Report status:** Living record; updated through session 93
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -28,7 +28,9 @@
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
 
-**Session 92:** Added reviewed switching of the controlled country within the live shared world, preserving both countries and their bilateral state. [Detailed session record](SESSION_92.md). The world remains fictional and shared-mode selection is not yet persisted.
+**Session 93:** Saved shared-world control metadata and added reviewed restore of the main and backup shared saves. [Detailed session record](SESSION_93.md). Older lab saves can still be loaded manually.
+
+**Session 92:** Added reviewed switching of the controlled country within the live shared world, preserving both countries and their bilateral state. [Detailed session record](SESSION_92.md). The world remains fictional.
 
 **Session 91:** Added opt-in shared-world play: main controls can operate on a live lab country, and one main clock advances both countries. [Detailed session record](SESSION_91.md). This is a two-country fictional prototype with guarded save/load and a detachable country copy.
 

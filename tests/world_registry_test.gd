@@ -23,6 +23,12 @@ func _initialize() -> void:
 		legacy.talks[key] = legacy.talks[key].progress
 	var migrated = Registry.new()
 	assert(migrated.import_snapshot(JSON.parse_string(JSON.stringify(legacy))).is_empty())
+	assert(migrated.saved_controlled_id.is_empty())
+	var invalid_control: Dictionary = migrated.export_snapshot()
+	invalid_control["controlled_country"] = "missing_country"
+	var previous_state: Dictionary = migrated.export_snapshot()
+	assert(not migrated.import_snapshot(invalid_control).is_empty())
+	assert(migrated.export_snapshot() == previous_state and migrated.saved_controlled_id.is_empty())
 	assert(migrated.dialogue_progress("test_republic", "coastal_republic") == 1 and migrated.talk_kind("test_republic", "coastal_republic") == "dialogue")
 	assert(migrated.cancel_talks("test_republic", "coastal_republic"))
 	assert(not migrated.cancel_talks("test_republic", "coastal_republic"))

@@ -391,7 +391,7 @@ func cancel_talks() -> void:
 func save_to(path: String) -> String:
 	if not initialized:
 		return "World lab is unavailable."
-	var error: String = registry.save_game(path)
+	var error: String = registry.save_game(path, Callable(), Callable(), shared_controlled_id if shared_mode else "")
 	message.text = "Lab world saved to its separate slot." if error.is_empty() else error
 	return error
 

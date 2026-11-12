@@ -17,6 +17,8 @@ var _countries: Dictionary = {}
 var _relations: Dictionary = {}
 var _talks: Dictionary = {}
 var _agreements: Dictionary = {}
+# Optional save metadata; it does not change simulation state.
+var saved_controlled_id := ""
 
 func initialize(scenarios: Variant) -> String:
 	if not scenarios is Array or scenarios.is_empty() or scenarios.size() > MAX_COUNTRIES:
@@ -40,6 +42,7 @@ func initialize(scenarios: Variant) -> String:
 	_relations = {}
 	_talks = {}
 	_agreements = {}
+	saved_controlled_id = ""
 	return ""
 
 func country_ids() -> Array:
@@ -155,11 +158,16 @@ func load_game(path: String) -> String:
 		return "World save contains invalid JSON."
 	return import_snapshot(json.data)
 
-func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
+func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable(), controlled_id: String = "") -> String:
+	if not controlled_id.is_empty() and not _countries.has(controlled_id):
+		return "Controlled country does not exist in this world."
+	var saved_data := export_snapshot()
+	if not controlled_id.is_empty():
+		saved_data["controlled_country"] = controlled_id
 	var temporary := path + ".tmp"
 	if FileAccess.file_exists(temporary) or DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(temporary)):
 		return "A temporary world save already exists; inspect it before saving."
-	var write_error := World._save_write(temporary, JSON.stringify(export_snapshot()), write_operation)
+	var write_error := World._save_write(temporary, JSON.stringify(saved_data), write_operation)
 	var absolute_temp := ProjectSettings.globalize_path(temporary)
 	if write_error != OK:
 		if FileAccess.file_exists(temporary):
@@ -210,6 +218,9 @@ func save_game(path: String, rename_operation: Callable = Callable(), write_oper
 func import_snapshot(data: Variant) -> String:
 	if not data is Dictionary or not World._is_whole_number(data.get("version")) or data.version < 1 or data.version > 2 or not data.get("countries") is Dictionary or not data.get("relations") is Dictionary or not data.get("talks") is Dictionary:
 		return "Invalid registry snapshot."
+	var control: Variant = data.get("controlled_country", "")
+	if not control is String or (not control.is_empty() and not data.countries.has(control)):
+		return "Registry has invalid controlled country metadata."
 	var talks: Dictionary = data.talks.duplicate(true)
 	var agreements: Variant = data.get("agreements") if data.version == 2 else {}
 	if not agreements is Dictionary:
@@ -250,6 +261,7 @@ func import_snapshot(data: Variant) -> String:
 		if not _valid_pair(key, countries) or not World._is_whole_number(agreements[key]) or agreements[key] < 1 or agreements[key] > AGREEMENT_DAYS:
 			return "Registry has invalid agreement state."
 	_countries = countries
+	saved_controlled_id = control
 	_relations = data.relations.duplicate()
 	_talks = talks
 	_agreements = agreements.duplicate()

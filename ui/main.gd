@@ -90,6 +90,8 @@ var shared_entry_dialog: ConfirmationDialog
 var pending_shared_entry: Dictionary = {}
 var shared_switch_dialog: ConfirmationDialog
 var pending_shared_switch: Dictionary = {}
+var shared_restore_dialog: ConfirmationDialog
+var pending_shared_restore: Dictionary = {}
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -181,6 +183,16 @@ func _ready() -> void:
 	main_backup_button.text = "Load backup"
 	main_backup_button.pressed.connect(_load_backup)
 	controls.add_child(main_backup_button)
+	var restore_controls := HBoxContainer.new()
+	layout.add_child(restore_controls)
+	var shared_restore := Button.new()
+	shared_restore.text = "Review restore shared world"
+	shared_restore.pressed.connect(func(): _request_shared_restore(world_lab.LAB_SAVE))
+	restore_controls.add_child(shared_restore)
+	var shared_backup_restore := Button.new()
+	shared_backup_restore.text = "Review shared backup"
+	shared_backup_restore.pressed.connect(func(): _request_shared_restore(world_lab.LAB_SAVE + ".bak"))
+	restore_controls.add_child(shared_backup_restore)
 	var income_controls := HBoxContainer.new()
 	layout.add_child(income_controls)
 	for node in [tax_label, tax, apply]:
@@ -491,6 +503,13 @@ func _ready() -> void:
 	shared_switch_dialog.confirmed.connect(_confirm_shared_switch)
 	shared_switch_dialog.canceled.connect(func(): pending_shared_switch.clear())
 	add_child(shared_switch_dialog)
+	shared_restore_dialog = ConfirmationDialog.new()
+	shared_restore_dialog.title = "Restore shared world?"
+	shared_restore_dialog.dialog_autowrap = true
+	shared_restore_dialog.min_size = Vector2i(600, 0)
+	shared_restore_dialog.confirmed.connect(_confirm_shared_restore)
+	shared_restore_dialog.canceled.connect(func(): pending_shared_restore.clear())
+	add_child(shared_restore_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -1425,6 +1444,49 @@ func _request_shared_switch(id: String) -> void:
 	pending_shared_switch = {"id": id, "controlled_id": world.country.id, "lab": JSON.stringify(world_lab.registry.export_snapshot())}
 	shared_switch_dialog.dialog_text = "Switch main control from %s to %s? Both countries and their relationships remain in the same world. The shared clock has been paused; queued time will be cleared if you switch. No save file is written. The selected country's policies and data will appear in the main interface." % [world.country.name, state.country.name]
 	shared_switch_dialog.popup_centered()
+
+func _request_shared_restore(path: String) -> void:
+	if not world_lab.initialized or world_lab.batch_remaining > 0:
+		status.text = "Shared restore is unavailable while a lab batch is running."
+		return
+	var candidate = WorldLab.Registry.new()
+	var error: String = candidate.load_game(path)
+	if error.is_empty():
+		error = world_lab._check_lab_identity(candidate)
+	if error.is_empty() and candidate.saved_controlled_id.is_empty():
+		error = "This lab save has no shared controlled country; load it in World Lab and enter shared mode manually."
+	if not error.is_empty():
+		status.text = "Cannot restore shared world: " + error
+		return
+	if running:
+		_toggle_pause()
+	world_lab.running = false
+	world_lab._refresh_clock()
+	pending_shared_restore = {"path": path, "snapshot": JSON.stringify(candidate.export_snapshot()), "id": candidate.saved_controlled_id, "main": JSON.stringify(world.export_snapshot()), "lab": JSON.stringify(world_lab.registry.export_snapshot()), "shared": shared_world_active}
+	shared_restore_dialog.dialog_text = "Restore the saved shared world as %s? This replaces both current sessions. Save them first if needed. Both clocks are paused; restoring clears queued time. No save file is written." % candidate.country_snapshot(candidate.saved_controlled_id).country.name
+	shared_restore_dialog.popup_centered()
+
+func _confirm_shared_restore() -> void:
+	if pending_shared_restore.is_empty():
+		return
+	var request := pending_shared_restore.duplicate(true)
+	pending_shared_restore.clear()
+	var candidate = WorldLab.Registry.new()
+	var error: String = candidate.load_game(request.path)
+	if error.is_empty():
+		error = world_lab._check_lab_identity(candidate)
+	if not error.is_empty() or running or world_lab.running or world_lab.batch_remaining > 0 or shared_world_active != request.shared or JSON.stringify(world.export_snapshot()) != request.main or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab or JSON.stringify(candidate.export_snapshot()) != request.snapshot or candidate.saved_controlled_id != request.id:
+		status.text = "Shared restore is out of date or invalid. Review it again."
+		return
+	_cancel_review()
+	review_dialog.hide()
+	world_lab._accept_registry(candidate, "Shared world restored.")
+	world = candidate.controlled_country(request.id)
+	shared_world_active = true
+	world_lab.set_shared_mode(true, request.id)
+	_update_shared_controls()
+	_sync_loaded_world("Shared world restored and paused.")
+	dashboard_tabs.current_tab = 0
 
 func _confirm_shared_switch() -> void:
 	if pending_shared_switch.is_empty():

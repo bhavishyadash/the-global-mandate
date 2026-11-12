@@ -6,6 +6,8 @@ const WorldMap = preload("res://ui/world_map.gd")
 const LAB_SAVE := "user://experimental_world_save.json"
 const USA := "usa_sandbox"
 const COAST := "coastal_republic"
+const MAX_DAYS_PER_FRAME := 10
+const FRAME_BUDGET_USEC := 8000
 var registry = Registry.new()
 var picker: OptionButton
 var tax: SpinBox
@@ -18,6 +20,13 @@ var dialogue_button: Button
 var lab_map: Control
 var map_status: Label
 var initialized := false
+var running := false
+var elapsed := 0.0
+var batch_remaining := 0
+var clock_buttons: Dictionary = {}
+var guarded_controls: Array = []
+var speed_picker: OptionButton
+var clock_status: Label
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 10)
@@ -39,12 +48,30 @@ func _ready() -> void:
 	initialized = true
 	var actions := HBoxContainer.new()
 	add_child(actions)
-	for spec in [["Advance lab one day", "advance"], ["Save lab world", "save"], ["Load lab world", "load"], ["Load lab backup", "backup"]]:
+	for spec in [["Save lab world", "save"], ["Load lab world", "load"], ["Load lab backup", "backup"]]:
 		var button := Button.new()
 		button.text = spec[0]
 		var action: String = spec[1]
 		button.pressed.connect(func(): _action(action))
 		actions.add_child(button)
+		guarded_controls.append(button)
+	var clock_controls := HBoxContainer.new()
+	add_child(clock_controls)
+	for spec in [["Run lab", "toggle"], ["Advance 1 day", "advance"], ["Advance 30 days", "batch"], ["Cancel 30-day advance", "cancel"]]:
+		var button := Button.new()
+		button.text = spec[0]
+		var action: String = spec[1]
+		button.pressed.connect(func(): _action(action))
+		clock_controls.add_child(button)
+		clock_buttons[action] = button
+	speed_picker = OptionButton.new()
+	for speed in [1, 3, 10]:
+		speed_picker.add_item("%d days/sec" % speed, speed)
+	clock_controls.add_child(speed_picker)
+	speed_picker.item_selected.connect(func(_index: int): _refresh_clock())
+	clock_status = Label.new()
+	clock_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(clock_status)
 	load_confirmation = ConfirmationDialog.new()
 	load_confirmation.title = "Load experimental world?"
 	load_confirmation.dialog_text = "Loading replaces the current lab world. Save it first if you want to keep it. The main game is not changed."
@@ -62,6 +89,7 @@ func _ready() -> void:
 		picker.set_item_metadata(picker.item_count - 1, id)
 	selection.add_child(picker)
 	picker.item_selected.connect(func(_index: int): _selection_changed())
+	guarded_controls.append(picker)
 	var tax_label := Label.new()
 	tax_label.text = "Income tax:"
 	selection.add_child(tax_label)
@@ -72,10 +100,12 @@ func _ready() -> void:
 	tax.suffix = "%"
 	tax.custom_minimum_size = Vector2(105, 0)
 	selection.add_child(tax)
+	guarded_controls.append(tax)
 	var apply := Button.new()
 	apply.text = "Apply to selected country"
 	apply.pressed.connect(apply_tax)
 	selection.add_child(apply)
+	guarded_controls.append(apply)
 	selected_details = Label.new()
 	selected_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(selected_details)
@@ -153,15 +183,75 @@ func refresh() -> void:
 		var c: Dictionary = state.country
 		selected_details.text = "SELECTED: %s\nPopulation %d | income tax %.1f%% | approval %.1f%%\nAnnual revenue $%.1fM | spending $%.1fM | debt $%.1fM" % [c.name, c.population, c.income_tax_rate * 100.0, c.approval, c.annual_revenue / 1000000.0, c.annual_spending / 1000000.0, c.debt / 1000000.0]
 	dialogue_button.disabled = progress >= 0
+	_refresh_clock()
+
+func _refresh_clock() -> void:
+	if clock_status == null:
+		return
+	var batching := batch_remaining > 0
+	clock_buttons.toggle.disabled = batching
+	clock_buttons.advance.disabled = running or batching
+	clock_buttons.batch.disabled = running or batching
+	clock_buttons.cancel.disabled = not batching
+	clock_buttons.toggle.text = "Pause lab" if running else "Run lab"
+	speed_picker.disabled = batching
+	for control in guarded_controls:
+		if control is SpinBox:
+			control.editable = not batching
+		else:
+			control.disabled = batching
+	if dialogue_button != null and batching:
+		dialogue_button.disabled = true
+	clock_status.text = "LAB CLOCK: %s | %d queued day(s) | 30-day advance remaining: %d. Lab time is independent and continues while running, even on another tab." % ["running" if running else "paused", floori(elapsed), batch_remaining]
+
+func _process(delta: float) -> void:
+	if not initialized:
+		return
+	if running:
+		elapsed += maxf(0.0, delta) * speed_picker.get_selected_id()
+	var processed := 0
+	var started := Time.get_ticks_usec()
+	while (batch_remaining > 0 or (running and elapsed >= 1.0)) and processed < MAX_DAYS_PER_FRAME:
+		if processed > 0 and Time.get_ticks_usec() - started >= FRAME_BUDGET_USEC:
+			break
+		if batch_remaining > 0:
+			batch_remaining -= 1
+		else:
+			elapsed -= 1.0
+		registry.advance_day()
+		processed += 1
+	if processed > 0:
+		if batch_remaining == 0 and not running:
+			message.text = "30-day lab advance completed."
+		refresh()
+	elif running:
+		_refresh_clock()
 
 func _action(action: String) -> void:
 	match action:
+		"toggle":
+			running = not running
+			_refresh_clock()
 		"advance": advance_day()
+		"batch":
+			if not running and batch_remaining == 0:
+				batch_remaining = 30
+				message.text = "Advancing the lab by 30 days; cancel stops future days."
+				_refresh_clock()
+		"cancel":
+			batch_remaining = 0
+			message.text = "30-day advance cancelled; completed days remain."
+			refresh()
 		"save": save_to(LAB_SAVE)
 		"load": _request_load(false)
 		"backup": _request_load(true)
 
 func _request_load(backup: bool) -> void:
+	running = false
+	batch_remaining = 0
+	elapsed = 0.0
+	refresh()
+	message.text = "Lab clock paused and queued days cleared before loading."
 	pending_load_path = LAB_SAVE + (".bak" if backup else "")
 	load_confirmation.dialog_text = "Loading the lab %s replaces the current lab world. Save it first if you want to keep it. The main game is not changed." % ("backup" if backup else "save")
 	load_confirmation.popup_centered()
@@ -212,6 +302,9 @@ func load_from(path: String) -> String:
 		message.text = error
 		return error
 	registry = candidate
+	running = false
+	batch_remaining = 0
+	elapsed = 0.0
 	message.text = "Lab world loaded; the main game was not changed."
 	_selection_changed()
 	return ""

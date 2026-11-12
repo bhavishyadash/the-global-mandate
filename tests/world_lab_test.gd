@@ -69,6 +69,28 @@ func run_checks() -> void:
 		lab.advance_day()
 	assert(lab.registry.dialogue_progress(lab.USA, lab.COAST) == -1)
 	assert(lab.registry.relationship(lab.USA, lab.COAST) == 5.0 and not lab.dialogue_button.disabled)
+	var before_batch: int = lab.registry.country_snapshot(lab.USA).fiscal.days
+	lab._action("batch")
+	assert(lab.batch_remaining == 30 and lab.clock_buttons.toggle.disabled and not lab.tax.editable)
+	lab._process(0.0)
+	assert(lab.batch_remaining >= 20 and lab.batch_remaining < 30)
+	lab._action("cancel")
+	var after_cancel: int = lab.registry.country_snapshot(lab.USA).fiscal.days
+	assert(after_cancel > before_batch and lab.batch_remaining == 0 and lab.tax.editable)
+	lab._process(10.0)
+	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == after_cancel)
+	lab._action("batch")
+	while lab.batch_remaining > 0:
+		lab._process(0.0)
+	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == after_cancel + 30)
+	assert(lab.registry.country_snapshot(lab.COAST).date == lab.registry.country_snapshot(lab.USA).date)
+	lab._action("toggle")
+	var before_running: int = lab.registry.country_snapshot(lab.USA).fiscal.days
+	lab._process(2.4)
+	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == before_running + 2)
+	lab._action("toggle")
+	lab._process(10.0)
+	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == before_running + 2)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE + ".bak"))
 	lab.queue_free()

@@ -17,6 +17,11 @@ func run_checks() -> void:
 	screen.world_lab.advance_day()
 	assert(screen.world.export_snapshot() == single_country_before_lab)
 	assert(screen.world_lab.registry.country_snapshot("usa_sandbox").date.day == 2)
+	screen.world_lab._action("batch")
+	while screen.world_lab.batch_remaining > 0:
+		screen.world_lab._process(0.0)
+	assert(screen.world.export_snapshot() == single_country_before_lab)
+	assert(screen.world_lab.registry.country_snapshot("usa_sandbox").date == screen.world_lab.registry.country_snapshot("coastal_republic").date)
 	assert("HOUSE: 435" in screen.congress_summary.text and "SENATE: 100" in screen.congress_summary.text)
 	assert(not screen.congress_buttons.introduce_congress_bill.disabled and screen.congress_buttons.congress_vote.disabled and screen.congress_buttons.sign.disabled)
 	assert("House 280/435" in screen.congress_summary.text and "selected proposal" in screen.congress_summary.text)

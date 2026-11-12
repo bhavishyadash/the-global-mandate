@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 86
+**Report status:** Living record; updated through session 87
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 87:** Added a bounded, independent World Lab clock and cancellable 30-day advance, with clear pause and loading behavior. [Detailed session record](SESSION_87.md). The lab remains experimental and separate from the main game.
 
 **Session 86:** Connected World Lab's US sandbox to an independent map and added confirmed lab-backup loading. [Detailed session record](SESSION_86.md). The lab remains independent of the main game; Coastal Republic is fictional and has no geographic location.
 

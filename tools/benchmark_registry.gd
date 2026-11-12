@@ -6,11 +6,15 @@ const Registry = preload("res://simulation/world_registry.gd")
 # Synthetic copies and simplified bilateral dialogue; not a real-world model.
 func _initialize() -> void:
 	var base: Variant = World.Scenario.read_file(World.DEFAULT_SCENARIO)
+	var dynamic_population := "--dynamic-population" in OS.get_cmdline_user_args()
 	print("Synthetic coupled registry | Godot %s | OS %s" % [Engine.get_version_info().string, OS.get_name()])
+	print("population_model=%s" % ("fictional dynamic rates" if dynamic_population else "static"))
 	for count in [2, 50, 200]:
 		var scenarios: Array = []
 		for i in range(count):
 			var scenario: Dictionary = base.duplicate(true)
+			if dynamic_population:
+				scenario.population_rules = {"birth_rate_tenths": 120, "death_rate_tenths": 90, "migration_rate_tenths": 20}
 			scenario.country.id = "country_%03d" % i
 			scenario.country.name = "Synthetic country %03d" % i
 			scenarios.append(scenario)

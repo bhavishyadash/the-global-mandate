@@ -196,6 +196,7 @@ func run_checks() -> void:
 	screen._confirm_shared_entry()
 	screen.shared_entry_dialog.hide()
 	assert(screen.shared_world_active and screen.world_lab.shared_mode and screen.world == screen.world_lab.registry.controlled_country(shared_id))
+	assert("assumed annual rates per 1,000" in screen.population_summary.text and "fixed" in screen.population_summary.text)
 	assert(screen._request_review("set_income_tax", {"rate": 0.22}))
 	screen._confirm_review()
 	screen.review_dialog.hide()

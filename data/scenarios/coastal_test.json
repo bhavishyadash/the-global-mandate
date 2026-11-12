@@ -2,6 +2,7 @@
   "version": 2,
   "id": "coastal_test",
   "seed": 12345,
+  "population_rules": {"birth_rate_tenths": 150, "death_rate_tenths": 100, "migration_rate_tenths": 10},
   "description": "Fictional alternate starting state; not real-world data.",
   "date": {
     "year": 2026,

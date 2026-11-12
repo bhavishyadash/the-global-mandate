@@ -1366,7 +1366,7 @@ func _forecast_budget() -> void:
 	var d: Dictionary = result.end_date
 	var warning := _forecast_cash_warning(result)
 	var model_note := "Shared-world model includes existing bilateral talks and agreements." if shared_world_active else "Single-country model."
-	forecast_label.text = "%d-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [days, d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
+	forecast_label.text = "%d-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nPopulation %d | Cash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [days, d.year, d.month, d.day, result.population, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
 	forecast_current = true
 
 func _forecast_cash_warning(result: Dictionary) -> String:
@@ -2106,11 +2106,12 @@ func _refresh() -> void:
 	lines.append("Test policy requires a majority, takes %d days and then costs $%.0f per year. Next illustrative election: January 1, %d. Seat allocation is a simplified placeholder." % [ceili(100.0 / float(world.policy_rules.procurement_progress_per_day)), world.policy_rules.procurement_annual_cost, world.next_election_year()])
 	politics_summary.text = "\n".join(lines)
 	_refresh_congress()
-	var people := PackedStringArray(["POPULATION APPROVAL — fictional test groups", "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
+	var demographic_rules: Dictionary = world.demographics.rules
+	var people := PackedStringArray(["POPULATION AND APPROVAL — fictional test groups", "Population: %d | assumed annual rates per 1,000: births %.1f, deaths %.1f, net migration %+.1f. Population changes daily using these fixed rates; values are fictional, not real statistics." % [c.population, demographic_rules.birth_rate_tenths / 10.0, demographic_rules.death_rate_tenths / 10.0, demographic_rules.migration_rate_tenths / 10.0], "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
 	for i in range(world.politics.groups.size()):
 		var group: Dictionary = world.politics.groups[i]
 		people.append("%s | %.0f%% of population (~%.0f people) | approval %.1f%%\n  Raw %.1f + services %+.1f points | sensitivity to +1 percentage point tax: income -%.2f, consumption -%.2f, corporate -%.2f points before limits." % [group.name, group.share * 100.0, c.population * group.share, group.approval, group.raw_approval, group.service_bonus, group.tax_sensitivity / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.consumption[i] / 100.0, world.politics.ADDITIONAL_TAX_SENSITIVITIES.corporate[i] / 100.0])
-	people.append("Service contribution responds gradually to the average condition of the five services. The three groups and all sensitivities are placeholders, not real demographic data or a model of individual personalities.")
+	people.append("Service contribution responds gradually to the average condition of the five services. Group shares and tax bases stay fixed; age, fertility, employment, migration policy and individual personalities are not modeled. The three groups, rates and sensitivities are placeholders, not real demographic data.")
 	population_summary.text = "\n\n".join(people)
 	var diplomatic_lines := PackedStringArray(["DIPLOMACY — fictional test rules", "Talks take 30 days; completion or cancellation starts a 90-day cooldown. Dialogue adds 5 relations. Accepted cooperation adds 10 and creates or renews a 365-day agreement with a $20 million annual partner contribution and $10 million annual cost; ending it early costs 5 relations. These are fictional assumptions, not trade estimates. Only one negotiation can run at a time. No trade or conflict effects are modeled."])
 	for partner in world.diplomacy.PARTNERS:

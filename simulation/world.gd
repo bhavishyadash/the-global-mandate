@@ -8,6 +8,7 @@ const Healthcare = preload("res://simulation/healthcare.gd")
 const Congress = preload("res://simulation/congress.gd")
 const Scenario = preload("res://simulation/scenario.gd")
 const PolicyRules = preload("res://simulation/policy_rules.gd")
+const Demographics = preload("res://simulation/demographics.gd")
 const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
 const ANNUAL_DEBT_RATE := 0.03
 const TEST_TAXABLE_BASE := 2000000000.0
@@ -20,6 +21,7 @@ var diplomacy = Diplomacy.new()
 var healthcare = Healthcare.new()
 var congress = Congress.new()
 var policy_rules: Dictionary = PolicyRules.defaults()
+var demographics = Demographics.new()
 
 # All values here are fictional test data; rates are annual USD.
 const INITIAL_DATE := {"year": 2026, "month": 1, "day": 1}
@@ -62,6 +64,8 @@ func apply_scenario(data: Variant) -> String:
 	diplomacy = Diplomacy.new()
 	healthcare = Healthcare.new()
 	congress = Congress.new()
+	demographics = Demographics.new()
+	demographics.configure(data.get("population_rules", Demographics.default_rules()))
 	policy_rules = data.policy_rules.duplicate(true) if data.version >= 5 else PolicyRules.defaults()
 	if data.version >= 3:
 		healthcare.configure(data.healthcare_rules)
@@ -139,7 +143,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.policy_rules = policy_rules.duplicate(true)
 	future.healthcare.configure(healthcare.rules)
 	future.institutions.configure(institutions.rules)
-	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
+	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()) or not future.demographics.import_state(demographics.export_state()):
 		return {}
 	if not future._apply_forecast_changes(changes):
 		return {}
@@ -157,6 +161,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	result.cash = future.country.treasury
 	result.debt = future.country.debt
 	result.approval = future.country.approval
+	result.population = future.country.population
 	return result
 
 # Apply forecast inputs only to an isolated copy; a rejected request may have
@@ -210,6 +215,8 @@ func advance_day() -> void:
 		country.debt -= repayment
 		fiscal.repaid += repayment
 		country.treasury += balance - repayment
+	var population_change: Dictionary = demographics.advance(country.population, is_leap_year(date.year))
+	country.population = population_change.population
 	services.advance_day(country.spending_categories, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus())
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
@@ -273,7 +280,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 23, "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 24, "demographics": demographics.export_state(), "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -359,7 +366,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 23:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 24:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -447,6 +454,11 @@ func import_snapshot(parsed: Variant) -> String:
 		for event in e:
 			loaded_records.append({"category": "legacy", "date": null, "text": event, "cause": "legacy_unknown", "severity": "info"})
 	var loaded_politics = Politics.new()
+	var loaded_demographics = Demographics.new()
+	if parsed.version >= 24 and not loaded_demographics.import_state(parsed.get("demographics")):
+		return "Save has invalid demographic data."
+	if c.population > Demographics.MAX_POPULATION and (loaded_demographics.rules.birth_rate_tenths != 0 or loaded_demographics.rules.death_rate_tenths != 0 or loaded_demographics.rules.migration_rate_tenths != 0):
+		return "Save population exceeds the demographic model's supported bound."
 	var loaded_policy_rules: Variant = parsed.get("policy_rules") if parsed.version >= 20 else PolicyRules.defaults()
 	if not PolicyRules.valid(loaded_policy_rules):
 		return "Save has invalid baseline policy rules."
@@ -531,6 +543,7 @@ func import_snapshot(parsed: Variant) -> String:
 	congress = loaded_congress
 	policy_rules = loaded_policy_rules.duplicate(true)
 	diplomacy = loaded_diplomacy
+	demographics = loaded_demographics
 	events.clear()
 	for event in e:
 		events.append(event)

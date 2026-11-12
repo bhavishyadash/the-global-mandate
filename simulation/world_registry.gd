@@ -82,6 +82,7 @@ func forecast_fiscal(id: String, days: int, changes: Dictionary = {}) -> Diction
 	result.cash = country.country.treasury
 	result.debt = country.country.debt
 	result.approval = country.country.approval
+	result.population = country.country.population
 	return result
 
 func execute_country(id: String, request: Variant) -> Dictionary:

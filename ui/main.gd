@@ -118,6 +118,13 @@ var inspector_sections: Array = []
 var inspector_reference: Label
 var map_inspector_scroll: ScrollContainer
 var map_layout: BoxContainer
+var map_navigation: HBoxContainer
+var map_controls: HBoxContainer
+var map_view_button: Button
+var map_inspector_button: Button
+var map_back_button: Button
+var map_tab_scroll: ScrollContainer
+var map_inspector_view := false
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -174,8 +181,25 @@ func _update_canvas_size() -> void:
 	_update_map_layout.call_deferred()
 
 func _update_map_layout() -> void:
-	if is_instance_valid(map_layout):
-		map_layout.vertical = get_viewport_rect().size.x < 800.0
+	if not is_instance_valid(map_layout) or not is_instance_valid(map_inspector_scroll) or not is_instance_valid(map_back_button):
+		return
+	_apply_map_layout(get_viewport_rect().size.x < 800.0)
+
+func _apply_map_layout(compact: bool) -> void:
+	map_layout.vertical = compact
+	map_navigation.visible = compact
+	map_controls.visible = not compact or not map_inspector_view
+	map_back_button.visible = compact
+	world_map.visible = not compact or not map_inspector_view
+	map_inspector_scroll.visible = not compact or map_inspector_view
+	map_view_button.set_pressed_no_signal(not map_inspector_view)
+	map_inspector_button.set_pressed_no_signal(map_inspector_view)
+
+func _set_map_view(inspector: bool) -> void:
+	map_inspector_view = inspector
+	_update_map_layout()
+	if is_instance_valid(map_tab_scroll):
+		map_tab_scroll.scroll_vertical = 0
 
 func _ready() -> void:
 	ui_size_index = _read_ui_size(UI_PREFERENCES_PATH)
@@ -416,11 +440,29 @@ func _ready() -> void:
 	var decisions := _make_dashboard_tab("History")
 	var laws := _make_dashboard_tab("Laws")
 	var map_tab := _make_dashboard_tab("World Map")
+	map_tab_scroll = map_tab.get_parent() as ScrollContainer
 	var executive := _make_dashboard_tab("Executive Orders")
 	var lab_tab := _make_dashboard_tab("World Lab")
 	world_lab = WorldLab.new()
 	lab_tab.add_child(world_lab)
-	var map_controls := HBoxContainer.new()
+	map_navigation = HBoxContainer.new()
+	map_tab.add_child(map_navigation)
+	var map_view_group := ButtonGroup.new()
+	map_view_button = Button.new()
+	map_view_button.text = "Map"
+	map_view_button.toggle_mode = true
+	map_view_button.button_group = map_view_group
+	map_view_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_view_button.pressed.connect(func(): _set_map_view(false))
+	map_navigation.add_child(map_view_button)
+	map_inspector_button = Button.new()
+	map_inspector_button.text = "Country panel"
+	map_inspector_button.toggle_mode = true
+	map_inspector_button.button_group = map_view_group
+	map_inspector_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_inspector_button.pressed.connect(func(): _set_map_view(true))
+	map_navigation.add_child(map_inspector_button)
+	map_controls = HBoxContainer.new()
 	map_tab.add_child(map_controls)
 	var map_help := Label.new()
 	map_help.text = "Click select  •  Double-click focus  •  Drag pan  •  Wheel zoom"
@@ -461,6 +503,10 @@ func _ready() -> void:
 	map_sidebar.custom_minimum_size = Vector2(270, 0)
 	map_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_sidebar_scroll.add_child(map_sidebar)
+	map_back_button = Button.new()
+	map_back_button.text = "Back to map"
+	map_back_button.pressed.connect(func(): _set_map_view(false))
+	map_sidebar.add_child(map_back_button)
 	var map_heading := Label.new()
 	map_heading.text = "EXPLORE THE WORLD"
 	map_sidebar.add_child(map_heading)
@@ -955,6 +1001,8 @@ func _map_country_selected(id: String, country_name: String) -> void:
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\nCOUNTRY  •  %s\nCapital: %s\nMapped places: %d\n\nGeography and place names are reference data. Regional simulation is not implemented." % [country_name, id, capital, count]
 	_refresh_map_simulation()
+	if map_layout.vertical:
+		_set_map_view(true)
 	if shared_world_active:
 		_open_country_inspector.call_deferred()
 
@@ -964,6 +1012,8 @@ func _map_city_selected(city: Dictionary) -> void:
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\n%s  •  %s\nLatitude: %.2f°\nLongitude: %.2f°\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country, float(city.point[1]), float(city.point[0])]
 	_refresh_map_simulation()
+	if map_layout.vertical:
+		_set_map_view(true)
 	if shared_world_active:
 		_open_country_inspector.call_deferred()
 

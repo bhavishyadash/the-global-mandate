@@ -70,8 +70,10 @@ In shared mode, open **World Map** to inspect the live relationship and review d
 
 The shared-world map selector also shows a live country overview: government bloc, population, approval, tax, revenue, spending, balance, cash, debt and diplomatic activity. Values and the simplified 100-seat government bloc are fictional. Unmapped countries are identified explicitly. See [session 95](docs/SESSION_95.md).
 
-The shared-world country inspector organizes information into Overview, Government, Economy and Diplomacy. Selecting map geography brings the inspector into view, and reference-only locations identify unavailable simulation data. In narrow windows the map and inspector stack vertically and may require nested scrolling. See [session 96](docs/SESSION_96.md).
+The shared-world country inspector organizes information into Overview, Government, Economy and Diplomacy. Selecting map geography brings the inspector into view, and reference-only locations identify unavailable simulation data. In narrow windows, use **Map** and **Country panel** to switch between them; the panel also offers **Back to map**. See [session 96](docs/SESSION_96.md).
 
-Window resizing keeps the interface from shrinking below its minimum canvas scale. Wide windows show the map and country panel side by side; narrow windows stack them. See [session 97](docs/SESSION_97.md).
+Window resizing keeps the interface from shrinking below its minimum canvas scale. Wide windows show the map and country panel side by side; narrow windows provide a switch between them. See [session 97](docs/SESSION_97.md).
 
 Use **Small-window UI** near the save controls to choose Compact, Standard or Large for smaller windows. The selection is saved separately from game progress; invalid or missing preferences use Standard. See [session 98](docs/SESSION_98.md).
+
+See [session 99](docs/SESSION_99.md) for compact map navigation.

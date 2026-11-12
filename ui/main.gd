@@ -78,6 +78,8 @@ var map_binding_error := ""
 var world_lab: VBoxContainer
 var lab_handoff_dialog: ConfirmationDialog
 var pending_lab_handoff: Dictionary = {}
+var main_to_lab_dialog: ConfirmationDialog
+var pending_main_to_lab: Dictionary = {}
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -445,6 +447,15 @@ func _ready() -> void:
 	lab_handoff_dialog.canceled.connect(_cancel_lab_handoff)
 	add_child(lab_handoff_dialog)
 	world_lab.copy_to_main_requested.connect(_request_lab_handoff)
+	main_to_lab_dialog = ConfirmationDialog.new()
+	main_to_lab_dialog.title = "Create a new lab world?"
+	main_to_lab_dialog.ok_button_text = "Create lab world"
+	main_to_lab_dialog.dialog_autowrap = true
+	main_to_lab_dialog.min_size = Vector2i(600, 0)
+	main_to_lab_dialog.confirmed.connect(_confirm_main_to_lab)
+	main_to_lab_dialog.canceled.connect(_cancel_main_to_lab)
+	add_child(main_to_lab_dialog)
+	world_lab.copy_from_main_requested.connect(_request_main_to_lab)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -1262,10 +1273,47 @@ func _confirm_lab_handoff() -> void:
 	_sync_loaded_world("Lab country copied to the main game; both worlds remain separate.")
 	dashboard_tabs.current_tab = 0
 
+func _request_main_to_lab() -> void:
+	if not world_lab.initialized or world_lab.batch_remaining > 0:
+		status.text = "Cannot create a lab world while a batch is running."
+		return
+	var snapshot: Dictionary = world.export_snapshot()
+	var result: Dictionary = world_lab.build_from_main(snapshot)
+	if not result.error.is_empty():
+		status.text = result.error
+		return
+	if running:
+		_toggle_pause()
+	world_lab.running = false
+	world_lab._refresh_clock()
+	pending_main_to_lab = {"main_snapshot": JSON.stringify(snapshot), "lab_snapshot": JSON.stringify(world_lab.registry.export_snapshot()), "proposed": result.snapshot.duplicate(true)}
+	var date: Dictionary = snapshot.date
+	main_to_lab_dialog.dialog_text = "Create a new lab world from the main US sandbox at %04d-%02d-%02d? This replaces the current lab session; save it first if you want to keep it. A fresh fictional Coastal Republic starts on the same date, with no bilateral history. Both clocks have been paused. Neither save file is written; the two worlds remain independent." % [date.year, date.month, date.day]
+	main_to_lab_dialog.popup_centered()
+
+func _cancel_main_to_lab() -> void:
+	pending_main_to_lab.clear()
+
+func _confirm_main_to_lab() -> void:
+	if pending_main_to_lab.is_empty():
+		return
+	var request := pending_main_to_lab.duplicate(true)
+	_cancel_main_to_lab()
+	if running or world_lab.running or world_lab.batch_remaining > 0 or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab_snapshot:
+		status.text = "New lab world review is out of date. Review it again."
+		return
+	var error: String = world_lab.replace_world(request.proposed)
+	if not error.is_empty():
+		status.text = "Could not create the lab world: " + error
+		return
+	status.text = "Lab world created from main US sandbox; both worlds remain separate."
+	dashboard_tabs.current_tab = 10
+
 func _refresh() -> void:
 	_invalidate_forecasts()
 	_update_speed_status()
 	_refresh_map_simulation()
+	world_lab.set_main_import_available(world.scenario_id == "usa_sandbox" and world.country.id == "usa_sandbox" and world.date.year <= 9998)
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	government_status.text = "%s   |   %04d-%02d-%02d   |   Cash $%.1fM   |   Annual balance $%.1fM   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, c.treasury / 1000000.0, world.annual_balance() / 1000000.0, c.approval]

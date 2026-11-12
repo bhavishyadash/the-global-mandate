@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 89
+**Report status:** Living record; updated through session 90
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 90:** Added a reviewed, validated migration from the current US sandbox into a new synchronized two-country lab, preserving US state and initializing a fresh fictional partner on the same date. [Detailed session record](SESSION_90.md). The lab and main game remain independent.
 
 **Session 89:** Added a reviewed, one-way country snapshot copy from World Lab to the main single-country session, with stale-state checks and no automatic save writes. [Detailed session record](SESSION_89.md). The worlds do not stay synchronized and lab-level relations are not copied.
 

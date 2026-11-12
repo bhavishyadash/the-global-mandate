@@ -1,6 +1,7 @@
 extends VBoxContainer
 
 signal copy_to_main_requested(country_id: String)
+signal copy_from_main_requested
 
 const Registry = preload("res://simulation/world_registry.gd")
 const World = preload("res://simulation/world.gd")
@@ -32,6 +33,8 @@ var clock_buttons: Dictionary = {}
 var guarded_controls: Array = []
 var speed_picker: OptionButton
 var clock_status: Label
+var copy_from_main_button: Button
+var main_import_available := false
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 10)
@@ -60,6 +63,11 @@ func _ready() -> void:
 		button.pressed.connect(func(): _action(action))
 		actions.add_child(button)
 		guarded_controls.append(button)
+	copy_from_main_button = Button.new()
+	copy_from_main_button.text = "Review new lab world from main US sandbox"
+	copy_from_main_button.tooltip_text = "Requires the US sandbox in the main game and a supported date. The current lab session will be replaced only after review."
+	copy_from_main_button.pressed.connect(func(): copy_from_main_requested.emit())
+	add_child(copy_from_main_button)
 	var clock_controls := HBoxContainer.new()
 	add_child(clock_controls)
 	for spec in [["Run lab", "toggle"], ["Advance 1 day", "advance"], ["Advance 30 days", "batch"], ["Cancel 30-day advance", "cancel"]]:
@@ -234,6 +242,7 @@ func _refresh_clock() -> void:
 			control.editable = not batching
 		else:
 			control.disabled = batching
+	copy_from_main_button.disabled = batching or not main_import_available
 	if dialogue_button != null and batching:
 		dialogue_button.disabled = true
 		cancel_talks_button.disabled = true
@@ -331,22 +340,66 @@ func save_to(path: String) -> String:
 	message.text = "Lab world saved to its separate slot." if error.is_empty() else error
 	return error
 
+func set_main_import_available(available: bool) -> void:
+	main_import_available = available
+	_refresh_clock()
+
+func build_from_main(snapshot: Variant) -> Dictionary:
+	var main_country = World.new()
+	var error: String = main_country.import_snapshot(snapshot)
+	if not error.is_empty():
+		return {"error": "Main state is invalid: " + error}
+	if main_country.scenario_id != USA or main_country.country.id != USA:
+		return {"error": "The main session must be the US sandbox."}
+	var scenario: Variant = World.Scenario.read_file("res://data/scenarios/coastal_test.json")
+	if not scenario is Dictionary:
+		return {"error": "The fictional partner scenario is unavailable."}
+	scenario.date = main_country.date.duplicate(true)
+	var coastal = World.new()
+	error = coastal.apply_scenario(scenario)
+	if not error.is_empty():
+		return {"error": "Cannot create the partner on this date: " + error}
+	var data := {"version": 2, "countries": {USA: main_country.export_snapshot(), COAST: coastal.export_snapshot()}, "relations": {}, "talks": {}, "agreements": {}}
+	var candidate = Registry.new()
+	error = candidate.import_snapshot(data)
+	if not error.is_empty():
+		return {"error": "Cannot create the new lab world: " + error}
+	return {"error": "", "snapshot": candidate.export_snapshot()}
+
+func replace_world(snapshot: Variant) -> String:
+	var candidate = Registry.new()
+	var error: String = candidate.import_snapshot(snapshot)
+	if error.is_empty():
+		error = _check_lab_identity(candidate)
+	if not error.is_empty():
+		return error
+	_accept_registry(candidate, "New lab world created from the main US sandbox.")
+	return ""
+
+func _check_lab_identity(candidate: Variant) -> String:
+	if candidate.country_ids() != [COAST, USA]:
+		return "This save is not the two-country lab world."
+	if candidate.country_snapshot(USA).scenario_id != "usa_sandbox" or candidate.country_snapshot(COAST).scenario_id != "coastal_test":
+		return "This save has unexpected lab scenario identities."
+	return ""
+
+func _accept_registry(candidate: Variant, text: String) -> void:
+	registry = candidate
+	running = false
+	batch_remaining = 0
+	elapsed = 0.0
+	message.text = text
+	_selection_changed()
+
 func load_from(path: String) -> String:
 	if not initialized:
 		return "World lab is unavailable."
 	var candidate = Registry.new()
 	var error: String = candidate.load_game(path)
-	if error.is_empty() and candidate.country_ids() != [COAST, USA]:
-		error = "This save is not the two-country lab world."
-	if error.is_empty() and (candidate.country_snapshot(USA).scenario_id != "usa_sandbox" or candidate.country_snapshot(COAST).scenario_id != "coastal_test"):
-		error = "This save has unexpected lab scenario identities."
+	if error.is_empty():
+		error = _check_lab_identity(candidate)
 	if not error.is_empty():
 		message.text = error
 		return error
-	registry = candidate
-	running = false
-	batch_remaining = 0
-	elapsed = 0.0
-	message.text = "Lab world loaded; the main game was not changed."
-	_selection_changed()
+	_accept_registry(candidate, "Lab world loaded; the main game was not changed.")
 	return ""

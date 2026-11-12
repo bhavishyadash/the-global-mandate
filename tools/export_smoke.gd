@@ -4,8 +4,13 @@ const World = preload("res://simulation/world.gd")
 const WorldMap = preload("res://ui/world_map.gd")
 const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
 const Registry = preload("res://simulation/world_registry.gd")
+const LawCatalogData = preload("res://ui/law_catalog_data.gd")
 
 func _initialize() -> void:
+	if not LawCatalogData.validate(LawCatalogData.read()).is_empty():
+		push_error("Packaged law catalogue could not be loaded.")
+		quit(1)
+		return
 	var world = World.new()
 	if not world.initialization_error.is_empty() or world.scenario_id != "test_republic" or world.country.get("id") != "test_republic":
 		push_error("Packaged scenario did not initialize.")

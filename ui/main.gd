@@ -9,6 +9,7 @@ const WorldLab = preload("res://ui/world_lab.gd")
 const GovernmentTheme = preload("res://ui/government_theme.gd")
 const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
 const BudgetChart = preload("res://ui/budget_chart.gd")
+const LawCatalogData = preload("res://ui/law_catalog_data.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -135,6 +136,8 @@ var law_categories: TabBar
 var law_search: LineEdit
 var law_catalog: Tree
 var law_catalog_note: Label
+var law_catalog_data: Dictionary = {}
+var law_catalog_error := ""
 var healthcare_panel: VBoxContainer
 var procurement_panel: VBoxContainer
 var procurement_detail: Label
@@ -917,8 +920,12 @@ func _ready() -> void:
 	var law_heading := Label.new()
 	law_heading.text = "LAW CATALOGUE — fictional single-chamber scenario"
 	laws.add_child(law_heading)
+	var law_data: Variant = LawCatalogData.read()
+	law_catalog_error = LawCatalogData.validate(law_data)
+	if law_catalog_error.is_empty():
+		law_catalog_data = law_data.duplicate(true)
 	law_categories = TabBar.new()
-	for category in ["Healthcare", "Finance", "Military", "Justice", "Education"]:
+	for category in law_catalog_data.get("categories", ["Unavailable"]):
 		law_categories.add_tab(category)
 	laws.add_child(law_categories)
 	law_search = LineEdit.new()
@@ -1513,35 +1520,44 @@ func _refresh_law_catalog() -> void:
 		return
 	law_catalog.clear()
 	var root_item := law_catalog.create_item()
+	if not law_catalog_error.is_empty():
+		law_catalog_note.text = law_catalog_error
+		healthcare_panel.visible = false
+		procurement_panel.visible = false
+		return
 	var category := law_categories.get_tab_title(law_categories.current_tab)
 	var query := law_search.text.strip_edges().to_lower()
-	var id := ""
-	var name := ""
-	var state := ""
-	var cost := 0.0
-	if category == "Healthcare":
-		id = "healthcare"
-		name = "Healthcare expansion"
-		state = "Active" if world.healthcare.active else "Not enacted"
-		cost = world.healthcare.annual_cost()
-	elif category == "Finance":
-		id = "procurement"
-		name = "Procurement policy"
-		state = "Active" if world.politics.procurement_policy else "Not enacted"
-		cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
-	if id.is_empty() or (not query.is_empty() and query not in name.to_lower()):
+	var first_id := ""
+	for law in law_catalog_data.laws:
+		if law.category != category:
+			continue
+		var search_text: String = (law.name + " " + " ".join(law.keywords)).to_lower()
+		if not query.is_empty() and query not in search_text:
+			continue
+		var state := ""
+		var cost := 0.0
+		match law.id:
+			"healthcare":
+				state = "Active" if world.healthcare.active else "Not enacted"
+				cost = world.healthcare.annual_cost()
+			"procurement":
+				state = "Active" if world.politics.procurement_policy else "Not enacted"
+				cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
+		var row := law_catalog.create_item(root_item)
+		row.set_text(0, law.name)
+		row.set_text(1, state)
+		row.set_text(2, "$%.1fM / year" % (cost / 1000000.0))
+		row.set_metadata(0, law.id)
+		if first_id.is_empty():
+			first_id = law.id
+			row.select(0)
+	if first_id.is_empty():
 		law_catalog_note.text = "No implemented laws match this category and search."
 		healthcare_panel.visible = false
 		procurement_panel.visible = false
 		return
-	var row := law_catalog.create_item(root_item)
-	row.set_text(0, name)
-	row.set_text(1, state)
-	row.set_text(2, "$%.1fM / year" % (cost / 1000000.0))
-	row.set_metadata(0, id)
-	row.select(0)
 	law_catalog_note.text = "Select a law to inspect its details. Values and political rules are fictional."
-	_show_law_detail(id)
+	_show_law_detail(first_id)
 
 func _law_catalog_selected() -> void:
 	var selected := law_catalog.get_selected()

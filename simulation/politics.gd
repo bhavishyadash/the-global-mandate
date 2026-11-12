@@ -3,9 +3,9 @@ extends RefCounted
 # Fictional groups and coefficients for testing, not empirical estimates.
 const ADDITIONAL_TAX_SENSITIVITIES := {"consumption": [120.0, 90.0, 50.0], "corporate": [10.0, 25.0, 80.0]}
 var groups: Array = [
-	{"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 100.0},
-	{"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 105.0},
-	{"name": "Higher income", "share": 0.2, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 115.0},
+	{"name": "Lower income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 100.0, "additional_tax_sensitivity": {"consumption": 120.0, "corporate": 10.0}},
+	{"name": "Middle income", "share": 0.4, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 105.0, "additional_tax_sensitivity": {"consumption": 90.0, "corporate": 25.0}},
+	{"name": "Higher income", "share": 0.2, "approval": 50.0, "raw_approval": 50.0, "service_bonus": 0.0, "tax_sensitivity": 115.0, "additional_tax_sensitivity": {"consumption": 50.0, "corporate": 80.0}},
 ]
 var parties: Array = [
 	{"name": "Government", "seats": 48, "support": true},
@@ -23,7 +23,7 @@ func apply_tax_change(delta: float) -> void:
 
 func apply_additional_tax_change(kind: String, delta: float) -> void:
 	for i in range(groups.size()):
-		groups[i].raw_approval -= delta * ADDITIONAL_TAX_SENSITIVITIES[kind][i]
+		groups[i].raw_approval -= delta * groups[i].additional_tax_sensitivity[kind]
 		groups[i].approval = clampf(groups[i].raw_approval + groups[i].service_bonus, 0.0, 100.0)
 
 func apply_service_bonuses(bonuses: Array) -> void:
@@ -114,10 +114,10 @@ func election() -> void:
 func export_state() -> Dictionary:
 	return {"groups": groups.duplicate(true), "parties": parties.duplicate(true), "procurement_policy": procurement_policy, "procurement_progress": procurement_progress, "election_count": election_count}
 
-func import_state(state: Variant) -> bool:
+func import_state(state: Variant, allow_legacy: bool = true) -> bool:
 	if not state is Dictionary or not state.get("groups") is Array or not state.get("parties") is Array:
 		return false
-	var gs: Array = state.groups
+	var gs: Array = state.groups.duplicate(true)
 	var ps: Array = state.parties
 	if gs.size() != 3 or ps.size() != 3 or not state.get("procurement_policy") is bool:
 		return false
@@ -128,7 +128,8 @@ func import_state(state: Variant) -> bool:
 	if not state.procurement_policy and progress != 0:
 		return false
 	var shares := 0.0
-	for group in gs:
+	for i in range(gs.size()):
+		var group: Variant = gs[i]
 		if not group is Dictionary or not group.get("name") is String:
 			return false
 		for key in ["share", "approval", "raw_approval", "service_bonus", "tax_sensitivity"]:
@@ -138,6 +139,17 @@ func import_state(state: Variant) -> bool:
 			return false
 		if absf(group.approval - clampf(group.raw_approval + group.service_bonus, 0.0, 100.0)) > 0.001:
 			return false
+		if not group.has("additional_tax_sensitivity"):
+			if not allow_legacy:
+				return false
+			group.additional_tax_sensitivity = {"consumption": ADDITIONAL_TAX_SENSITIVITIES.consumption[i], "corporate": ADDITIONAL_TAX_SENSITIVITIES.corporate[i]}
+		var sensitivities: Variant = group.additional_tax_sensitivity
+		if not sensitivities is Dictionary or sensitivities.size() != 2:
+			return false
+		for kind in ["consumption", "corporate"]:
+			if not _number(sensitivities.get(kind)) or absf(float(sensitivities[kind])) > 1000.0:
+				return false
+			sensitivities[kind] = float(sensitivities[kind])
 		shares += group.share
 	if absf(shares - 1.0) > 0.00001:
 		return false

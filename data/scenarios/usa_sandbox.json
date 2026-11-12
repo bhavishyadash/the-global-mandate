@@ -37,7 +37,8 @@
         "approval": 50.0,
         "raw_approval": 50.0,
         "service_bonus": 0.0,
-        "tax_sensitivity": 100.0
+        "tax_sensitivity": 100.0,
+        "additional_tax_sensitivity": {"consumption": 140.0, "corporate": -20.0}
       },
       {
         "name": "Middle income",
@@ -45,7 +46,8 @@
         "approval": 50.0,
         "raw_approval": 50.0,
         "service_bonus": 0.0,
-        "tax_sensitivity": 105.0
+        "tax_sensitivity": 105.0,
+        "additional_tax_sensitivity": {"consumption": 95.0, "corporate": 25.0}
       },
       {
         "name": "Higher income",
@@ -53,7 +55,8 @@
         "approval": 50.0,
         "raw_approval": 50.0,
         "service_bonus": 0.0,
-        "tax_sensitivity": 115.0
+        "tax_sensitivity": 115.0,
+        "additional_tax_sensitivity": {"consumption": 45.0, "corporate": 85.0}
       }
     ],
     "parties": [

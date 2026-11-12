@@ -97,3 +97,5 @@ The fictional US and Coastal Republic scenarios now use illustrative daily birth
 Population trend values are recorded for new monthly samples; older history without population is retained without inventing past values. See [session 108](docs/SESSION_108.md).
 
 The Population tab allocates whole-person group counts from fixed fictional shares so they sum to the national total; approval still uses the unrounded shares. See [session 109](docs/SESSION_109.md).
+
+Fictional population groups can have scenario-specific consumption and corporate tax responses, including positive or negative approval changes. Older saves use the former defaults. These coefficients are invented, not real polling data. See [session 110](docs/SESSION_110.md).

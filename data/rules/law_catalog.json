@@ -1,8 +1,1560 @@
 {
   "version": 1,
-  "categories": ["Healthcare", "Finance", "Military", "Justice", "Education"],
+  "categories": [
+    "Finance",
+    "Tax",
+    "Industry",
+    "Farming",
+    "Military",
+    "Justice",
+    "Immigration",
+    "Healthcare",
+    "Research",
+    "Education",
+    "Culture",
+    "Media",
+    "Sports",
+    "Housing",
+    "Police",
+    "Environment",
+    "Services",
+    "Family",
+    "Women & Children",
+    "Debt",
+    "Diplomacy & Aid"
+  ],
   "laws": [
-    {"id": "healthcare", "name": "Healthcare expansion", "category": "Healthcare", "keywords": ["health", "medical", "care"]},
-    {"id": "procurement", "name": "Procurement policy", "category": "Finance", "keywords": ["public", "purchasing", "procurement"]}
+    {
+      "id": "procurement",
+      "name": "Procurement policy",
+      "category": "Finance",
+      "keywords": [
+        "public",
+        "purchasing",
+        "procurement"
+      ]
+    },
+    {
+      "id": "topic_finance_federal_budget_framework",
+      "name": "Federal budget framework",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_appropriations_and_spending_authorization",
+      "name": "Appropriations and spending authorization",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_government_procurement",
+      "name": "Government procurement",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_financial_regulation",
+      "name": "Financial regulation",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_banking_supervision",
+      "name": "Banking supervision",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_deposit_insurance",
+      "name": "Deposit insurance",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_consumer_financial_protection",
+      "name": "Consumer financial protection",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_securities_market_regulation",
+      "name": "Securities market regulation",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_payment_systems_and_digital_currency",
+      "name": "Payment systems and digital currency",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_public_accounting_and_audit",
+      "name": "Public accounting and audit",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_anti_money_laundering",
+      "name": "Anti-money laundering",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_finance_federal_grants_to_states",
+      "name": "Federal grants to states",
+      "category": "Finance",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_individual_income_tax_brackets",
+      "name": "Individual income tax brackets",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_standard_deduction_and_exemptions",
+      "name": "Standard deduction and exemptions",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_child_tax_credit",
+      "name": "Child tax credit",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_corporate_income_tax",
+      "name": "Corporate income tax",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_capital_gains_taxation",
+      "name": "Capital gains taxation",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_estate_and_gift_taxes",
+      "name": "Estate and gift taxes",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_payroll_taxes",
+      "name": "Payroll taxes",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_excise_taxes",
+      "name": "Excise taxes",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_tax_credits_and_deductions",
+      "name": "Tax credits and deductions",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_tax_enforcement_and_audits",
+      "name": "Tax enforcement and audits",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_international_taxation",
+      "name": "International taxation",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_tax_tariffs_and_customs_duties",
+      "name": "Tariffs and customs duties",
+      "category": "Tax",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_competition_and_antitrust",
+      "name": "Competition and antitrust",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_industrial_subsidies",
+      "name": "Industrial subsidies",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_manufacturing_incentives",
+      "name": "Manufacturing incentives",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_supply_chain_resilience",
+      "name": "Supply chain resilience",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_small_business_support",
+      "name": "Small business support",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_labor_standards",
+      "name": "Labor standards",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_minimum_wage",
+      "name": "Minimum wage",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_collective_bargaining",
+      "name": "Collective bargaining",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_workplace_safety",
+      "name": "Workplace safety",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_product_safety_standards",
+      "name": "Product safety standards",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_trade_and_export_controls",
+      "name": "Trade and export controls",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_industry_business_licensing",
+      "name": "Business licensing",
+      "category": "Industry",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_farm_subsidies",
+      "name": "Farm subsidies",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_crop_insurance",
+      "name": "Crop insurance",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_agricultural_credit",
+      "name": "Agricultural credit",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_food_safety_inspection",
+      "name": "Food safety inspection",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_farm_labor_protections",
+      "name": "Farm labor protections",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_agricultural_research",
+      "name": "Agricultural research",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_land_conservation_programs",
+      "name": "Land conservation programs",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_livestock_and_animal_health",
+      "name": "Livestock and animal health",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_rural_development",
+      "name": "Rural development",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_commodity_pricing_supports",
+      "name": "Commodity pricing supports",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_nutrition_assistance",
+      "name": "Nutrition assistance",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_farming_agricultural_trade",
+      "name": "Agricultural trade",
+      "category": "Farming",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_defense_appropriations",
+      "name": "Defense appropriations",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_military_recruitment_and_service",
+      "name": "Military recruitment and service",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_military_pay_and_benefits",
+      "name": "Military pay and benefits",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_veterans_benefits",
+      "name": "Veterans benefits",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_defense_procurement",
+      "name": "Defense procurement",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_military_deployments",
+      "name": "Military deployments",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_use_of_military_force_authorization",
+      "name": "Use of military force authorization",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_nuclear_weapons_policy",
+      "name": "Nuclear weapons policy",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_arms_control",
+      "name": "Arms control",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_cyber_defense",
+      "name": "Cyber defense",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_military_justice",
+      "name": "Military justice",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_military_national_guard_mobilization",
+      "name": "National Guard mobilization",
+      "category": "Military",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_criminal_sentencing",
+      "name": "Criminal sentencing",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_federal_criminal_offenses",
+      "name": "Federal criminal offenses",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_judicial_appointments",
+      "name": "Judicial appointments",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_court_funding",
+      "name": "Court funding",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_access_to_legal_counsel",
+      "name": "Access to legal counsel",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_civil_rights_enforcement",
+      "name": "Civil rights enforcement",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_prison_conditions",
+      "name": "Prison conditions",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_sentencing_reform",
+      "name": "Sentencing reform",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_death_penalty",
+      "name": "Death penalty",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_drug_policy",
+      "name": "Drug policy",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_privacy_and_surveillance",
+      "name": "Privacy and surveillance",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_justice_judicial_review_and_appeals",
+      "name": "Judicial review and appeals",
+      "category": "Justice",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_visa_categories_and_quotas",
+      "name": "Visa categories and quotas",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_border_enforcement",
+      "name": "Border enforcement",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_asylum_and_refugee_admissions",
+      "name": "Asylum and refugee admissions",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_work_permits",
+      "name": "Work permits",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_family_immigration",
+      "name": "Family immigration",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_naturalization_and_citizenship",
+      "name": "Naturalization and citizenship",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_deportation_and_removal",
+      "name": "Deportation and removal",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_immigration_detention",
+      "name": "Immigration detention",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_temporary_protected_status",
+      "name": "Temporary protected status",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_employment_verification",
+      "name": "Employment verification",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_immigration_court_funding",
+      "name": "Immigration court funding",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "topic_immigration_international_student_visas",
+      "name": "International student visas",
+      "category": "Immigration",
+      "keywords": []
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare expansion",
+      "category": "Healthcare",
+      "keywords": [
+        "health",
+        "medical",
+        "care"
+      ]
+    },
+    {
+      "id": "topic_healthcare_health_insurance_coverage",
+      "name": "Health insurance coverage",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_medicare",
+      "name": "Medicare",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_medicaid_and_chip",
+      "name": "Medicaid and CHIP",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_prescription_drug_pricing",
+      "name": "Prescription drug pricing",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_public_health_funding",
+      "name": "Public health funding",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_hospital_funding",
+      "name": "Hospital funding",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_mental_health_services",
+      "name": "Mental health services",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_substance_use_treatment",
+      "name": "Substance use treatment",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_vaccination_programs",
+      "name": "Vaccination programs",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_reproductive_healthcare",
+      "name": "Reproductive healthcare",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_medical_research_funding",
+      "name": "Medical research funding",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_healthcare_healthcare_workforce",
+      "name": "Healthcare workforce",
+      "category": "Healthcare",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_federal_research_grants",
+      "name": "Federal research grants",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_scientific_agencies_funding",
+      "name": "Scientific agencies funding",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_research_ethics",
+      "name": "Research ethics",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_biomedical_research",
+      "name": "Biomedical research",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_artificial_intelligence_research",
+      "name": "Artificial intelligence research",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_space_research",
+      "name": "Space research",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_energy_research",
+      "name": "Energy research",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_university_research_partnerships",
+      "name": "University research partnerships",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_technology_transfer",
+      "name": "Technology transfer",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_open_science_and_data",
+      "name": "Open science and data",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_research_security",
+      "name": "Research security",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_research_scientific_workforce",
+      "name": "Scientific workforce",
+      "category": "Research",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_school_funding",
+      "name": "School funding",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_federal_student_loans",
+      "name": "Federal student loans",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_student_loan_repayment",
+      "name": "Student loan repayment",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_higher_education_grants",
+      "name": "Higher education grants",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_special_education",
+      "name": "Special education",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_early_childhood_education",
+      "name": "Early childhood education",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_school_meals",
+      "name": "School meals",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_teacher_training",
+      "name": "Teacher training",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_education_civil_rights",
+      "name": "Education civil rights",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_career_and_technical_education",
+      "name": "Career and technical education",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_student_data_privacy",
+      "name": "Student data privacy",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_education_university_research_support",
+      "name": "University research support",
+      "category": "Education",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_arts_funding",
+      "name": "Arts funding",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_museums_and_cultural_institutions",
+      "name": "Museums and cultural institutions",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_historic_preservation",
+      "name": "Historic preservation",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_cultural_heritage_protection",
+      "name": "Cultural heritage protection",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_libraries",
+      "name": "Libraries",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_public_broadcasting_funding",
+      "name": "Public broadcasting funding",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_copyright_and_creative_rights",
+      "name": "Copyright and creative rights",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_cultural_exchange",
+      "name": "Cultural exchange",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_indigenous_cultural_heritage",
+      "name": "Indigenous cultural heritage",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_national_monuments",
+      "name": "National monuments",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_arts_education",
+      "name": "Arts education",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_culture_language_access",
+      "name": "Language access",
+      "category": "Culture",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_broadcast_licensing",
+      "name": "Broadcast licensing",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_media_ownership",
+      "name": "Media ownership",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_public_broadcasting",
+      "name": "Public broadcasting",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_journalist_protections",
+      "name": "Journalist protections",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_political_advertising_disclosure",
+      "name": "Political advertising disclosure",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_online_platform_regulation",
+      "name": "Online platform regulation",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_data_privacy",
+      "name": "Data privacy",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_content_moderation_transparency",
+      "name": "Content moderation transparency",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_telecommunications_access",
+      "name": "Telecommunications access",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_broadband_funding",
+      "name": "Broadband funding",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_consumer_advertising_standards",
+      "name": "Consumer advertising standards",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_media_freedom_of_information",
+      "name": "Freedom of information",
+      "category": "Media",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_youth_sports_funding",
+      "name": "Youth sports funding",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_athlete_safety",
+      "name": "Athlete safety",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_anti_doping_rules",
+      "name": "Anti-doping rules",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_sports_integrity",
+      "name": "Sports integrity",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_college_athletics",
+      "name": "College athletics",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_stadium_funding",
+      "name": "Stadium funding",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_accessibility_in_sports",
+      "name": "Accessibility in sports",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_participation_opportunities",
+      "name": "Participation opportunities",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_professional_league_competition",
+      "name": "Professional league competition",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_sports_betting_regulation",
+      "name": "Sports betting regulation",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_olympic_and_international_sport",
+      "name": "Olympic and international sport",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_sports_athlete_labor_protections",
+      "name": "Athlete labor protections",
+      "category": "Sports",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_affordable_housing_funding",
+      "name": "Affordable housing funding",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_rental_assistance",
+      "name": "Rental assistance",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_public_housing",
+      "name": "Public housing",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_housing_vouchers",
+      "name": "Housing vouchers",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_fair_housing_enforcement",
+      "name": "Fair housing enforcement",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_homelessness_assistance",
+      "name": "Homelessness assistance",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_mortgage_finance",
+      "name": "Mortgage finance",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_tenant_protections",
+      "name": "Tenant protections",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_homeownership_assistance",
+      "name": "Homeownership assistance",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_housing_supply_incentives",
+      "name": "Housing supply incentives",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_building_safety",
+      "name": "Building safety",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_housing_disaster_housing_assistance",
+      "name": "Disaster housing assistance",
+      "category": "Housing",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_federal_law_enforcement_funding",
+      "name": "Federal law enforcement funding",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_police_training_standards",
+      "name": "Police training standards",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_use_of_force_standards",
+      "name": "Use of force standards",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_police_accountability",
+      "name": "Police accountability",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_body_camera_programs",
+      "name": "Body camera programs",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_community_policing",
+      "name": "Community policing",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_police_equipment_grants",
+      "name": "Police equipment grants",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_facial_recognition_safeguards",
+      "name": "Facial recognition safeguards",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_search_and_seizure_protections",
+      "name": "Search and seizure protections",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_data_collection_and_reporting",
+      "name": "Data collection and reporting",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_civilian_oversight",
+      "name": "Civilian oversight",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_police_emergency_response",
+      "name": "Emergency response",
+      "category": "Police",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_air_pollution_standards",
+      "name": "Air pollution standards",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_water_quality_protections",
+      "name": "Water quality protections",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_climate_emissions_policy",
+      "name": "Climate emissions policy",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_clean_energy_incentives",
+      "name": "Clean energy incentives",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_protected_lands",
+      "name": "Protected lands",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_biodiversity_conservation",
+      "name": "Biodiversity conservation",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_environmental_impact_review",
+      "name": "Environmental impact review",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_hazardous_waste_regulation",
+      "name": "Hazardous waste regulation",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_wildfire_management",
+      "name": "Wildfire management",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_flood_resilience",
+      "name": "Flood resilience",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_environmental_justice",
+      "name": "Environmental justice",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_environment_pollution_enforcement",
+      "name": "Pollution enforcement",
+      "category": "Environment",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_social_security_retirement_benefits",
+      "name": "Social Security retirement benefits",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_retirement_eligibility_age",
+      "name": "Retirement eligibility age",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_disability_benefits",
+      "name": "Disability benefits",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_unemployment_insurance",
+      "name": "Unemployment insurance",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_food_assistance",
+      "name": "Food assistance",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_postal_service",
+      "name": "Postal service",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_public_transportation_grants",
+      "name": "Public transportation grants",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_emergency_management",
+      "name": "Emergency management",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_water_and_sanitation_infrastructure",
+      "name": "Water and sanitation infrastructure",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_digital_public_services",
+      "name": "Digital public services",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_public_benefits_administration",
+      "name": "Public benefits administration",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_services_federal_workforce",
+      "name": "Federal workforce",
+      "category": "Services",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_parental_leave",
+      "name": "Parental leave",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_childcare_support",
+      "name": "Childcare support",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_family_tax_credits",
+      "name": "Family tax credits",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_adoption_and_foster_care",
+      "name": "Adoption and foster care",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_child_support_enforcement",
+      "name": "Child support enforcement",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_family_violence_prevention",
+      "name": "Family violence prevention",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_marriage_and_family_law",
+      "name": "Marriage and family law",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_elder_care_support",
+      "name": "Elder care support",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_paid_sick_leave",
+      "name": "Paid sick leave",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_family_benefit_eligibility",
+      "name": "Family benefit eligibility",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_dependent_care_assistance",
+      "name": "Dependent care assistance",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_family_work_life_protections",
+      "name": "Work-life protections",
+      "category": "Family",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_maternal_health",
+      "name": "Maternal health",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_child_protection",
+      "name": "Child protection",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_child_labor_standards",
+      "name": "Child labor standards",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_age_of_consent",
+      "name": "Age of consent",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_domestic_violence_protections",
+      "name": "Domestic violence protections",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_sex_discrimination_protections",
+      "name": "Sex discrimination protections",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_equal_pay_enforcement",
+      "name": "Equal pay enforcement",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_pregnancy_discrimination",
+      "name": "Pregnancy discrimination",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_child_nutrition",
+      "name": "Child nutrition",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_child_online_privacy",
+      "name": "Child online privacy",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_trafficking_prevention",
+      "name": "Trafficking prevention",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_women_children_childcare_safety_standards",
+      "name": "Childcare safety standards",
+      "category": "Women & Children",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_federal_debt_limit",
+      "name": "Federal debt limit",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_treasury_borrowing_authority",
+      "name": "Treasury borrowing authority",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_debt_management_strategy",
+      "name": "Debt management strategy",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_interest_cost_reporting",
+      "name": "Interest cost reporting",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_debt_refinancing",
+      "name": "Debt refinancing",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_budget_deficit_targets",
+      "name": "Budget deficit targets",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_fiscal_rules",
+      "name": "Fiscal rules",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_emergency_borrowing",
+      "name": "Emergency borrowing",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_trust_fund_financing",
+      "name": "Trust fund financing",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_government_bond_issuance",
+      "name": "Government bond issuance",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_debt_transparency",
+      "name": "Debt transparency",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_debt_long_term_fiscal_projections",
+      "name": "Long-term fiscal projections",
+      "category": "Debt",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_foreign_assistance_appropriations",
+      "name": "Foreign assistance appropriations",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_humanitarian_aid",
+      "name": "Humanitarian aid",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_development_assistance",
+      "name": "Development assistance",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_diplomatic_missions",
+      "name": "Diplomatic missions",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_treaty_approval",
+      "name": "Treaty approval",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_economic_sanctions",
+      "name": "Economic sanctions",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_international_organizations",
+      "name": "International organizations",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_refugee_assistance_abroad",
+      "name": "Refugee assistance abroad",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_arms_export_controls",
+      "name": "Arms export controls",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_international_climate_finance",
+      "name": "International climate finance",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_trade_agreements",
+      "name": "Trade agreements",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    },
+    {
+      "id": "topic_diplomacy_aid_peacebuilding_and_mediation",
+      "name": "Peacebuilding and mediation",
+      "category": "Diplomacy & Aid",
+      "keywords": []
+    }
   ]
 }

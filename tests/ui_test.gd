@@ -29,6 +29,9 @@ func run_checks() -> void:
 	var catalog = preload("res://ui/law_catalog_data.gd")
 	var catalog_data: Dictionary = catalog.read()
 	assert(catalog.validate(catalog_data).is_empty())
+	assert(catalog_data.categories.size() == 21 and catalog_data.laws.size() == 254)
+	for category in catalog_data.categories:
+		assert(catalog_data.laws.any(func(law): return law.category == category))
 	var bad_catalog: Dictionary = catalog_data.duplicate(true)
 	bad_catalog.laws.append(bad_catalog.laws[0].duplicate(true))
 	assert(not catalog.validate(bad_catalog).is_empty())
@@ -36,7 +39,7 @@ func run_checks() -> void:
 	bad_catalog.laws[0].id = "unimplemented_law"
 	assert(not catalog.validate(bad_catalog).is_empty())
 	bad_catalog = catalog_data.duplicate(true)
-	bad_catalog.laws[0].category = "Finance"
+	bad_catalog.laws[0].category = "Tax"
 	assert(not catalog.validate(bad_catalog).is_empty())
 	bad_catalog = catalog_data.duplicate(true)
 	bad_catalog.laws[0].keywords = [42]
@@ -458,6 +461,7 @@ func run_checks() -> void:
 	screen.review_dialog.hide()
 	assert(screen.world.healthcare.active and "President: sign" in screen.congress_summary.text)
 	assert(screen.world.apply_scenario(World.Scenario.read_file(World.DEFAULT_SCENARIO)).is_empty())
+	screen.law_categories.current_tab = 7
 	screen._refresh()
 	assert(screen.healthcare_panel.visible and not screen.procurement_panel.visible)
 	screen.law_search.text = "medical"
@@ -469,17 +473,23 @@ func run_checks() -> void:
 	assert(not screen.healthcare_panel.visible and not screen.procurement_panel.visible and screen.law_catalog_note.text == "Catalogue test failure.")
 	screen.law_catalog_error = ""
 	screen._refresh_law_catalog()
-	screen.law_categories.current_tab = 1
+	screen.law_categories.current_tab = 0
 	screen._refresh_law_catalog()
 	assert(screen.procurement_panel.visible and not screen.healthcare_panel.visible)
 	screen.law_search.text = "missing"
 	screen._refresh_law_catalog()
-	assert(not screen.procurement_panel.visible and "No implemented laws" in screen.law_catalog_note.text)
+	assert(not screen.procurement_panel.visible and "No policy topics" in screen.law_catalog_note.text)
+	screen.law_search_all.button_pressed = true
+	screen.law_search.text = "facial recognition"
+	screen._refresh_law_catalog()
+	assert("Planned topic" in screen.law_catalog_note.text and not screen.procurement_panel.visible)
+	assert(screen.law_catalog.get_root().get_first_child().get_text(0) == "Police — Facial recognition safeguards")
+	screen.law_search_all.button_pressed = false
 	screen.law_search.text = ""
 	screen.law_categories.current_tab = 2
 	screen._refresh_law_catalog()
 	assert(not screen.healthcare_panel.visible and not screen.procurement_panel.visible)
-	screen.law_categories.current_tab = 0
+	screen.law_categories.current_tab = 7
 	screen._refresh_law_catalog()
 	assert(screen._request_review("vote_healthcare", {"funding": 100000000.0}))
 	assert(not screen.world.healthcare.active and "70 / 100" in screen.review_dialog.dialog_text)

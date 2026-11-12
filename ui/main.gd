@@ -142,6 +142,7 @@ var budget_chart_note: Label
 var budget_rows: Dictionary = {}
 var law_categories: TabBar
 var law_search: LineEdit
+var law_search_all: CheckBox
 var law_catalog: Tree
 var law_catalog_note: Label
 var law_catalog_data: Dictionary = {}
@@ -957,8 +958,12 @@ func _ready() -> void:
 	diagnostic_button.pressed.connect(_export_diagnostics)
 	decisions.add_child(diagnostic_button)
 	var law_heading := Label.new()
-	law_heading.text = "LAW CATALOGUE — fictional single-chamber scenario"
+	law_heading.text = "LAW CATALOGUE — US-ORIENTED POLICY TOPICS"
 	laws.add_child(law_heading)
+	var law_explanation := Label.new()
+	law_explanation.text = "Choose a category or search across categories. Planned topics are not playable laws; existing prototypes use fictional rules. Federal and state authority is not yet modeled."
+	law_explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	laws.add_child(law_explanation)
 	var law_data: Variant = LawCatalogData.read()
 	law_catalog_error = LawCatalogData.validate(law_data)
 	if law_catalog_error.is_empty():
@@ -968,8 +973,11 @@ func _ready() -> void:
 		law_categories.add_tab(category)
 	laws.add_child(law_categories)
 	law_search = LineEdit.new()
-	law_search.placeholder_text = "Search implemented laws"
+	law_search.placeholder_text = "Search policy topics"
 	laws.add_child(law_search)
+	law_search_all = CheckBox.new()
+	law_search_all.text = "Search all categories"
+	laws.add_child(law_search_all)
 	law_catalog = Tree.new()
 	law_catalog.columns = 3
 	law_catalog.hide_root = true
@@ -978,7 +986,7 @@ func _ready() -> void:
 	law_catalog.set_column_title(1, "Status")
 	law_catalog.set_column_title(2, "Annual cost")
 	law_catalog.set_column_expand(0, true)
-	law_catalog.custom_minimum_size = Vector2(0, 90)
+	law_catalog.custom_minimum_size = Vector2(0, 240)
 	laws.add_child(law_catalog)
 	law_catalog_note = Label.new()
 	law_catalog_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -995,6 +1003,7 @@ func _ready() -> void:
 	procurement_panel.add_child(procurement_detail)
 	law_categories.tab_changed.connect(func(_index: int): _refresh_law_catalog())
 	law_search.text_changed.connect(func(_text: String): _refresh_law_catalog())
+	law_search_all.toggled.connect(func(_pressed: bool): _refresh_law_catalog())
 	law_catalog.item_selected.connect(_law_catalog_selected)
 	healthcare_picker = OptionButton.new()
 	_sync_healthcare_picker()
@@ -1656,12 +1665,12 @@ func _refresh_law_catalog() -> void:
 	var query := law_search.text.strip_edges().to_lower()
 	var first_id := ""
 	for law in law_catalog_data.laws:
-		if law.category != category:
+		if not law_search_all.button_pressed and law.category != category:
 			continue
-		var search_text: String = (law.name + " " + " ".join(law.keywords)).to_lower()
+		var search_text: String = (law.name + " " + law.category + " " + " ".join(law.keywords)).to_lower()
 		if not query.is_empty() and query not in search_text:
 			continue
-		var state := ""
+		var state := "Planned"
 		var cost := 0.0
 		match law.id:
 			"healthcare":
@@ -1671,19 +1680,18 @@ func _refresh_law_catalog() -> void:
 				state = "Active" if world.politics.procurement_policy else "Not enacted"
 				cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
 		var row := law_catalog.create_item(root_item)
-		row.set_text(0, law.name)
+		row.set_text(0, (law.category + " — " if law_search_all.button_pressed else "") + law.name)
 		row.set_text(1, state)
-		row.set_text(2, "$%.1fM / year" % (cost / 1000000.0))
+		row.set_text(2, "Not modeled" if state == "Planned" else "$%.1fM / year" % (cost / 1000000.0))
 		row.set_metadata(0, law.id)
 		if first_id.is_empty():
 			first_id = law.id
 			row.select(0)
 	if first_id.is_empty():
-		law_catalog_note.text = "No implemented laws match this category and search."
+		law_catalog_note.text = "No policy topics match this category and search."
 		healthcare_panel.visible = false
 		procurement_panel.visible = false
 		return
-	law_catalog_note.text = "Select a law to inspect its details. Values and political rules are fictional."
 	_show_law_detail(first_id)
 
 func _law_catalog_selected() -> void:
@@ -1694,6 +1702,7 @@ func _law_catalog_selected() -> void:
 func _show_law_detail(id: String) -> void:
 	healthcare_panel.visible = id == "healthcare"
 	procurement_panel.visible = id == "procurement"
+	law_catalog_note.text = "Prototype: values and political rules are fictional." if id in ["healthcare", "procurement"] else "Planned topic: not yet a proposal or enacted law. Legal authority, options, costs and effects are not modeled."
 	if id == "procurement":
 		procurement_detail.text = "PROCUREMENT POLICY — fictional test rules\nCurrent: %s | rollout: %d%% | votes for adoption: %d/100 | votes for repeal: %d/100\nOnce fully implemented, the policy costs $%.1fM per year. A majority is required." % ["active" if world.politics.procurement_policy else "not enacted", world.politics.procurement_progress, world.politics.votes_for_policy(), world.politics.votes_for_repeal(), float(world.policy_rules.procurement_annual_cost) / 1000000.0]
 

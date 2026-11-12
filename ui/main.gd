@@ -929,7 +929,7 @@ func _ready() -> void:
 	indicator_title.text = "MONTHLY INDICATORS — fictional values"
 	indicator_panel.add_child(indicator_title)
 	indicator_picker = OptionButton.new()
-	for spec in [["Approval (%)", "approval"], ["Cash ($ millions)", "cash"], ["Debt ($ millions)", "debt"], ["Annual revenue ($ millions)", "revenue"], ["Annual balance ($ millions)", "balance"]]:
+	for spec in [["Approval (%)", "approval"], ["Cash ($ millions)", "cash"], ["Debt ($ millions)", "debt"], ["Annual revenue ($ millions)", "revenue"], ["Annual balance ($ millions)", "balance"], ["Population (people)", "population"]]:
 		indicator_picker.add_item(spec[0])
 		indicator_picker.set_item_metadata(indicator_picker.item_count - 1, spec[1])
 	indicator_picker.item_selected.connect(func(_index: int): _refresh_indicators())
@@ -2144,10 +2144,13 @@ func _refresh_indicators() -> void:
 	if indicator_picker == null or indicator_chart == null or indicator_summary == null:
 		return
 	var field: String = indicator_picker.get_item_metadata(indicator_picker.selected)
-	var samples: Array = world.indicator_history
+	var samples: Array = []
+	for sample in world.indicator_history:
+		if sample.has(field):
+			samples.append(sample)
 	indicator_chart.set_series(samples, field)
 	if samples.is_empty():
-		indicator_summary.text = "No monthly samples yet. Older saves start recording when the next month begins."
+		indicator_summary.text = "No samples for this indicator yet. Older saves begin recording new values at the next month; missing past values are not invented."
 		return
 	var low := INF
 	var high := -INF
@@ -2156,13 +2159,18 @@ func _refresh_indicators() -> void:
 		high = maxf(high, float(sample[field]))
 	var first: Dictionary = samples.front().date
 	var last: Dictionary = samples.back().date
-	var divisor := 1.0 if field == "approval" else 1000000.0
-	var units := "%" if field == "approval" else "M USD"
-	var lines := PackedStringArray(["%d %s · %04d-%02d-%02d to %04d-%02d-%02d\nChart range: %.1f to %.1f %s. Each chart scales to its own range." % [samples.size(), "sample" if samples.size() == 1 else "samples", first.year, first.month, first.day, last.year, last.month, last.day, low / divisor, high / divisor, units], "RECENT SAMPLES (up to 12)"])
+	var divisor := 1.0 if field in ["approval", "population"] else 1000000.0
+	var units := "%" if field == "approval" else ("people" if field == "population" else "M USD")
+	var low_text := "%d" % int(low) if field == "population" else "%.1f" % (low / divisor)
+	var high_text := "%d" % int(high) if field == "population" else "%.1f" % (high / divisor)
+	var lines := PackedStringArray(["%d %s · %04d-%02d-%02d to %04d-%02d-%02d\nChart range: %s to %s %s. Each chart scales to its own range." % [samples.size(), "sample" if samples.size() == 1 else "samples", first.year, first.month, first.day, last.year, last.month, last.day, low_text, high_text, units], "RECENT SAMPLES (up to 12)"])
 	for index in range(maxi(0, samples.size() - 12), samples.size()):
 		var sample: Dictionary = samples[index]
 		var d: Dictionary = sample.date
-		lines.append("%04d-%02d-%02d  |  %.1f %s" % [d.year, d.month, d.day, float(sample[field]) / divisor, units])
+		var value_text := "%d" % int(sample[field]) if field == "population" else "%.1f" % (float(sample[field]) / divisor)
+		lines.append("%04d-%02d-%02d  |  %s %s" % [d.year, d.month, d.day, value_text, units])
+	if samples.size() < world.indicator_history.size():
+		lines.append("Older samples lack this indicator; no past values were invented.")
 	lines.append("Samples are recorded at scenario start and at the beginning of each month; up to 120 are retained. Values are fictional, not forecasts.")
 	indicator_summary.text = "\n".join(lines)
 

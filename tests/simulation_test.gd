@@ -253,6 +253,24 @@ func _initialize() -> void:
 	assert(trend_load_error.is_empty())
 	assert(trend_loaded.indicator_history.size() == trend.indicator_history.size())
 	assert(is_equal_approx(trend_loaded.indicator_history[1].cash, trend.indicator_history[1].cash))
+	assert(trend_loaded.indicator_history[1].population == trend.country.population)
+	var v24_history: Dictionary = trend_save.duplicate(true)
+	v24_history.version = 24
+	for sample in v24_history.indicator_history:
+		sample.erase("population")
+	var v24_loaded = World.new()
+	assert(v24_loaded.import_snapshot(v24_history).is_empty())
+	assert(not v24_loaded.indicator_history[0].has("population"))
+	for day in range(28):
+		v24_loaded.advance_day()
+	assert(not v24_loaded.indicator_history[1].has("population") and v24_loaded.indicator_history[2].population == v24_loaded.country.population)
+	assert(World.new().import_snapshot(JSON.parse_string(JSON.stringify(v24_loaded.export_snapshot()))).is_empty())
+	var gap_history: Dictionary = v24_loaded.export_snapshot()
+	gap_history.indicator_history[0].population = 100
+	assert(not World.new().import_snapshot(gap_history).is_empty())
+	var bad_population: Dictionary = v24_loaded.export_snapshot()
+	bad_population.indicator_history[2].population = -1
+	assert(not World.new().import_snapshot(bad_population).is_empty())
 	var old_trend: Dictionary = trend_save.duplicate(true)
 	old_trend.version = 22
 	old_trend.erase("indicator_history")

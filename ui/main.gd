@@ -88,6 +88,8 @@ var pending_main_to_lab: Dictionary = {}
 var shared_world_active := false
 var shared_entry_dialog: ConfirmationDialog
 var pending_shared_entry: Dictionary = {}
+var shared_switch_dialog: ConfirmationDialog
+var pending_shared_switch: Dictionary = {}
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -473,6 +475,7 @@ func _ready() -> void:
 	shared_entry_dialog.canceled.connect(func(): pending_shared_entry.clear())
 	add_child(shared_entry_dialog)
 	world_lab.shared_world_requested.connect(_request_shared_entry)
+	world_lab.shared_switch_requested.connect(_request_shared_switch)
 	world_lab.leave_shared_world_requested.connect(_leave_shared_world)
 	world_lab.lab_state_changed.connect(func(country_id: String):
 		if shared_world_active:
@@ -480,6 +483,14 @@ func _ready() -> void:
 				tax.value = world.country.income_tax_rate * 100.0
 			_refresh()
 	)
+	shared_switch_dialog = ConfirmationDialog.new()
+	shared_switch_dialog.title = "Switch controlled country?"
+	shared_switch_dialog.ok_button_text = "Switch country"
+	shared_switch_dialog.dialog_autowrap = true
+	shared_switch_dialog.min_size = Vector2i(600, 0)
+	shared_switch_dialog.confirmed.connect(_confirm_shared_switch)
+	shared_switch_dialog.canceled.connect(func(): pending_shared_switch.clear())
+	add_child(shared_switch_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -1394,9 +1405,44 @@ func _confirm_shared_entry() -> void:
 		return
 	world = selected
 	shared_world_active = true
-	world_lab.set_shared_mode(true)
+	world_lab.set_shared_mode(true, request.id)
 	_update_shared_controls()
 	_sync_loaded_world("Shared world active; main clock advances both countries.")
+	dashboard_tabs.current_tab = 0
+
+func _request_shared_switch(id: String) -> void:
+	if not shared_world_active or id != world_lab.selected_id() or id == world.country.id:
+		status.text = "Select a different country in the shared world first."
+		return
+	var state: Dictionary = world_lab.registry.country_snapshot(id)
+	var candidate = World.new()
+	var error: String = candidate.import_snapshot(state)
+	if not error.is_empty():
+		status.text = "Cannot switch country: " + error
+		return
+	if running:
+		_toggle_pause()
+	pending_shared_switch = {"id": id, "controlled_id": world.country.id, "lab": JSON.stringify(world_lab.registry.export_snapshot())}
+	shared_switch_dialog.dialog_text = "Switch main control from %s to %s? Both countries and their relationships remain in the same world. The shared clock has been paused; queued time will be cleared if you switch. No save file is written. The selected country's policies and data will appear in the main interface." % [world.country.name, state.country.name]
+	shared_switch_dialog.popup_centered()
+
+func _confirm_shared_switch() -> void:
+	if pending_shared_switch.is_empty():
+		return
+	var request := pending_shared_switch.duplicate(true)
+	pending_shared_switch.clear()
+	if not shared_world_active or running or world_lab.running or world_lab.selected_id() != request.id or world.country.id != request.controlled_id or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab:
+		status.text = "Country switch review is out of date. Review it again."
+		return
+	var selected: Variant = world_lab.registry.controlled_country(request.id)
+	if selected == null:
+		status.text = "Selected country is unavailable."
+		return
+	_cancel_review()
+	review_dialog.hide()
+	world = selected
+	world_lab.shared_controlled_id = request.id
+	_sync_loaded_world("Main control switched within the shared world; the clock is paused.")
 	dashboard_tabs.current_tab = 0
 
 func _leave_shared_world() -> void:

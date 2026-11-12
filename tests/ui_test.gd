@@ -131,6 +131,34 @@ func run_checks() -> void:
 	screen.world_lab.tax.value = 30
 	screen.world_lab.apply_tax()
 	assert(screen.world.country.income_tax_rate == 0.3 and screen.tax.value == 30.0 and "Approval" in screen.government_status.text)
+	var target_id := "usa_sandbox" if shared_id == "coastal_republic" else "coastal_republic"
+	for index in range(screen.world_lab.picker.item_count):
+		if screen.world_lab.picker.get_item_metadata(index) == target_id:
+			screen.world_lab.picker.select(index)
+	screen.world_lab._selection_changed()
+	assert(screen.world.country.id == shared_id and not screen.world_lab.shared_buttons.switch.disabled)
+	var before_switch: Dictionary = screen.world_lab.registry.export_snapshot()
+	screen._request_shared_switch(target_id)
+	assert(not screen.pending_shared_switch.is_empty() and "No save file is written" in screen.shared_switch_dialog.dialog_text)
+	screen.pending_shared_switch.clear()
+	screen.shared_switch_dialog.hide()
+	assert(screen.world.country.id == shared_id and screen.world_lab.registry.export_snapshot() == before_switch)
+	screen._request_shared_switch(target_id)
+	screen.world_lab.registry.execute_country(target_id, {"id": "set_income_tax", "args": {"rate": 0.25}})
+	screen._confirm_shared_switch()
+	screen.shared_switch_dialog.hide()
+	assert(screen.world.country.id == shared_id and "out of date" in screen.status.text)
+	var switch_state: Dictionary = screen.world_lab.registry.export_snapshot()
+	screen._request_shared_switch(target_id)
+	screen._confirm_shared_switch()
+	screen.shared_switch_dialog.hide()
+	assert(screen.world.country.id == target_id and screen.world == screen.world_lab.registry.controlled_country(target_id))
+	assert(screen.world_lab.shared_controlled_id == target_id and screen.world_lab.shared_buttons.switch.disabled)
+	assert(screen.tax.value == 25.0 and screen.world_lab.registry.export_snapshot() == switch_state)
+	screen.tax.value = 35
+	screen._apply_tax()
+	assert(screen.world_lab.registry.country_snapshot(target_id).country.income_tax_rate == 0.35)
+	assert(screen.world_lab.registry.country_snapshot(shared_id).country.income_tax_rate == 0.3)
 	screen.world_lab.start_dialogue()
 	for day in range(30):
 		screen._advance_world_tick()

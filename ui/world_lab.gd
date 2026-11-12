@@ -3,6 +3,7 @@ extends VBoxContainer
 signal copy_to_main_requested(country_id: String)
 signal copy_from_main_requested
 signal shared_world_requested(country_id: String)
+signal shared_switch_requested(country_id: String)
 signal leave_shared_world_requested
 signal lab_state_changed(country_id: String)
 
@@ -39,6 +40,7 @@ var clock_status: Label
 var copy_from_main_button: Button
 var main_import_available := false
 var shared_mode := false
+var shared_controlled_id := ""
 var shared_buttons: Dictionary = {}
 var lab_buttons: Dictionary = {}
 var lab_note: Label
@@ -141,6 +143,11 @@ func _ready() -> void:
 	join.pressed.connect(func(): shared_world_requested.emit(selected_id()))
 	add_child(join)
 	shared_buttons.join = join
+	var switch := Button.new()
+	switch.text = "Review switching main control to selected country"
+	switch.pressed.connect(func(): shared_switch_requested.emit(selected_id()))
+	add_child(switch)
+	shared_buttons.switch = switch
 	var leave := Button.new()
 	leave.text = "Leave shared world and keep country copy"
 	leave.pressed.connect(func(): leave_shared_world_requested.emit())
@@ -264,6 +271,7 @@ func _refresh_clock() -> void:
 	copy_from_main_button.disabled = batching or not main_import_available
 	shared_buttons.copy.disabled = batching or shared_mode
 	shared_buttons.join.disabled = batching or shared_mode
+	shared_buttons.switch.disabled = batching or not shared_mode or selected_id() == shared_controlled_id
 	shared_buttons.leave.disabled = not shared_mode
 	lab_buttons.load.disabled = batching or shared_mode
 	lab_buttons.backup.disabled = batching or shared_mode
@@ -279,12 +287,13 @@ func _refresh_clock() -> void:
 		cancel_talks_button.disabled = true
 	clock_status.text = "SHARED WORLD: use the main clock above; lab load and clock controls are disabled until you leave." if shared_mode else "LAB CLOCK: %s | %d queued day(s) | 30-day advance remaining: %d. Lab time is independent and continues while running, even on another tab." % ["running" if running else "paused", floori(elapsed), batch_remaining]
 
-func set_shared_mode(enabled: bool) -> void:
+func set_shared_mode(enabled: bool, controlled_id: String = "") -> void:
 	shared_mode = enabled
+	shared_controlled_id = controlled_id if enabled else ""
 	running = false
 	batch_remaining = 0
 	elapsed = 0.0
-	lab_note.text = "SHARED WORLD: the main game controls one lab country and its clock advances both countries. Lab selection does not change the controlled country. All values are fictional. Leave shared world before loading another save." if enabled else "This experimental world has its own clock and save slot. Its US sandbox and Coastal Republic have fictional values. It does not control the main game or map. Advance days here to update both countries together."
+	lab_note.text = "SHARED WORLD: the main clock advances both countries. Lab selection does not change the controlled country until you confirm a switch. All values are fictional. Leave shared world before loading another save." if enabled else "This experimental world has its own clock and save slot. Its US sandbox and Coastal Republic have fictional values. It does not control the main game or map. Advance days here to update both countries together."
 	refresh()
 
 func _process(delta: float) -> void:

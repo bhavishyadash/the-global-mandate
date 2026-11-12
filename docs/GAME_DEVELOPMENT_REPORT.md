@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 112
+**Report status:** Living record; updated through session 113
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 113:** Added the 21 requested policy-category tabs and a searchable catalogue of 254 entries, including two fictional playable prototypes and 252 planned policy topics. The topics are not implemented law options. [Detailed session record](SESSION_113.md).
 
 **Session 112:** Added a historical federal-budget what-if calculator with non-mutating accounting in millions of dollars. Receipts remain fixed and the preview does not affect gameplay; a calibrated fiscal model remains open. [Detailed session record](SESSION_112.md).
 

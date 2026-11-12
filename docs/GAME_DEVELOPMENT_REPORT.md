@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 93
+**Report status:** Living record; updated through session 94
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 94:** Connected shared-world diplomacy to the map country panel, including reviewed talks and a selector for the unmapped fictional partner. [Detailed session record](SESSION_94.md).
 
 **Session 93:** Saved shared-world control metadata and added reviewed restore of the main and backup shared saves. [Detailed session record](SESSION_93.md). Older lab saves can still be loaded manually.
 

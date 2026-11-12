@@ -65,3 +65,5 @@ See [performance targets and benchmarks](docs/PERFORMANCE_TARGETS.md) for the pl
 Developers can use `simulation/replay_record.gd` to record a versioned scenario, seed and decisions into a JSON-compatible reproduction record. The recorder must own all decision and day-advance calls; it is not yet wired into the game UI. See [session 66](docs/SESSION_66.md) for limitations.
 
 Save files are stored in Godot's user data directory, not in the repository.
+
+In shared mode, open **World Map** to inspect the live relationship and review dialogue or cooperation talks in the sidebar. Select the US on the map or choose a simulated country from the selector; the fictional Coastal Republic is deliberately unmapped. The main clock advances talks, and World Lab shows the same state. The separate legacy diplomacy controls return when leaving shared mode. See [session 94](docs/SESSION_94.md).

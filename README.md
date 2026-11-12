@@ -67,3 +67,5 @@ Developers can use `simulation/replay_record.gd` to record a versioned scenario,
 Save files are stored in Godot's user data directory, not in the repository.
 
 In shared mode, open **World Map** to inspect the live relationship and review dialogue or cooperation talks in the sidebar. Select the US on the map or choose a simulated country from the selector; the fictional Coastal Republic is deliberately unmapped. The main clock advances talks, and World Lab shows the same state. The separate legacy diplomacy controls return when leaving shared mode. See [session 94](docs/SESSION_94.md).
+
+The shared-world map selector also shows a live country overview: government bloc, population, approval, tax, revenue, spending, balance, cash, debt and diplomatic activity. Values and the simplified 100-seat government bloc are fictional. Unmapped countries are identified explicitly. See [session 95](docs/SESSION_95.md).

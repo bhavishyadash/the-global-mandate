@@ -102,6 +102,10 @@ var shared_talk_dialog: ConfirmationDialog
 var pending_shared_talk: Dictionary = {}
 var shared_diplomacy_note: Label
 var legacy_diplomacy_controls: Array = []
+var shared_country_heading: Label
+var shared_country_overview: VBoxContainer
+var shared_country_rows: Dictionary = {}
+var preserve_shared_picker := false
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -435,11 +439,40 @@ func _ready() -> void:
 	shared_map_panel = VBoxContainer.new()
 	map_sidebar.add_child(shared_map_panel)
 	var shared_heading := Label.new()
-	shared_heading.text = "SHARED WORLD DIPLOMACY"
+	shared_heading.text = "SHARED WORLD COUNTRY"
 	shared_map_panel.add_child(shared_heading)
 	shared_partner_picker = OptionButton.new()
 	shared_map_panel.add_child(shared_partner_picker)
-	shared_partner_picker.item_selected.connect(func(_index: int): _refresh_shared_diplomacy())
+	shared_partner_picker.item_selected.connect(_shared_country_picker_changed)
+	shared_country_overview = VBoxContainer.new()
+	shared_map_panel.add_child(shared_country_overview)
+	shared_country_heading = Label.new()
+	shared_country_heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	shared_country_heading.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	shared_country_overview.add_child(shared_country_heading)
+	var country_rows := GridContainer.new()
+	country_rows.columns = 2
+	country_rows.add_theme_constant_override("h_separation", 14)
+	country_rows.add_theme_constant_override("v_separation", 5)
+	shared_country_overview.add_child(country_rows)
+	for row_name in ["Date", "Government bloc", "Population", "Approval", "Income tax", "Annual revenue", "Base spending", "Annual balance", "Cash", "Debt", "Diplomacy"]:
+		var caption := Label.new()
+		caption.text = row_name
+		caption.add_theme_color_override("font_color", GovernmentTheme.MUTED)
+		country_rows.add_child(caption)
+		var value := Label.new()
+		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		country_rows.add_child(value)
+		shared_country_rows[row_name] = value
+	var country_note := Label.new()
+	country_note.text = "Fictional test data. Government bloc seats use the simplified 100-seat model. Annual balance includes modeled policy costs and interest."
+	country_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	country_note.add_theme_color_override("font_color", GovernmentTheme.MUTED)
+	shared_country_overview.add_child(country_note)
+	var shared_diplomacy_heading := Label.new()
+	shared_diplomacy_heading.text = "DIPLOMACY"
+	shared_map_panel.add_child(shared_diplomacy_heading)
 	shared_proposal_picker = OptionButton.new()
 	shared_proposal_picker.add_item("Open dialogue")
 	shared_proposal_picker.add_item("Cooperation agreement")
@@ -821,7 +854,8 @@ func _map_city_selected(city: Dictionary) -> void:
 	_refresh_map_simulation()
 
 func _map_selection_cleared() -> void:
-	_select_shared_map_country("")
+	if not preserve_shared_picker:
+		_select_shared_map_country("")
 	map_focus_button.disabled = true
 	map_clear_button.disabled = true
 	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
@@ -861,6 +895,52 @@ func _select_shared_map_country(map_id: String) -> void:
 			break
 	_refresh_shared_diplomacy()
 
+func _shared_country_picker_changed(_index: int) -> void:
+	var binding := _map_binding(world_map.selected_id)
+	if not world_map.selected_id.is_empty() and binding.get("country_id", "") != _shared_partner_id():
+		preserve_shared_picker = true
+		world_map.clear_selection()
+		preserve_shared_picker = false
+	_refresh_shared_diplomacy()
+
+func _refresh_shared_country_overview(target: String, ids: Array) -> void:
+	shared_country_overview.visible = target in ids
+	if not shared_country_overview.visible:
+		return
+	var selected = world_lab.registry.controlled_country(target)
+	var c: Dictionary = selected.country
+	var date: Dictionary = selected.date
+	shared_country_heading.text = ("YOUR GOVERNMENT" if target == world.country.id else "OTHER SIMULATED COUNTRY") + "\n" + c.name
+	if target == WorldLab.COAST:
+		shared_country_heading.text += "\nFictional country; no map location"
+	var party: Dictionary = selected.politics.parties[0]
+	var activity: Array[String] = []
+	for other in ids:
+		if other == target:
+			continue
+		var progress: int = world_lab.registry.dialogue_progress(target, other)
+		var days: int = world_lab.registry.agreement_days(target, other)
+		var other_name: String = world_lab.registry.country_snapshot(other).country.name
+		if progress >= 0:
+			activity.append("%s: %s day %d/%d" % [other_name, world_lab.registry.talk_kind(target, other), progress, WorldLab.Registry.TALK_DAYS])
+		if days > 0:
+			activity.append("%s: agreement %d days" % [other_name, days])
+	var values := {
+		"Date": "%04d-%02d-%02d" % [date.year, date.month, date.day],
+		"Government bloc": "%s · %d / 100" % [party.name, party.seats],
+		"Population": str(c.population),
+		"Approval": "%.1f%%" % c.approval,
+		"Income tax": "%.1f%%" % (c.income_tax_rate * 100.0),
+		"Annual revenue": "$%.1fM" % (selected.total_annual_revenue() / 1000000.0),
+		"Base spending": "$%.1fM" % (c.annual_spending / 1000000.0),
+		"Annual balance": "$%.1fM" % (selected.annual_balance() / 1000000.0),
+		"Cash": "$%.1fM" % (c.treasury / 1000000.0),
+		"Debt": "$%.1fM" % (c.debt / 1000000.0),
+		"Diplomacy": "None active" if activity.is_empty() else "\n".join(activity),
+	}
+	for key in values:
+		shared_country_rows[key].text = values[key]
+
 func _refresh_shared_diplomacy() -> void:
 	if shared_map_panel == null or shared_diplomacy_note == null:
 		return
@@ -888,6 +968,7 @@ func _refresh_shared_diplomacy() -> void:
 			if str(shared_partner_picker.get_item_metadata(index)) == current:
 				shared_partner_picker.select(index)
 	var target := _shared_partner_id()
+	_refresh_shared_country_overview(target, ids)
 	var valid: bool = target in ids and target != world.country.id
 	shared_talk_button.disabled = true
 	shared_cancel_button.disabled = true

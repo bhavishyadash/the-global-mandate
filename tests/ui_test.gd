@@ -341,7 +341,12 @@ func run_checks() -> void:
 	assert(not screen._start_scenario(World.DEFAULT_SCENARIO) and screen.world_lab.registry.export_snapshot() == before_blocked_load)
 	assert(not screen.world_lab.load_from("res://tests/nonexistent.json").is_empty())
 	screen._forecast_budget()
-	assert("unavailable in shared world" in screen.forecast_label.text)
+	assert(screen.forecast_current and "includes existing bilateral talks" in screen.forecast_label.text)
+	screen._compare_budget()
+	assert(screen.comparison_current and "Shared-world forecast" in screen.comparison_label.text)
+	screen.world_lab.start_dialogue()
+	assert(not screen.forecast_current and not screen.comparison_current)
+	screen.world_lab.cancel_talks()
 	var shared_test_path := "res://tests/shared_world_test_save.json"
 	assert(not FileAccess.file_exists(shared_test_path))
 	assert(screen.world_lab.save_to(shared_test_path).is_empty())

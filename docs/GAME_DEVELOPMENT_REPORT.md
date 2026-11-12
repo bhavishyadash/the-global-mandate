@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 111
+**Report status:** Living record; updated through session 112
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 112:** Added a historical federal-budget what-if calculator with non-mutating accounting in millions of dollars. Receipts remain fixed and the preview does not affect gameplay; a calibrated fiscal model remains open. [Detailed session record](SESSION_112.md).
 
 **Session 111:** Added an offline, sourced US historical reference for population, GDP, unemployment and federal receipts, deficit and all 19 FY2025 budget functions. The playable scenario is still fictional; real-data integration and coverage remain open. [Detailed session record](SESSION_111.md).
 

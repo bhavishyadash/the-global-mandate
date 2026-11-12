@@ -12,6 +12,7 @@ const BudgetChart = preload("res://ui/budget_chart.gd")
 const LawCatalogData = preload("res://ui/law_catalog_data.gd")
 const IndicatorChart = preload("res://ui/indicator_chart.gd")
 const USReference = preload("res://ui/us_reference.gd")
+const FederalBudget = preload("res://simulation/federal_budget.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -1069,6 +1070,38 @@ func _build_us_reference(column: VBoxContainer) -> void:
 		var item := table.create_item(root_item)
 		item.set_text(0, row.name)
 		item.set_text(1, str(int(row.millions)))
+	var preview_heading := Label.new()
+	preview_heading.text = "HISTORICAL BUDGET WHAT-IF (REFERENCE ONLY)"
+	column.add_child(preview_heading)
+	var preview_note := Label.new()
+	preview_note.text = "Change one nonnegative function in millions of dollars. This is arithmetic only: receipts, policy behavior and economic effects are held fixed. It does not change the game."
+	preview_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(preview_note)
+	var picker := OptionButton.new()
+	picker.name = "USBudgetFunction"
+	for row in data.budget.functions:
+		if row.millions >= 0:
+			picker.add_item(row.name)
+			picker.set_item_metadata(picker.item_count - 1, row.millions)
+	column.add_child(picker)
+	var amount := SpinBox.new()
+	amount.name = "USBudgetAmount"
+	amount.min_value = 0
+	amount.max_value = FederalBudget.MAX_MILLIONS
+	amount.step = 1
+	amount.value = picker.get_item_metadata(0)
+	amount.suffix = "million USD"
+	column.add_child(amount)
+	var result := Label.new()
+	result.name = "USBudgetPreview"
+	result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(result)
+	var update_preview := func():
+		var preview: Dictionary = FederalBudget.preview(data, picker.get_item_text(picker.selected), amount.value)
+		result.text = "Preview unavailable: " + preview.error if not preview.error.is_empty() else "Change: %+.0f million USD\nTotal outlays: %.0f million USD\nDeficit (negative means surplus): %.0f million USD" % [preview.delta_millions, preview.outlays_millions, preview.deficit_millions]
+	picker.item_selected.connect(func(_index: int): amount.value = picker.get_item_metadata(picker.selected); update_preview.call())
+	amount.value_changed.connect(func(_value: float): update_preview.call())
+	update_preview.call()
 	var sources := Label.new()
 	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". FY2025 is a historical baseline; the existing sandbox still uses fictional inputs."
 	sources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

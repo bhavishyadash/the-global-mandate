@@ -6,6 +6,15 @@ func _initialize() -> void:
 	call_deferred("run_checks")
 
 func run_checks() -> void:
+	var us_reference = preload("res://ui/us_reference.gd")
+	var us_data: Dictionary = us_reference.read()
+	assert(us_reference.validate(us_data).is_empty())
+	var bad_us: Dictionary = us_data.duplicate(true)
+	bad_us.budget.functions[0].millions += 1000
+	assert(not us_reference.validate(bad_us).is_empty())
+	bad_us = us_data.duplicate(true)
+	bad_us.budget.functions.append(bad_us.budget.functions[0].duplicate(true))
+	assert(not us_reference.validate(bad_us).is_empty())
 	assert(ProjectSettings.get_setting("display/window/size/mode") == 2)
 	var catalog = preload("res://ui/law_catalog_data.gd")
 	var catalog_data: Dictionary = catalog.read()
@@ -46,7 +55,8 @@ func run_checks() -> void:
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
 	screen.set_process(false)
-	assert(screen.dashboard_tabs.get_tab_count() == 11)
+	assert(screen.dashboard_tabs.get_tab_count() == 12)
+	assert(screen.find_child("USReferenceTable", true, false) != null)
 	assert("1 sample ·" in screen.indicator_summary.text and screen.indicator_chart.metric == "approval")
 	screen.indicator_picker.select(1)
 	screen._refresh_indicators()

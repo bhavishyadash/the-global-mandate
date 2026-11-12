@@ -89,3 +89,5 @@ Budget comparisons can model either the total-budget reset or the selected categ
 Shared-world fiscal forecasts include current bilateral talks and cooperation costs in a detached simulation; they remain fictional and do not apply proposed decisions. See [session 104](docs/SESSION_104.md).
 
 Choose a 30-, 90-, 180- or 365-day forecast horizon in Budget & services. Comparisons show proposal-minus-current differences and end-of-day zero-cash warnings. See [session 105](docs/SESSION_105.md).
+
+The **History** tab charts monthly approval, cash, debt, annual revenue or annual balance, with up to 120 saved samples and the latest 12 values. Older saves begin recording at the next month; displayed data is fictional. See [session 106](docs/SESSION_106.md).

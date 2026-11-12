@@ -10,6 +10,7 @@ const GovernmentTheme = preload("res://ui/government_theme.gd")
 const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
 const BudgetChart = preload("res://ui/budget_chart.gd")
 const LawCatalogData = preload("res://ui/law_catalog_data.gd")
+const IndicatorChart = preload("res://ui/indicator_chart.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -28,6 +29,9 @@ var running := false
 var elapsed := 0.0
 var summary: Label
 var history: Label
+var indicator_picker: OptionButton
+var indicator_chart: Control
+var indicator_summary: Label
 var tax: SpinBox
 var pause_button: Button
 var main_save_button: Button
@@ -918,6 +922,24 @@ func _ready() -> void:
 	event_filter.item_selected.connect(func(_index: int): _refresh_history())
 	decisions.add_child(event_filter)
 	decisions.move_child(event_filter, 1)
+	var indicator_panel := VBoxContainer.new()
+	decisions.add_child(indicator_panel)
+	decisions.move_child(indicator_panel, 0)
+	var indicator_title := Label.new()
+	indicator_title.text = "MONTHLY INDICATORS — fictional values"
+	indicator_panel.add_child(indicator_title)
+	indicator_picker = OptionButton.new()
+	for spec in [["Approval (%)", "approval"], ["Cash ($ millions)", "cash"], ["Debt ($ millions)", "debt"], ["Annual revenue ($ millions)", "revenue"], ["Annual balance ($ millions)", "balance"]]:
+		indicator_picker.add_item(spec[0])
+		indicator_picker.set_item_metadata(indicator_picker.item_count - 1, spec[1])
+	indicator_picker.item_selected.connect(func(_index: int): _refresh_indicators())
+	indicator_panel.add_child(indicator_picker)
+	indicator_chart = IndicatorChart.new()
+	indicator_chart.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	indicator_panel.add_child(indicator_chart)
+	indicator_summary = Label.new()
+	indicator_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	indicator_panel.add_child(indicator_summary)
 	var diagnostic_note := Label.new()
 	diagnostic_note.text = "Optional reproduction steps (review before sharing). Reports are saved locally and never sent automatically."
 	diagnostic_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2105,6 +2127,7 @@ func _refresh() -> void:
 	_refresh_healthcare()
 	_refresh_law_catalog()
 	_refresh_history()
+	_refresh_indicators()
 	_update_tax_preview(tax.value)
 	_update_additional_tax_preview(additional_tax.value)
 	_update_spending_preview(spending.value)
@@ -2115,6 +2138,32 @@ func _update_speed_status() -> void:
 		speed_status.text = "%s — %d simulation days queued. The game processes the backlog over multiple frames." % ["Running" if running else "Paused", int(elapsed)]
 	else:
 		speed_status.text = "Simulation %s." % ("running" if running else "paused")
+
+func _refresh_indicators() -> void:
+	if indicator_picker == null or indicator_chart == null or indicator_summary == null:
+		return
+	var field: String = indicator_picker.get_item_metadata(indicator_picker.selected)
+	var samples: Array = world.indicator_history
+	indicator_chart.set_series(samples, field)
+	if samples.is_empty():
+		indicator_summary.text = "No monthly samples yet. Older saves start recording when the next month begins."
+		return
+	var low := INF
+	var high := -INF
+	for sample in samples:
+		low = minf(low, float(sample[field]))
+		high = maxf(high, float(sample[field]))
+	var first: Dictionary = samples.front().date
+	var last: Dictionary = samples.back().date
+	var divisor := 1.0 if field == "approval" else 1000000.0
+	var units := "%" if field == "approval" else "M USD"
+	var lines := PackedStringArray(["%d %s · %04d-%02d-%02d to %04d-%02d-%02d\nChart range: %.1f to %.1f %s. Each chart scales to its own range." % [samples.size(), "sample" if samples.size() == 1 else "samples", first.year, first.month, first.day, last.year, last.month, last.day, low / divisor, high / divisor, units], "RECENT SAMPLES (up to 12)"])
+	for index in range(maxi(0, samples.size() - 12), samples.size()):
+		var sample: Dictionary = samples[index]
+		var d: Dictionary = sample.date
+		lines.append("%04d-%02d-%02d  |  %.1f %s" % [d.year, d.month, d.day, float(sample[field]) / divisor, units])
+	lines.append("Samples are recorded at scenario start and at the beginning of each month; up to 120 are retained. Values are fictional, not forecasts.")
+	indicator_summary.text = "\n".join(lines)
 
 func _refresh_history() -> void:
 	var category: String = "" if event_filter.selected == 0 else World.EVENT_CATEGORIES[event_filter.selected - 1]

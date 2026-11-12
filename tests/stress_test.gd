@@ -30,6 +30,12 @@ func _initialize() -> void:
 		assert(continuous.country.approval >= 0.0 and continuous.country.approval <= 100.0)
 		assert(continuous.events.size() <= continuous.MAX_EVENTS)
 		assert(continuous.events.size() == continuous.event_records.size())
+		assert(continuous.indicator_history.size() <= continuous.MAX_INDICATOR_SAMPLES)
+	assert(continuous.indicator_history.size() == resumed.indicator_history.size())
+	for i in range(continuous.indicator_history.size()):
+		assert(continuous.indicator_history[i].date == resumed.indicator_history[i].date)
+		for field in ["cash", "debt", "approval", "revenue", "balance"]:
+			assert(is_equal_approx(continuous.indicator_history[i][field], resumed.indicator_history[i][field]))
 	assert(continuous.politics.election_count >= 2)
 	assert(World._valid_event_records(continuous.event_records, continuous.events))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE))

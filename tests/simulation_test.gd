@@ -240,6 +240,40 @@ func _initialize() -> void:
 	assert(foreign.cancel_diplomatic_talks())
 	assert(foreign.diplomacy.cooldowns.northern == 90)
 	var initial_treasury: float = world.country.treasury
+	var trend = World.new()
+	assert(trend.indicator_history.size() == 1 and trend.indicator_history[0].date == trend.date)
+	assert(trend.set_income_tax(0.3))
+	for day in range(31):
+		trend.advance_day()
+	assert(trend.indicator_history.size() == 2 and trend.indicator_history[1].date == {"year": 2026, "month": 2, "day": 1})
+	assert(is_equal_approx(trend.indicator_history[1].approval, trend.country.approval))
+	var trend_save: Dictionary = JSON.parse_string(JSON.stringify(trend.export_snapshot()))
+	var trend_loaded = World.new()
+	var trend_load_error: String = trend_loaded.import_snapshot(trend_save)
+	assert(trend_load_error.is_empty())
+	assert(trend_loaded.indicator_history.size() == trend.indicator_history.size())
+	assert(is_equal_approx(trend_loaded.indicator_history[1].cash, trend.indicator_history[1].cash))
+	var old_trend: Dictionary = trend_save.duplicate(true)
+	old_trend.version = 22
+	old_trend.erase("indicator_history")
+	assert(trend_loaded.import_snapshot(old_trend).is_empty() and trend_loaded.indicator_history.is_empty())
+	for day in range(28):
+		trend_loaded.advance_day()
+	assert(trend_loaded.indicator_history.size() == 1 and trend_loaded.indicator_history[0].date.month == 3)
+	var bad_trend: Dictionary = trend_save.duplicate(true)
+	bad_trend.indicator_history[1].date = bad_trend.indicator_history[0].date.duplicate(true)
+	var trend_before_bad: Dictionary = trend_loaded.export_snapshot()
+	assert(not trend_loaded.import_snapshot(bad_trend).is_empty() and trend_loaded.export_snapshot() == trend_before_bad)
+	bad_trend = trend_save.duplicate(true)
+	bad_trend.indicator_history[0].approval = NAN
+	assert(not trend_loaded.import_snapshot(bad_trend).is_empty())
+	bad_trend = trend_save.duplicate(true)
+	bad_trend.indicator_history[1].date.year = 2030
+	assert(not trend_loaded.import_snapshot(bad_trend).is_empty())
+	bad_trend = trend_save.duplicate(true)
+	while bad_trend.indicator_history.size() <= World.MAX_INDICATOR_SAMPLES:
+		bad_trend.indicator_history.append(bad_trend.indicator_history[0].duplicate(true))
+	assert(not trend_loaded.import_snapshot(bad_trend).is_empty())
 	var forecast: Dictionary = world.forecast_fiscal(365)
 	assert(not forecast.is_empty() and world.date == World.INITIAL_DATE)
 	assert(world.fiscal.days == 0 and world.politics.election_count == 0)

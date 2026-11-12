@@ -2,17 +2,21 @@
   "version": 2,
   "id": "usa_sandbox",
   "seed": 12345,
-  "population_rules": {"birth_rate_tenths": 120, "death_rate_tenths": 90, "migration_rate_tenths": 20},
-  "description": "US geography sandbox. All population, budgets, parties, behavior and other values are fictional test data, not US statistics.",
+  "population_rules": {
+    "birth_rate_tenths": 0,
+    "death_rate_tenths": 0,
+    "migration_rate_tenths": 0
+  },
+  "description": "US sandbox with Census Vintage 2025 resident population on July 1, 2025. Other figures, budgets, politics and behavior are fictional test values; population growth is not modeled.",
   "date": {
-    "year": 2026,
-    "month": 1,
+    "year": 2025,
+    "month": 7,
     "day": 1
   },
   "country": {
     "id": "usa_sandbox",
-    "name": "United States (fictional sandbox)",
-    "population": 10000000,
+    "name": "United States (mixed-data sandbox)",
+    "population": 341784857,
     "treasury": 1000000000.0,
     "debt": 0.0,
     "annual_revenue": 1200000000.0,
@@ -38,7 +42,10 @@
         "raw_approval": 50.0,
         "service_bonus": 0.0,
         "tax_sensitivity": 100.0,
-        "additional_tax_sensitivity": {"consumption": 140.0, "corporate": -20.0}
+        "additional_tax_sensitivity": {
+          "consumption": 140.0,
+          "corporate": -20.0
+        }
       },
       {
         "name": "Middle income",
@@ -47,7 +54,10 @@
         "raw_approval": 50.0,
         "service_bonus": 0.0,
         "tax_sensitivity": 105.0,
-        "additional_tax_sensitivity": {"consumption": 95.0, "corporate": 25.0}
+        "additional_tax_sensitivity": {
+          "consumption": 95.0,
+          "corporate": 25.0
+        }
       },
       {
         "name": "Higher income",
@@ -56,7 +66,10 @@
         "raw_approval": 50.0,
         "service_bonus": 0.0,
         "tax_sensitivity": 115.0,
-        "additional_tax_sensitivity": {"consumption": 45.0, "corporate": 85.0}
+        "additional_tax_sensitivity": {
+          "consumption": 45.0,
+          "corporate": 85.0
+        }
       }
     ],
     "parties": [

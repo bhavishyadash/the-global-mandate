@@ -54,6 +54,8 @@ func _initialize() -> void:
 		assert(at_cap.population == Demographics.MAX_POPULATION and at_cap.births == 0)
 	assert(model.advance(0, false).population == 0)
 	var scenario: Dictionary = World.Scenario.read_file("res://data/scenarios/usa_sandbox.json")
+	var source: Dictionary = preload("res://ui/us_reference.gd").read()
+	assert(scenario.country.population == source.population.value and int(scenario.date.year) == 2025 and int(scenario.date.month) == 7 and int(scenario.date.day) == 1)
 	assert(World.Scenario.validate(scenario).is_empty())
 	var invalid_scenario: Dictionary = scenario.duplicate(true)
 	invalid_scenario.population_rules.birth_rate_tenths = 1001
@@ -69,7 +71,7 @@ func _initialize() -> void:
 		original.advance_day()
 		resumed.advance_day()
 	assert(original.country.population == resumed.country.population and original.demographics.export_state() == resumed.demographics.export_state())
-	assert(original.country.population > 10000000)
+	assert(original.country.population == int(source.population.value))
 	var legacy: Dictionary = saved.duplicate(true)
 	legacy.version = 23
 	legacy.erase("demographics")
@@ -93,6 +95,7 @@ func _initialize() -> void:
 	assert(forecast.population == forecast_world.country.population)
 	assert(is_equal_approx(forecast.approval, forecast_world.country.approval))
 	var coastal: Dictionary = World.Scenario.read_file("res://data/scenarios/coastal_test.json")
+	coastal.date = scenario.date.duplicate(true)
 	var shared = Registry.new()
 	assert(shared.initialize([scenario, coastal]).is_empty())
 	var shared_before: Dictionary = shared.export_snapshot()

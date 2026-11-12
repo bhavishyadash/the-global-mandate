@@ -555,7 +555,7 @@ func run_checks() -> void:
 	screen.world_map.select_at(usa_point)
 	assert(screen.world_map.selected_id == "USA" and "United States" in screen.map_selection.text)
 	assert(screen.map_scenario_button.visible and screen.map_scenario_button.text == "Start US sandbox")
-	assert("fictional test values" in screen.map_simulation.text)
+	assert("Census population estimate" in screen.map_simulation.text)
 	var before_start: Dictionary = screen.world.export_snapshot()
 	screen._map_scenario_action()
 	assert(screen.pending_scenario_index == 2 and "replaces" in screen.new_game_confirmation.dialog_text)

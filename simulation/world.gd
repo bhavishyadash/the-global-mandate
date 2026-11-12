@@ -133,7 +133,15 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
 		return {}
 	for key in changes:
-		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending"] or not _is_number(changes[key]):
+		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending", "category_spending"]:
+			return {}
+		if key != "category_spending" and not _is_number(changes[key]):
+			return {}
+	if changes.has("category_spending"):
+		var category_change: Variant = changes.category_spending
+		if changes.has("spending") or not category_change is Dictionary or category_change.size() != 2 or not category_change.get("category") is String or not _is_number(category_change.get("amount")):
+			return {}
+		if not future.set_category_spending(category_change.category, float(category_change.amount)):
 			return {}
 	if changes.has("income_tax") and not future.set_income_tax(float(changes.income_tax)):
 		return {}

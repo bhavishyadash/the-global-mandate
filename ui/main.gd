@@ -61,6 +61,7 @@ var healthcare_summary: Label
 var appropriation_picker: OptionButton
 var forecast_label: Label
 var comparison_label: Label
+var comparison_scope: OptionButton
 var forecast_current := false
 var comparison_current := false
 var population_summary: Label
@@ -814,13 +815,18 @@ func _ready() -> void:
 	forecast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	forecast_label.text = "Forecast on demand; rerun after changing settings or advancing time."
 	finances.add_child(forecast_label)
+	comparison_scope = OptionButton.new()
+	comparison_scope.add_item("Compare total budget (reset shares)")
+	comparison_scope.add_item("Compare selected category only")
+	comparison_scope.item_selected.connect(func(_index: int): _invalidate_comparison())
+	finances.add_child(comparison_scope)
 	var compare_button := Button.new()
-	compare_button.text = "Compare entered tax and total budget"
+	compare_button.text = "Compare entered tax and budget proposal"
 	compare_button.pressed.connect(_compare_budget)
 	finances.add_child(compare_button)
 	comparison_label = Label.new()
 	comparison_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	comparison_label.text = "Comparison uses the entered income tax, total budget, and selected additional tax from Tax previews; it does not apply them."
+	comparison_label.text = "Comparison uses entered taxes and the selected budget proposal; it does not apply them."
 	finances.add_child(comparison_label)
 	for node in [income_controls, tax_controls, tax_preview, additional_tax_preview]:
 		node.reparent(taxes)
@@ -1339,13 +1345,21 @@ func _compare_budget() -> void:
 		return
 	var baseline: Dictionary = world.forecast_fiscal(365)
 	var kind := _additional_tax_kind()
-	var changes := {"income_tax": tax.value / 100.0, "spending": spending.value * 1000000.0}
+	var changes := {"income_tax": tax.value / 100.0}
+	var budget_description := ""
+	if comparison_scope.selected == 0:
+		changes["spending"] = spending.value * 1000000.0
+		budget_description = "total budget $%.0f; this resets category shares" % changes.spending
+	else:
+		var category := category_picker.get_item_text(category_picker.selected)
+		changes["category_spending"] = {"category": category, "amount": category_amount.value * 1000000.0}
+		budget_description = "%s category $%.0f; other category amounts are unchanged" % [category, changes.category_spending.amount]
 	changes[kind + "_tax"] = additional_tax.value / 100.0
 	var proposed: Dictionary = world.forecast_fiscal(365, changes)
 	if baseline.is_empty() or proposed.is_empty():
 		comparison_label.text = "Comparison unavailable for these inputs."
 		return
-	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, total budget $%.0f; changing the total resets category shares.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, spending.value * 1000000.0, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval]
+	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval]
 	comparison_current = true
 
 func _invalidate_comparison() -> void:
@@ -2138,6 +2152,7 @@ func _update_spending_preview(value: float) -> void:
 	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual balance: $%.0f | Daily net flow: $%.2f\nService and approval changes develop over time; employment and wider economic effects are not modeled." % [preview.annual_balance, preview.daily_balance]
 
 func _update_category_preview(value: float) -> void:
+	_invalidate_comparison()
 	var name := category_picker.get_item_text(category_picker.selected)
 	var preview: Dictionary = world.preview_category_spending(name, value * 1000000.0)
 	if budget_chart != null:

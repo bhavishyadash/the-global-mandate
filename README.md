@@ -83,3 +83,5 @@ Map search supports country codes and name searches, country/city filters, and E
 The implemented law catalogue is described in `data/rules/law_catalog.json` and validated against existing policy handlers. Catalogue metadata alone does not add a playable law. See [session 101](docs/SESSION_101.md).
 
 Main tax and spending controls open a review showing the current and proposed values and available fictional projections. Confirm to apply; cancelling leaves state unchanged, and a stale review must be opened again. See [session 102](docs/SESSION_102.md).
+
+Budget comparisons can model either the total-budget reset or the selected category amount while keeping other categories unchanged. Both use fictional 365-day forecasts and do not apply decisions. See [session 103](docs/SESSION_103.md).

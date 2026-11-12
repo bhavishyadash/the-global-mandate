@@ -58,6 +58,32 @@ func country_snapshot(id: String) -> Dictionary:
 func controlled_country(id: String) -> Variant:
 	return _countries.get(id)
 
+func forecast_fiscal(id: String, days: int, changes: Dictionary = {}) -> Dictionary:
+	if not _countries.has(id) or days < 1 or days > 366 or _countries[id].date.year >= 9999:
+		return {}
+	var future = get_script().new()
+	if not future.import_snapshot(export_snapshot()).is_empty():
+		return {}
+	var country = future.controlled_country(id)
+	if not country._apply_forecast_changes(changes):
+		return {}
+	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
+	for i in range(days):
+		var before: Dictionary = country.fiscal.duplicate(true)
+		var year: int = country.date.year
+		future.advance_day()
+		# On New Year's Day the completed ledger moved to previous_fiscal.
+		var after: Dictionary = country.previous_fiscal if country.date.year != year else country.fiscal
+		for field in ["revenue", "spending", "policy", "interest"]:
+			result[field] += float(after[field]) - float(before[field])
+		if result.first_cash_exhaustion_day == 0 and country.country.treasury <= 0.0:
+			result.first_cash_exhaustion_day = i + 1
+	result.end_date = country.date.duplicate(true)
+	result.cash = country.country.treasury
+	result.debt = country.country.debt
+	result.approval = country.country.approval
+	return result
+
 func execute_country(id: String, request: Variant) -> Dictionary:
 	if not _countries.has(id):
 		return {"ok": false, "code": "unknown_country", "message": "Country does not exist."}

@@ -132,24 +132,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	future.institutions.configure(institutions.rules)
 	if not future.politics.import_state(politics.export_state()) or not future.services.import_state(services.export_state()) or not future.institutions.import_state(institutions.export_state()) or not future.diplomacy.import_state(diplomacy.export_state()) or not future.healthcare.import_state(healthcare.export_state()):
 		return {}
-	for key in changes:
-		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending", "category_spending"]:
-			return {}
-		if key != "category_spending" and not _is_number(changes[key]):
-			return {}
-	if changes.has("category_spending"):
-		var category_change: Variant = changes.category_spending
-		if changes.has("spending") or not category_change is Dictionary or category_change.size() != 2 or not category_change.get("category") is String or not _is_number(category_change.get("amount")):
-			return {}
-		if not future.set_category_spending(category_change.category, float(category_change.amount)):
-			return {}
-	if changes.has("income_tax") and not future.set_income_tax(float(changes.income_tax)):
-		return {}
-	for kind in ["consumption", "corporate"]:
-		var key: String = kind + "_tax"
-		if changes.has(key) and not future.set_additional_tax(kind, float(changes[key])):
-			return {}
-	if changes.has("spending") and not future.set_annual_spending(float(changes.spending)):
+	if not future._apply_forecast_changes(changes):
 		return {}
 	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
 	for i in range(days):
@@ -166,6 +149,30 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 	result.debt = future.country.debt
 	result.approval = future.country.approval
 	return result
+
+# Apply forecast inputs only to an isolated copy; a rejected request may have
+# partially changed that copy and must never be applied to the live world.
+func _apply_forecast_changes(changes: Dictionary) -> bool:
+	for key in changes:
+		if key not in ["income_tax", "consumption_tax", "corporate_tax", "spending", "category_spending"]:
+			return false
+		if key != "category_spending" and not _is_number(changes[key]):
+			return false
+	if changes.has("category_spending"):
+		var category_change: Variant = changes.category_spending
+		if changes.has("spending") or not category_change is Dictionary or category_change.size() != 2 or not category_change.get("category") is String or not _is_number(category_change.get("amount")):
+			return false
+		if not set_category_spending(category_change.category, float(category_change.amount)):
+			return false
+	if changes.has("income_tax") and not set_income_tax(float(changes.income_tax)):
+		return false
+	for kind in ["consumption", "corporate"]:
+		var key: String = kind + "_tax"
+		if changes.has(key) and not set_additional_tax(kind, float(changes[key])):
+			return false
+	if changes.has("spending") and not set_annual_spending(float(changes.spending)):
+		return false
+	return true
 
 func advance_day() -> void:
 	var divisor := 366.0 if is_leap_year(date.year) else 365.0

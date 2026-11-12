@@ -1324,26 +1324,24 @@ func _export_diagnostics() -> void:
 	var error: String = Diagnostics.write_new(path, report)
 	status.text = "Report saved: " + ProjectSettings.globalize_path(path) if error.is_empty() else error
 
+func _fiscal_forecast(days: int, changes: Dictionary = {}) -> Dictionary:
+	return world_lab.registry.forecast_fiscal(world.country.id, days, changes) if shared_world_active else world.forecast_fiscal(days, changes)
+
 func _forecast_budget() -> void:
 	forecast_current = false
-	if shared_world_active:
-		forecast_label.text = "Forecast unavailable in shared world: bilateral events are not modeled by the single-country forecast."
-		return
-	var result: Dictionary = world.forecast_fiscal(365)
+	var result: Dictionary = _fiscal_forecast(365)
 	if result.is_empty():
 		forecast_label.text = "Forecast unavailable for this state."
 		return
 	var d: Dictionary = result.end_date
 	var warning := "Cash exhausted by day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "Cash remains positive."
-	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning]
+	var model_note := "Shared-world model includes existing bilateral talks and agreements." if shared_world_active else "Single-country model."
+	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
 	forecast_current = true
 
 func _compare_budget() -> void:
 	comparison_current = false
-	if shared_world_active:
-		comparison_label.text = "Comparison unavailable in shared world: bilateral events are not modeled by the single-country forecast."
-		return
-	var baseline: Dictionary = world.forecast_fiscal(365)
+	var baseline: Dictionary = _fiscal_forecast(365)
 	var kind := _additional_tax_kind()
 	var changes := {"income_tax": tax.value / 100.0}
 	var budget_description := ""
@@ -1355,11 +1353,12 @@ func _compare_budget() -> void:
 		changes["category_spending"] = {"category": category, "amount": category_amount.value * 1000000.0}
 		budget_description = "%s category $%.0f; other category amounts are unchanged" % [category, changes.category_spending.amount]
 	changes[kind + "_tax"] = additional_tax.value / 100.0
-	var proposed: Dictionary = world.forecast_fiscal(365, changes)
+	var proposed: Dictionary = _fiscal_forecast(365, changes)
 	if baseline.is_empty() or proposed.is_empty():
 		comparison_label.text = "Comparison unavailable for these inputs."
 		return
-	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval]
+	var model_note := "Shared-world forecast includes existing bilateral talks and agreements." if shared_world_active else "Single-country forecast."
+	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. %s Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval, model_note]
 	comparison_current = true
 
 func _invalidate_comparison() -> void:

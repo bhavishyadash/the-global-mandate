@@ -16,6 +16,8 @@ const SCENARIOS := [
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
+const BASE_CANVAS_SIZE := Vector2i(1152, 648)
+const MIN_CANVAS_SCALE := 2.0
 var world = World.new()
 var running := false
 var elapsed := 0.0
@@ -111,6 +113,7 @@ var inspector_selected := 0
 var inspector_sections: Array = []
 var inspector_reference: Label
 var map_inspector_scroll: ScrollContainer
+var map_layout: BoxContainer
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -128,7 +131,26 @@ var pending_decision: Dictionary = {}
 var review_snapshot := ""
 const SAVE_PATH := "user://prototype_save.json"
 
+static func _canvas_size_for_window(pixels: Vector2i) -> Vector2i:
+	if pixels.x <= 0 or pixels.y <= 0:
+		return BASE_CANVAS_SIZE
+	return Vector2i(mini(BASE_CANVAS_SIZE.x, maxi(1, floori(pixels.x / MIN_CANVAS_SCALE))), mini(BASE_CANVAS_SIZE.y, maxi(1, floori(pixels.y / MIN_CANVAS_SCALE))))
+
+func _update_canvas_size() -> void:
+	var window := get_window()
+	var pixels := window.size
+	if pixels.x <= 0 or pixels.y <= 0:
+		return
+	window.content_scale_size = _canvas_size_for_window(pixels)
+	_update_map_layout.call_deferred()
+
+func _update_map_layout() -> void:
+	if is_instance_valid(map_layout):
+		map_layout.vertical = get_viewport_rect().size.x < 800.0
+
 func _ready() -> void:
+	get_window().size_changed.connect(_update_canvas_size)
+	_update_canvas_size()
 	theme = GovernmentTheme.create()
 	var background := ColorRect.new()
 	background.color = GovernmentTheme.BACKGROUND
@@ -361,7 +383,8 @@ func _ready() -> void:
 	var map_controls := HBoxContainer.new()
 	map_tab.add_child(map_controls)
 	var map_help := Label.new()
-	map_help.text = "Click to select  •  Double-click to focus  •  Drag to pan  •  Wheel to zoom"
+	map_help.text = "Click select  •  Double-click focus  •  Drag pan  •  Wheel zoom"
+	map_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_help.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_controls.add_child(map_help)
 	var zoom_in := Button.new()
@@ -376,9 +399,10 @@ func _ready() -> void:
 	map_zoom_label = Label.new()
 	map_zoom_label.text = "1.0×"
 	map_controls.add_child(map_zoom_label)
-	var map_layout := HBoxContainer.new()
+	map_layout = BoxContainer.new()
 	map_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	map_tab.add_child(map_layout)
+	get_viewport().size_changed.connect(_update_map_layout)
 	world_map = WorldMap.new()
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL

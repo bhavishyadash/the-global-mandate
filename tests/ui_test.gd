@@ -7,6 +7,10 @@ func _initialize() -> void:
 
 func run_checks() -> void:
 	assert(ProjectSettings.get_setting("display/window/size/mode") == 2)
+	var main_script = preload("res://ui/main.gd")
+	assert(main_script._canvas_size_for_window(Vector2i(2940, 1700)) == Vector2i(1152, 648))
+	assert(main_script._canvas_size_for_window(Vector2i(1152, 720)) == Vector2i(576, 360))
+	assert(main_script._canvas_size_for_window(Vector2i(0, 0)) == Vector2i(1152, 648))
 	var screen = load("res://main.tscn").instantiate()
 	root.add_child(screen)
 	screen.set_process(false)

@@ -70,4 +70,6 @@ In shared mode, open **World Map** to inspect the live relationship and review d
 
 The shared-world map selector also shows a live country overview: government bloc, population, approval, tax, revenue, spending, balance, cash, debt and diplomatic activity. Values and the simplified 100-seat government bloc are fictional. Unmapped countries are identified explicitly. See [session 95](docs/SESSION_95.md).
 
-The shared-world country inspector organizes information into Overview, Government, Economy and Diplomacy. Selecting map geography brings the inspector into view, and reference-only locations identify unavailable simulation data. Very small restored windows can make text hard to read; [issue #142](https://github.com/bhavishyadash/the-global-mandate/issues/142) tracks the global scaling problem. See [session 96](docs/SESSION_96.md).
+The shared-world country inspector organizes information into Overview, Government, Economy and Diplomacy. Selecting map geography brings the inspector into view, and reference-only locations identify unavailable simulation data. In narrow windows the map and inspector stack vertically and may require nested scrolling. See [session 96](docs/SESSION_96.md).
+
+Window resizing keeps the interface from shrinking below its minimum canvas scale. Wide windows show the map and country panel side by side; narrow windows stack them. See [session 97](docs/SESSION_97.md).

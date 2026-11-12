@@ -90,6 +90,8 @@ Shared-world fiscal forecasts include current bilateral talks and cooperation co
 
 Choose a 30-, 90-, 180- or 365-day forecast horizon in Budget & services. Comparisons show proposal-minus-current differences and end-of-day zero-cash warnings. See [session 105](docs/SESSION_105.md).
 
-The **History** tab charts monthly approval, cash, debt, annual revenue or annual balance, with up to 120 saved samples and the latest 12 values. Older saves begin recording at the next month; displayed data is fictional. See [session 106](docs/SESSION_106.md).
+The **History** tab charts monthly population, approval, cash, debt, annual revenue or annual balance, with up to 120 saved samples and the latest 12 values. Older saves begin recording at the next month; displayed data is fictional. See [session 106](docs/SESSION_106.md).
 
 The fictional US and Coastal Republic scenarios now use illustrative daily birth, death and net-migration flows. The Population tab shows the assumed rates; group shares and tax bases remain fixed. Older saves retain static population rather than acquiring new rates. See [session 107](docs/SESSION_107.md).
+
+Population trend values are recorded for new monthly samples; older history without population is retained without inventing past values. See [session 108](docs/SESSION_108.md).

@@ -85,7 +85,7 @@ func apply_scenario(data: Variant) -> String:
 	return ""
 
 func _sample_indicators() -> void:
-	indicator_history.append({"date": date.duplicate(true), "cash": float(country.treasury), "debt": float(country.debt), "approval": float(country.approval), "revenue": total_annual_revenue(), "balance": annual_balance()})
+	indicator_history.append({"date": date.duplicate(true), "cash": float(country.treasury), "debt": float(country.debt), "approval": float(country.approval), "revenue": total_annual_revenue(), "balance": annual_balance(), "population": int(country.population)})
 	if indicator_history.size() > MAX_INDICATOR_SAMPLES:
 		indicator_history.pop_front()
 
@@ -280,7 +280,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 24, "demographics": demographics.export_state(), "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 25, "demographics": demographics.export_state(), "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -366,7 +366,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 24:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 25:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -554,14 +554,23 @@ func import_snapshot(parsed: Variant) -> String:
 		sample.date = {"year": int(sample_date.year), "month": int(sample_date.month), "day": int(sample_date.day)}
 		for field in ["cash", "debt", "approval", "revenue", "balance"]:
 			sample[field] = float(sample[field])
+		if sample.has("population"):
+			sample.population = int(sample.population)
 	return ""
 
 static func _valid_indicator_history(history: Variant, current_date: int) -> bool:
 	if not history is Array or history.size() > MAX_INDICATOR_SAMPLES:
 		return false
 	var previous_date := 0
+	var population_started := false
 	for sample in history:
-		if not sample is Dictionary or sample.size() != 6 or not sample.get("date") is Dictionary:
+		if not sample is Dictionary or sample.size() not in [6, 7] or not sample.get("date") is Dictionary:
+			return false
+		if sample.has("population"):
+			if not _is_whole_number(sample.population) or sample.population < 0:
+				return false
+			population_started = true
+		elif sample.size() != 6 or population_started:
 			return false
 		var d: Dictionary = sample.date
 		if d.size() != 3 or not _is_whole_number(d.get("year")) or not _is_whole_number(d.get("month")) or not _is_whole_number(d.get("day")):

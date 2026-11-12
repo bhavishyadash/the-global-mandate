@@ -34,6 +34,7 @@ func _initialize() -> void:
 	assert(continuous.indicator_history.size() == resumed.indicator_history.size())
 	for i in range(continuous.indicator_history.size()):
 		assert(continuous.indicator_history[i].date == resumed.indicator_history[i].date)
+		assert(continuous.indicator_history[i].population == resumed.indicator_history[i].population)
 		for field in ["cash", "debt", "approval", "revenue", "balance"]:
 			assert(is_equal_approx(continuous.indicator_history[i][field], resumed.indicator_history[i][field]))
 	assert(continuous.politics.election_count >= 2)

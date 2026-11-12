@@ -135,6 +135,17 @@ func run_checks() -> void:
 	screen.shared_entry_dialog.hide()
 	assert(screen.shared_world_active and screen.world_lab.shared_mode and screen.world == screen.world_lab.registry.controlled_country(shared_id))
 	assert(screen.shared_map_panel.visible and screen.shared_diplomacy_note.visible and not screen.diplomacy_picker.visible)
+	screen.map_inspector_view = false
+	screen._apply_map_layout(true)
+	assert(screen.map_navigation.visible and screen.world_map.visible and not screen.map_inspector_scroll.visible)
+	screen.map_inspector_view = true
+	screen._apply_map_layout(true)
+	assert(not screen.world_map.visible and screen.map_inspector_scroll.visible and screen.map_back_button.visible)
+	assert(screen.map_inspector_button.button_pressed and not screen.map_controls.visible)
+	screen._apply_map_layout(false)
+	assert(screen.world_map.visible and screen.map_inspector_scroll.visible and not screen.map_navigation.visible)
+	screen.map_inspector_view = false
+	screen._update_map_layout()
 	screen._select_shared_map_country("USA")
 	assert(screen._shared_partner_id() == "usa_sandbox")
 	assert(screen.shared_country_overview.visible and screen.shared_country_rows.Population.text == str(screen.world_lab.registry.country_snapshot("usa_sandbox").country.population))
@@ -148,6 +159,13 @@ func run_checks() -> void:
 		if country.id == "USA":
 			screen.world_map.focus_country(country)
 			break
+	screen.map_inspector_view = true
+	screen._apply_map_layout(true)
+	assert(screen.world_map.selected_id == "USA" and screen.map_inspector_scroll.visible)
+	screen.map_inspector_view = false
+	screen._apply_map_layout(true)
+	assert(screen.world_map.selected_id == "USA" and screen.world_map.visible)
+	screen._update_map_layout()
 	for index in range(screen.shared_partner_picker.item_count):
 		if screen.shared_partner_picker.get_item_metadata(index) == "coastal_republic":
 			screen.shared_partner_picker.select(index)

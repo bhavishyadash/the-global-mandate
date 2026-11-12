@@ -1,5 +1,7 @@
 extends VBoxContainer
 
+signal copy_to_main_requested(country_id: String)
+
 const Registry = preload("res://simulation/world_registry.gd")
 const World = preload("res://simulation/world.gd")
 const WorldMap = preload("res://ui/world_map.gd")
@@ -112,6 +114,11 @@ func _ready() -> void:
 	selected_details = Label.new()
 	selected_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(selected_details)
+	var copy_to_main := Button.new()
+	copy_to_main.text = "Review copy of selected country to main game"
+	copy_to_main.pressed.connect(func(): copy_to_main_requested.emit(selected_id()))
+	add_child(copy_to_main)
+	guarded_controls.append(copy_to_main)
 	proposal_picker = OptionButton.new()
 	proposal_picker.add_item("Open dialogue")
 	proposal_picker.add_item("Cooperation agreement")

@@ -76,6 +76,8 @@ var map_legend: Label
 var map_bindings: Array = []
 var map_binding_error := ""
 var world_lab: VBoxContainer
+var lab_handoff_dialog: ConfirmationDialog
+var pending_lab_handoff: Dictionary = {}
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -434,6 +436,15 @@ func _ready() -> void:
 	new_game_button.pressed.connect(func(): _request_new_scenario(scenario_picker.selected))
 	new_game_confirmation.confirmed.connect(_confirm_new_scenario)
 	new_game_confirmation.canceled.connect(func(): pending_scenario_index = -1)
+	lab_handoff_dialog = ConfirmationDialog.new()
+	lab_handoff_dialog.title = "Copy lab country to main game?"
+	lab_handoff_dialog.ok_button_text = "Copy to main game"
+	lab_handoff_dialog.dialog_autowrap = true
+	lab_handoff_dialog.min_size = Vector2i(600, 0)
+	lab_handoff_dialog.confirmed.connect(_confirm_lab_handoff)
+	lab_handoff_dialog.canceled.connect(_cancel_lab_handoff)
+	add_child(lab_handoff_dialog)
+	world_lab.copy_to_main_requested.connect(_request_lab_handoff)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -1196,20 +1207,60 @@ func _load_backup() -> void:
 func _load_from(path: String) -> void:
 	var error: String = world.load_game(path)
 	if error.is_empty():
-		running = false
-		elapsed = 0.0
-		pause_button.text = "Resume"
-		tax.value = world.country.income_tax_rate * 100.0
-		_additional_tax_selected(additional_tax_picker.selected)
-		spending.value = world.country.annual_spending / 1000000.0
-		_category_selected(category_picker.selected)
-		_sync_scenario_picker()
-		_sync_healthcare_picker()
-		_sync_directive_picker()
-		status.text = "Game loaded and paused."
-		_refresh()
+		_sync_loaded_world("Game loaded and paused.")
 	else:
 		status.text = error
+
+func _sync_loaded_world(text: String) -> void:
+	running = false
+	elapsed = 0.0
+	pause_button.text = "Resume"
+	tax.value = world.country.income_tax_rate * 100.0
+	_additional_tax_selected(additional_tax_picker.selected)
+	spending.value = world.country.annual_spending / 1000000.0
+	_category_selected(category_picker.selected)
+	_sync_scenario_picker()
+	_sync_healthcare_picker()
+	_sync_directive_picker()
+	status.text = text
+	_refresh()
+
+func _request_lab_handoff(id: String) -> void:
+	if not world_lab.initialized or world_lab.batch_remaining > 0 or id != world_lab.selected_id():
+		status.text = "Lab handoff is unavailable while a batch is running or selection changed."
+		return
+	var snapshot: Dictionary = world_lab.registry.country_snapshot(id)
+	var candidate = World.new()
+	var error: String = candidate.import_snapshot(snapshot)
+	if not error.is_empty():
+		status.text = "Lab country cannot be copied: " + error
+		return
+	if running:
+		_toggle_pause()
+	world_lab.running = false
+	world_lab._refresh_clock()
+	pending_lab_handoff = {"id": id, "snapshot": snapshot.duplicate(true), "main_snapshot": JSON.stringify(world.export_snapshot()), "lab_snapshot": JSON.stringify(snapshot)}
+	var date: Dictionary = snapshot.date
+	lab_handoff_dialog.dialog_text = "Copy %s at %04d-%02d-%02d into the main game? This replaces the current main session; save it first if you want to keep it. Both clocks have been paused. Neither save file is written. The lab stays separate: bilateral relationships and agreements are not transferred, and future changes do not synchronize." % [snapshot.country.name, date.year, date.month, date.day]
+	lab_handoff_dialog.popup_centered()
+
+func _cancel_lab_handoff() -> void:
+	pending_lab_handoff.clear()
+
+func _confirm_lab_handoff() -> void:
+	if pending_lab_handoff.is_empty():
+		return
+	var request := pending_lab_handoff.duplicate(true)
+	_cancel_lab_handoff()
+	if running or world_lab.running or world_lab.batch_remaining > 0 or world_lab.selected_id() != request.id or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.country_snapshot(request.id)) != request.lab_snapshot:
+		status.text = "Lab handoff is out of date. Review it again."
+		return
+	var error: String = world.import_snapshot(request.snapshot)
+	if not error.is_empty():
+		status.text = "Lab country could not be copied: " + error
+		return
+	_sync_loaded_world("Lab country copied to the main game; both worlds remain separate.")
+	dashboard_tabs.current_tab = 0
 
 func _refresh() -> void:
 	_invalidate_forecasts()

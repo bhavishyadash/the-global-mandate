@@ -11,6 +11,70 @@ func _initialize() -> void:
 	var coastal: Variant = World.Scenario.read_file("res://data/scenarios/coastal_test.json")
 	var registry = Registry.new()
 	assert(registry.initialize([federal, coastal]).is_empty())
+	# Version 1 dialogue saves migrate without losing progress.
+	var old_world = Registry.new()
+	assert(old_world.initialize([federal, coastal]).is_empty())
+	assert(old_world.start_dialogue("test_republic", "coastal_republic"))
+	old_world.advance_day()
+	var legacy: Dictionary = old_world.export_snapshot()
+	legacy.version = 1
+	legacy.erase("agreements")
+	for key in legacy.talks:
+		legacy.talks[key] = legacy.talks[key].progress
+	var migrated = Registry.new()
+	assert(migrated.import_snapshot(JSON.parse_string(JSON.stringify(legacy))).is_empty())
+	assert(migrated.dialogue_progress("test_republic", "coastal_republic") == 1 and migrated.talk_kind("test_republic", "coastal_republic") == "dialogue")
+	assert(migrated.cancel_talks("test_republic", "coastal_republic"))
+	assert(not migrated.cancel_talks("test_republic", "coastal_republic"))
+	# A proposal with inadequate relations is declined without a fee.
+	var denied = Registry.new()
+	assert(denied.initialize([federal, coastal]).is_empty())
+	assert(denied.start_talks("test_republic", "coastal_republic", "cooperation"))
+	for day in range(30):
+		denied.advance_day()
+	assert(denied.agreement_days("test_republic", "coastal_republic") == 0 and denied.relationship("test_republic", "coastal_republic") == 0.0)
+	assert("declined" in denied.country_snapshot("test_republic").events[0])
+	var insufficient = Registry.new()
+	assert(insufficient.initialize([federal, coastal]).is_empty())
+	insufficient._relations["coastal_republic|test_republic"] = 5.0
+	assert(insufficient.start_talks("test_republic", "coastal_republic", "cooperation"))
+	for day in range(29):
+		insufficient.advance_day()
+	insufficient._countries.test_republic.country.treasury = 0.0
+	var coastal_cash: float = insufficient.country_snapshot("coastal_republic").country.treasury
+	insufficient.advance_day()
+	assert(insufficient.agreement_days("test_republic", "coastal_republic") == 0 and insufficient.relationship("test_republic", "coastal_republic") == 5.0)
+	assert(insufficient.country_snapshot("coastal_republic").country.treasury > coastal_cash)
+	# Accepted cooperation charges each country's cash and fiscal ledger once.
+	var cooperation = Registry.new()
+	var control = Registry.new()
+	assert(cooperation.initialize([federal, coastal]).is_empty() and control.initialize([federal, coastal]).is_empty())
+	cooperation._relations["coastal_republic|test_republic"] = 5.0
+	assert(cooperation.start_talks("test_republic", "coastal_republic", "cooperation"))
+	for day in range(30):
+		cooperation.advance_day()
+		control.advance_day()
+	for id in ["test_republic", "coastal_republic"]:
+		var accepted: Dictionary = cooperation.country_snapshot(id)
+		var baseline: Dictionary = control.country_snapshot(id)
+		assert(is_equal_approx(baseline.country.treasury - accepted.country.treasury, Registry.COOPERATION_COST))
+		assert(is_equal_approx(accepted.fiscal.spending - baseline.fiscal.spending, Registry.COOPERATION_COST))
+	assert(cooperation.relationship("test_republic", "coastal_republic") == 15.0 and cooperation.agreement_days("test_republic", "coastal_republic") == 365)
+	assert(not cooperation.start_talks("test_republic", "coastal_republic", "cooperation"))
+	var agreement_save: Dictionary = JSON.parse_string(JSON.stringify(cooperation.export_snapshot()))
+	var agreement_restored = Registry.new()
+	assert(agreement_restored.import_snapshot(agreement_save).is_empty())
+	assert(agreement_restored.agreement_days("test_republic", "coastal_republic") == 365)
+	var bad_agreement: Dictionary = agreement_save.duplicate(true)
+	bad_agreement.agreements["coastal_republic|test_republic"] = 366
+	var before_bad: Dictionary = agreement_restored.export_snapshot()
+	assert(not agreement_restored.import_snapshot(bad_agreement).is_empty() and agreement_restored.export_snapshot() == before_bad)
+	for day in range(365):
+		agreement_restored.advance_day()
+		control.advance_day()
+	assert(agreement_restored.agreement_days("test_republic", "coastal_republic") == 0)
+	for id in ["test_republic", "coastal_republic"]:
+		assert(is_equal_approx(control.country_snapshot(id).country.treasury - agreement_restored.country_snapshot(id).country.treasury, Registry.COOPERATION_COST))
 	assert(registry.country_ids() == ["coastal_republic", "test_republic"])
 	var before: Dictionary = registry.export_snapshot()
 	assert(not registry.initialize([federal, federal]).is_empty())
@@ -31,7 +95,10 @@ func _initialize() -> void:
 		registry.advance_day()
 	assert(registry.dialogue_progress("test_republic", "coastal_republic") == 29)
 	assert(registry.relationship("test_republic", "coastal_republic") == 0.0)
-	assert(registry.save_game(SAVE).is_empty())
+	var first_save_error: String = registry.save_game(SAVE)
+	if not first_save_error.is_empty():
+		push_error("Registry save failed: " + first_save_error)
+	assert(first_save_error.is_empty())
 	assert(registry.save_game(SAVE).is_empty())
 	var primary := FileAccess.get_file_as_string(SAVE)
 	var backup := FileAccess.get_file_as_string(SAVE + ".bak")

@@ -69,6 +69,18 @@ func run_checks() -> void:
 		lab.advance_day()
 	assert(lab.registry.dialogue_progress(lab.USA, lab.COAST) == -1)
 	assert(lab.registry.relationship(lab.USA, lab.COAST) == 5.0 and not lab.dialogue_button.disabled)
+	lab.proposal_picker.select(1)
+	lab.refresh()
+	assert("one-time" in lab.diplomacy_preview.text and "Current eligibility: eligible" in lab.diplomacy_preview.text)
+	lab.start_dialogue()
+	assert(lab.registry.talk_kind(lab.USA, lab.COAST) == "cooperation" and not lab.cancel_talks_button.disabled)
+	lab.cancel_talks()
+	assert(lab.registry.dialogue_progress(lab.USA, lab.COAST) == -1)
+	lab.start_dialogue()
+	for day in range(30):
+		lab.advance_day()
+	assert(lab.registry.agreement_days(lab.USA, lab.COAST) == 365 and lab.registry.relationship(lab.USA, lab.COAST) == 15.0)
+	assert(lab.dialogue_button.disabled and "no recurring" in lab.diplomacy_preview.text.to_lower())
 	var before_batch: int = lab.registry.country_snapshot(lab.USA).fiscal.days
 	lab._action("batch")
 	assert(lab.batch_remaining == 30 and lab.clock_buttons.toggle.disabled and not lab.tax.editable)

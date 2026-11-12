@@ -6,12 +6,17 @@ const MAX_COUNTRIES := 250
 const MAX_TALKS := 1000
 const TALK_DAYS := 30
 const RELATION_GAIN := 5.0
+const COOPERATION_GAIN := 10.0
+const COOPERATION_MIN_RELATION := 5.0
+const COOPERATION_COST := 5000000.0
+const AGREEMENT_DAYS := 365
 
 # This is an experimental headless multi-country layer. Its bilateral
 # relationships are separate from the older single-country diplomacy model.
 var _countries: Dictionary = {}
 var _relations: Dictionary = {}
 var _talks: Dictionary = {}
+var _agreements: Dictionary = {}
 
 func initialize(scenarios: Variant) -> String:
 	if not scenarios is Array or scenarios.is_empty() or scenarios.size() > MAX_COUNTRIES:
@@ -34,6 +39,7 @@ func initialize(scenarios: Variant) -> String:
 	_countries = countries
 	_relations = {}
 	_talks = {}
+	_agreements = {}
 	return ""
 
 func country_ids() -> Array:
@@ -50,14 +56,24 @@ func execute_country(id: String, request: Variant) -> Dictionary:
 	return Decisions.execute(_countries[id], request)
 
 func start_dialogue(a: String, b: String) -> bool:
+	return start_talks(a, b, "dialogue")
+
+func start_talks(a: String, b: String, kind: String) -> bool:
 	if not _countries.has(a) or not _countries.has(b) or a == b or _talks.size() >= MAX_TALKS:
 		return false
 	var key := _pair(a, b)
-	if _talks.has(key):
+	if _talks.has(key) or kind not in ["dialogue", "cooperation"] or (kind == "cooperation" and _agreements.has(key)):
 		return false
-	_talks[key] = 0
-	_countries[a].add_event("Opened bilateral dialogue with %s." % _countries[b].country.name, "diplomacy")
-	_countries[b].add_event("Opened bilateral dialogue with %s." % _countries[a].country.name, "diplomacy")
+	if kind == "cooperation":
+		var reserved := _agreements.size()
+		for existing in _talks.values():
+			if existing.kind == "cooperation":
+				reserved += 1
+		if reserved >= MAX_TALKS:
+			return false
+	_talks[key] = {"kind": kind, "progress": 0}
+	_countries[a].add_event("Opened bilateral %s talks with %s." % [kind, _countries[b].country.name], "diplomacy")
+	_countries[b].add_event("Opened bilateral %s talks with %s." % [kind, _countries[a].country.name], "diplomacy")
 	return true
 
 func relationship(a: String, b: String) -> float:
@@ -66,18 +82,55 @@ func relationship(a: String, b: String) -> float:
 	return float(_relations.get(_pair(a, b), 0.0))
 
 func dialogue_progress(a: String, b: String) -> int:
-	return int(_talks.get(_pair(a, b), -1))
+	var talk: Dictionary = _talks.get(_pair(a, b), {})
+	return int(talk.get("progress", -1))
+
+func talk_kind(a: String, b: String) -> String:
+	var talk: Dictionary = _talks.get(_pair(a, b), {})
+	return str(talk.get("kind", ""))
+
+func cancel_talks(a: String, b: String) -> bool:
+	if not _countries.has(a) or not _countries.has(b) or a == b:
+		return false
+	var key := _pair(a, b)
+	if not _talks.has(key):
+		return false
+	_talks.erase(key)
+	for id in [a, b]:
+		_countries[id].add_event("Bilateral talks cancelled without an agreement.", "diplomacy", "lab_talks_cancelled")
+	return true
+
+func agreement_days(a: String, b: String) -> int:
+	return int(_agreements.get(_pair(a, b), 0))
+
+func cooperation_eligible(a: String, b: String) -> bool:
+	return _countries.has(a) and _countries.has(b) and a != b and relationship(a, b) >= COOPERATION_MIN_RELATION and _countries[a].country.treasury >= COOPERATION_COST and _countries[b].country.treasury >= COOPERATION_COST
 
 func advance_day() -> void:
+	for key in _agreements.keys():
+		_agreements[key] -= 1
+		if _agreements[key] <= 0:
+			var pair: PackedStringArray = key.split("|")
+			for id in pair:
+				_countries[id].add_event("Bilateral cooperation agreement expired.", "diplomacy", "lab_agreement_expired")
+			_agreements.erase(key)
 	var keys := _talks.keys()
 	keys.sort()
 	for key in keys:
-		_talks[key] += 1
-		if _talks[key] >= TALK_DAYS:
-			_relations[key] = minf(100.0, float(_relations.get(key, 0.0)) + RELATION_GAIN)
+		_talks[key].progress += 1
+		if _talks[key].progress >= TALK_DAYS:
 			var pair: PackedStringArray = key.split("|")
-			_countries[pair[0]].add_event("Bilateral dialogue with %s concluded." % _countries[pair[1]].country.name, "diplomacy")
-			_countries[pair[1]].add_event("Bilateral dialogue with %s concluded." % _countries[pair[0]].country.name, "diplomacy")
+			var kind: String = _talks[key].kind
+			var accepted := kind == "dialogue" or cooperation_eligible(pair[0], pair[1])
+			if accepted:
+				_relations[key] = minf(100.0, float(_relations.get(key, 0.0)) + (RELATION_GAIN if kind == "dialogue" else COOPERATION_GAIN))
+				if kind == "cooperation":
+					_agreements[key] = AGREEMENT_DAYS
+					for id in pair:
+						_countries[id].country.treasury -= COOPERATION_COST
+						_countries[id].fiscal.spending += COOPERATION_COST
+			for id in pair:
+				_countries[id].add_event("Bilateral %s talks concluded: %s%s." % [kind, "accepted" if accepted else "declined", "; one-time cost $%.0f" % COOPERATION_COST if accepted and kind == "cooperation" else ""], "diplomacy", "lab_talks_concluded")
 			_talks.erase(key)
 	for id in country_ids():
 		_countries[id].advance_day()
@@ -86,7 +139,7 @@ func export_snapshot() -> Dictionary:
 	var snapshots := {}
 	for id in country_ids():
 		snapshots[id] = _countries[id].export_snapshot()
-	return {"version": 1, "countries": snapshots, "relations": _relations.duplicate(true), "talks": _talks.duplicate(true)}
+	return {"version": 2, "countries": snapshots, "relations": _relations.duplicate(true), "talks": _talks.duplicate(true), "agreements": _agreements.duplicate(true)}
 
 func load_game(path: String) -> String:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -150,9 +203,16 @@ func save_game(path: String, rename_operation: Callable = Callable(), write_oper
 	return ""
 
 func import_snapshot(data: Variant) -> String:
-	if not data is Dictionary or data.get("version") != 1 or not data.get("countries") is Dictionary or not data.get("relations") is Dictionary or not data.get("talks") is Dictionary:
+	if not data is Dictionary or not World._is_whole_number(data.get("version")) or data.version < 1 or data.version > 2 or not data.get("countries") is Dictionary or not data.get("relations") is Dictionary or not data.get("talks") is Dictionary:
 		return "Invalid registry snapshot."
-	if data.countries.is_empty() or data.countries.size() > MAX_COUNTRIES or data.talks.size() > MAX_TALKS:
+	var talks: Dictionary = data.talks.duplicate(true)
+	var agreements: Variant = data.get("agreements") if data.version == 2 else {}
+	if not agreements is Dictionary:
+		return "Registry has invalid agreements."
+	if data.version == 1:
+		for key in talks:
+			talks[key] = {"kind": "dialogue", "progress": talks[key]}
+	if data.countries.is_empty() or data.countries.size() > MAX_COUNTRIES or data.talks.size() > MAX_TALKS or agreements.size() > MAX_TALKS:
 		return "Registry snapshot is outside the supported bounds."
 	var countries := {}
 	var shared_date: Dictionary = {}
@@ -170,16 +230,30 @@ func import_snapshot(data: Variant) -> String:
 	for key in data.relations:
 		if not _valid_pair(key, countries) or not World._is_number(data.relations[key]) or data.relations[key] < -100.0 or data.relations[key] > 100.0:
 			return "Registry has invalid relationships."
-	for key in data.talks:
-		if not _valid_pair(key, countries) or not World._is_whole_number(data.talks[key]) or data.talks[key] < 0 or data.talks[key] >= TALK_DAYS:
+	var reserved: int = agreements.size()
+	for key in talks:
+		var talk: Variant = talks[key]
+		if not _valid_pair(key, countries) or not talk is Dictionary or talk.size() != 2 or talk.get("kind") not in ["dialogue", "cooperation"] or not World._is_whole_number(talk.get("progress")) or talk.progress < 0 or talk.progress >= TALK_DAYS:
 			return "Registry has invalid dialogue state."
+		if talk.kind == "cooperation" and agreements.has(key):
+			return "Registry has conflicting cooperation state."
+		if talk.kind == "cooperation":
+			reserved += 1
+	if reserved > MAX_TALKS:
+		return "Registry has too many pending or active agreements."
+	for key in agreements:
+		if not _valid_pair(key, countries) or not World._is_whole_number(agreements[key]) or agreements[key] < 1 or agreements[key] > AGREEMENT_DAYS:
+			return "Registry has invalid agreement state."
 	_countries = countries
 	_relations = data.relations.duplicate()
-	_talks = data.talks.duplicate()
+	_talks = talks
+	_agreements = agreements.duplicate()
 	for key in _relations:
 		_relations[key] = float(_relations[key])
 	for key in _talks:
-		_talks[key] = int(_talks[key])
+		_talks[key].progress = int(_talks[key].progress)
+	for key in _agreements:
+		_agreements[key] = int(_agreements[key])
 	return ""
 
 static func _pair(a: String, b: String) -> String:

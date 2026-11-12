@@ -16,7 +16,7 @@ const FederalBudget = preload("res://simulation/federal_budget.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
-	{"id": "usa_sandbox", "name": "United States sandbox (fictional values)", "path": "res://data/scenarios/usa_sandbox.json"},
+	{"id": "usa_sandbox", "name": "United States sandbox (mixed data)", "path": "res://data/scenarios/usa_sandbox.json"},
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
@@ -674,7 +674,7 @@ func _ready() -> void:
 	map_results.item_selected.connect(_select_map_result)
 	map_selection = Label.new()
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; US population starts from Census data, while other sandbox values are fictional."
 	map_sidebar.add_child(map_selection)
 	map_sidebar.move_child(map_results, map_search_status.get_index() + 1)
 	map_sidebar.move_child(map_selection, shared_map_panel.get_index())
@@ -1112,7 +1112,7 @@ func _build_us_reference(column: VBoxContainer) -> void:
 	amount.value_changed.connect(func(_value: float): update_preview.call())
 	update_preview.call()
 	var sources := Label.new()
-	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". FY2025 is a historical baseline; the existing sandbox still uses fictional inputs."
+	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". New US games use the Census population estimate; budget and economic reference figures do not yet drive the simulation."
 	sources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(sources)
 
@@ -1169,7 +1169,7 @@ func _map_selection_cleared() -> void:
 		_select_shared_map_country("")
 	map_focus_button.disabled = true
 	map_clear_button.disabled = true
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; US population starts from Census data, while other sandbox values are fictional."
 	_refresh_map_simulation()
 
 func _map_scenario_index(id: String) -> int:
@@ -1376,12 +1376,12 @@ func _refresh_map_simulation() -> void:
 		map_simulation.text = "REFERENCE ONLY\nNo playable country scenario is linked here yet."
 	elif _map_binding_active(binding):
 		map_scenario_button.text = "Open government"
-		map_simulation.text = "ACTIVE %s — FICTIONAL VALUES\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nThese values are simulation placeholders, not real statistics. City-level simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+		map_simulation.text = "ACTIVE %s — MIXED OR FICTIONAL DATA\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nNew US games start from a Census estimate; financial and political values are fictional. Older saves may differ. City simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
 	elif shared_world_active:
 		map_simulation.text = "SHARED WORLD COUNTRY\nUse the diplomacy panel below to inspect this country. Scenario changes are unavailable while sharing a world."
 	else:
 		map_scenario_button.text = "Start " + binding.short_name
-		map_simulation.text = "%s AVAILABLE\nUses fictional test values, not real statistics. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
+		map_simulation.text = "%s AVAILABLE\nNew games use a Census population estimate; other values are fictional. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
 
 func _map_scenario_action() -> void:
 	var index := _map_scenario_index(world_map.selected_id)
@@ -2157,7 +2157,7 @@ func _update_shared_controls() -> void:
 	main_load_button.disabled = shared_world_active
 	main_backup_button.disabled = shared_world_active
 	scenario_start_button.disabled = shared_world_active
-	mode_notice.text = "SHARED WORLD  ·  Main clock advances both fictional countries  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+	mode_notice.text = "MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype")
 
 func _refresh() -> void:
 	_invalidate_forecasts()
@@ -2197,6 +2197,8 @@ func _refresh() -> void:
 	_refresh_congress()
 	var demographic_rules: Dictionary = world.demographics.rules
 	var people := PackedStringArray(["POPULATION AND APPROVAL — fictional test groups", "Population: %d | assumed annual rates per 1,000: births %.1f, deaths %.1f, net migration %+.1f. Population changes daily using these fixed rates; values are fictional, not real statistics." % [c.population, demographic_rules.birth_rate_tenths / 10.0, demographic_rules.death_rate_tenths / 10.0, demographic_rules.migration_rate_tenths / 10.0], "National approval is the population-share weighted average of group approval. Raw approval includes the initial value and prior tax responses; it is not a breakdown of individual causes. Services add a separate contribution. Displayed approval is clamped to 0–100%."])
+	if c.name == "United States (mixed-data sandbox)":
+		people[1] = "Population: %d. New US games start at the Census Vintage 2025 estimate of 341,784,857 on July 1, 2025. Growth is not modeled; zero rates are placeholders, not observed birth, death or migration rates. Source: https://www.census.gov/quickfacts/fact/table/US/PST045222" % c.population
 	var group_counts: Array = world.politics.population_counts(c.population)
 	for i in range(world.politics.groups.size()):
 		var group: Dictionary = world.politics.groups[i]
@@ -2262,7 +2264,7 @@ func _refresh_indicators() -> void:
 		lines.append("%04d-%02d-%02d  |  %s %s" % [d.year, d.month, d.day, value_text, units])
 	if samples.size() < world.indicator_history.size():
 		lines.append("Older samples lack this indicator; no past values were invented.")
-	lines.append("Samples are recorded at scenario start and at the beginning of each month; up to 120 are retained. Values are fictional, not forecasts.")
+	lines.append("Samples are recorded at scenario start and at the beginning of each month; up to 120 are retained. US starting population may be sourced; other values are fictional. These are not forecasts.")
 	indicator_summary.text = "\n".join(lines)
 
 func _refresh_history() -> void:

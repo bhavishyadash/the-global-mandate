@@ -37,11 +37,12 @@ func _initialize() -> void:
 		quit(1)
 		return
 	world.advance_day()
-	if world.country.population <= 10000000:
-		push_error("Packaged US sandbox demographic rules did not advance population.")
+	if world.country.population != int(USReference.read().population.value):
+		push_error("Packaged US sandbox population differs from its source reference.")
 		quit(1)
 		return
 	var registry = Registry.new()
+	alternate.date = usa.date.duplicate(true)
 	if not registry.initialize([usa, alternate]).is_empty():
 		push_error("Packaged world lab could not initialize.")
 		quit(1)

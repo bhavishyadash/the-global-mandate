@@ -95,3 +95,5 @@ The **History** tab charts monthly population, approval, cash, debt, annual reve
 The fictional US and Coastal Republic scenarios now use illustrative daily birth, death and net-migration flows. The Population tab shows the assumed rates; group shares and tax bases remain fixed. Older saves retain static population rather than acquiring new rates. See [session 107](docs/SESSION_107.md).
 
 Population trend values are recorded for new monthly samples; older history without population is retained without inventing past values. See [session 108](docs/SESSION_108.md).
+
+The Population tab allocates whole-person group counts from fixed fictional shares so they sum to the national total; approval still uses the unrounded shares. See [session 109](docs/SESSION_109.md).

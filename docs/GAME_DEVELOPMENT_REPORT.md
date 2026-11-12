@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 109
+**Report status:** Living record; updated through session 110
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 110:** Added scenario-specific fictional group responses to consumption and corporate tax changes, with legacy save migration. [Detailed session record](SESSION_110.md).
 
 **Session 109:** Reconciled displayed whole-person income-group counts with national population while retaining fixed fictional group shares. [Detailed session record](SESSION_109.md).
 

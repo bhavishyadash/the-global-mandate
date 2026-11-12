@@ -60,6 +60,7 @@ var healthcare_picker: OptionButton
 var healthcare_summary: Label
 var appropriation_picker: OptionButton
 var forecast_label: Label
+var forecast_horizon: OptionButton
 var comparison_label: Label
 var comparison_scope: OptionButton
 var forecast_current := false
@@ -807,8 +808,14 @@ func _ready() -> void:
 	budget_chart_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	finances.add_child(budget_chart_note)
 	finances.move_child(budget_chart_note, 3)
+	forecast_horizon = OptionButton.new()
+	for days in [30, 90, 180, 365]:
+		forecast_horizon.add_item("Forecast horizon: %d days" % days, days)
+	forecast_horizon.select(3)
+	forecast_horizon.item_selected.connect(func(_index: int): _invalidate_forecasts())
+	finances.add_child(forecast_horizon)
 	var forecast_button := Button.new()
-	forecast_button.text = "Forecast next 365 days"
+	forecast_button.text = "Run fiscal forecast"
 	forecast_button.pressed.connect(_forecast_budget)
 	finances.add_child(forecast_button)
 	forecast_label = Label.new()
@@ -1329,19 +1336,24 @@ func _fiscal_forecast(days: int, changes: Dictionary = {}) -> Dictionary:
 
 func _forecast_budget() -> void:
 	forecast_current = false
-	var result: Dictionary = _fiscal_forecast(365)
+	var days := forecast_horizon.get_selected_id()
+	var result: Dictionary = _fiscal_forecast(days)
 	if result.is_empty():
 		forecast_label.text = "Forecast unavailable for this state."
 		return
 	var d: Dictionary = result.end_date
-	var warning := "Cash exhausted by day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "Cash remains positive."
+	var warning := _forecast_cash_warning(result)
 	var model_note := "Shared-world model includes existing bilateral talks and agreements." if shared_world_active else "Single-country model."
-	forecast_label.text = "365-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
+	forecast_label.text = "%d-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nCash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [days, d.year, d.month, d.day, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
 	forecast_current = true
+
+func _forecast_cash_warning(result: Dictionary) -> String:
+	return "Cash reaches zero at the end of day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "No end-of-day zero cash observed."
 
 func _compare_budget() -> void:
 	comparison_current = false
-	var baseline: Dictionary = _fiscal_forecast(365)
+	var days := forecast_horizon.get_selected_id()
+	var baseline: Dictionary = _fiscal_forecast(days)
 	var kind := _additional_tax_kind()
 	var changes := {"income_tax": tax.value / 100.0}
 	var budget_description := ""
@@ -1353,12 +1365,12 @@ func _compare_budget() -> void:
 		changes["category_spending"] = {"category": category, "amount": category_amount.value * 1000000.0}
 		budget_description = "%s category $%.0f; other category amounts are unchanged" % [category, changes.category_spending.amount]
 	changes[kind + "_tax"] = additional_tax.value / 100.0
-	var proposed: Dictionary = _fiscal_forecast(365, changes)
+	var proposed: Dictionary = _fiscal_forecast(days, changes)
 	if baseline.is_empty() or proposed.is_empty():
 		comparison_label.text = "Comparison unavailable for these inputs."
 		return
 	var model_note := "Shared-world forecast includes existing bilateral talks and agreements." if shared_world_active else "Single-country forecast."
-	comparison_label.text = "365-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f vs $%.0f | Debt: $%.0f vs $%.0f | Approval: %.1f%% vs %.1f%%\nValues: current settings vs proposal. %s Fictional rules; no future decisions or shocks." % [tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, baseline.debt, proposed.debt, baseline.approval, proposed.approval, model_note]
+	comparison_label.text = "%d-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f → $%.0f (change $%+.0f)\nDebt: $%.0f → $%.0f (change $%+.0f)\nApproval: %.1f%% → %.1f%% (change %+.1f points)\nCurrent: %s\nProposal: %s\nChanges are proposal minus current settings. %s Fictional rules; no future decisions or shocks." % [days, tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, proposed.cash - baseline.cash, baseline.debt, proposed.debt, proposed.debt - baseline.debt, baseline.approval, proposed.approval, proposed.approval - baseline.approval, _forecast_cash_warning(baseline), _forecast_cash_warning(proposed), model_note]
 	comparison_current = true
 
 func _invalidate_comparison() -> void:

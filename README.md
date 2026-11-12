@@ -84,6 +84,8 @@ The implemented law catalogue is described in `data/rules/law_catalog.json` and 
 
 Main tax and spending controls open a review showing the current and proposed values and available fictional projections. Confirm to apply; cancelling leaves state unchanged, and a stale review must be opened again. See [session 102](docs/SESSION_102.md).
 
-Budget comparisons can model either the total-budget reset or the selected category amount while keeping other categories unchanged. Both use fictional 365-day forecasts and do not apply decisions. See [session 103](docs/SESSION_103.md).
+Budget comparisons can model either the total-budget reset or the selected category amount while keeping other categories unchanged. Both use fictional forecasts and do not apply decisions. See [session 103](docs/SESSION_103.md).
 
 Shared-world fiscal forecasts include current bilateral talks and cooperation costs in a detached simulation; they remain fictional and do not apply proposed decisions. See [session 104](docs/SESSION_104.md).
+
+Choose a 30-, 90-, 180- or 365-day forecast horizon in Budget & services. Comparisons show proposal-minus-current differences and end-of-day zero-cash warnings. See [session 105](docs/SESSION_105.md).

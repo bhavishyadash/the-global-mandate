@@ -50,6 +50,11 @@ func country_ids() -> Array:
 func country_snapshot(id: String) -> Dictionary:
 	return _countries[id].export_snapshot() if _countries.has(id) else {}
 
+# Internal live reference for the opt-in shared-world controller. Callers must
+# advance time through the registry, not this country directly.
+func controlled_country(id: String) -> Variant:
+	return _countries.get(id)
+
 func execute_country(id: String, request: Variant) -> Dictionary:
 	if not _countries.has(id):
 		return {"ok": false, "code": "unknown_country", "message": "Country does not exist."}

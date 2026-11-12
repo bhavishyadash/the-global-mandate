@@ -2,6 +2,9 @@ extends VBoxContainer
 
 signal copy_to_main_requested(country_id: String)
 signal copy_from_main_requested
+signal shared_world_requested(country_id: String)
+signal leave_shared_world_requested
+signal lab_state_changed(country_id: String)
 
 const Registry = preload("res://simulation/world_registry.gd")
 const World = preload("res://simulation/world.gd")
@@ -35,16 +38,20 @@ var speed_picker: OptionButton
 var clock_status: Label
 var copy_from_main_button: Button
 var main_import_available := false
+var shared_mode := false
+var shared_buttons: Dictionary = {}
+var lab_buttons: Dictionary = {}
+var lab_note: Label
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 10)
 	var heading := Label.new()
 	heading.text = "MULTI-COUNTRY LAB — independent fictional test world"
 	add_child(heading)
-	var note := Label.new()
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.text = "This experimental world has its own clock and save slot. Its US sandbox and Coastal Republic have fictional values. It does not control the main game or map. Advance days here to update both countries together."
-	add_child(note)
+	lab_note = Label.new()
+	lab_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lab_note.text = "This experimental world has its own clock and save slot. Its US sandbox and Coastal Republic have fictional values. It does not control the main game or map. Advance days here to update both countries together."
+	add_child(lab_note)
 	var scenarios := [World.Scenario.read_file("res://data/scenarios/usa_sandbox.json"), World.Scenario.read_file("res://data/scenarios/coastal_test.json")]
 	var error: String = registry.initialize(scenarios)
 	message = Label.new()
@@ -63,6 +70,7 @@ func _ready() -> void:
 		button.pressed.connect(func(): _action(action))
 		actions.add_child(button)
 		guarded_controls.append(button)
+		lab_buttons[action] = button
 	copy_from_main_button = Button.new()
 	copy_from_main_button.text = "Review new lab world from main US sandbox"
 	copy_from_main_button.tooltip_text = "Requires the US sandbox in the main game and a supported date. The current lab session will be replaced only after review."
@@ -127,6 +135,17 @@ func _ready() -> void:
 	copy_to_main.pressed.connect(func(): copy_to_main_requested.emit(selected_id()))
 	add_child(copy_to_main)
 	guarded_controls.append(copy_to_main)
+	shared_buttons.copy = copy_to_main
+	var join := Button.new()
+	join.text = "Review playing selected country in shared world"
+	join.pressed.connect(func(): shared_world_requested.emit(selected_id()))
+	add_child(join)
+	shared_buttons.join = join
+	var leave := Button.new()
+	leave.text = "Leave shared world and keep country copy"
+	leave.pressed.connect(func(): leave_shared_world_requested.emit())
+	add_child(leave)
+	shared_buttons.leave = leave
 	proposal_picker = OptionButton.new()
 	proposal_picker.add_item("Open dialogue")
 	proposal_picker.add_item("Cooperation agreement")
@@ -243,13 +262,33 @@ func _refresh_clock() -> void:
 		else:
 			control.disabled = batching
 	copy_from_main_button.disabled = batching or not main_import_available
+	shared_buttons.copy.disabled = batching or shared_mode
+	shared_buttons.join.disabled = batching or shared_mode
+	shared_buttons.leave.disabled = not shared_mode
+	lab_buttons.load.disabled = batching or shared_mode
+	lab_buttons.backup.disabled = batching or shared_mode
+	if shared_mode:
+		clock_buttons.toggle.disabled = true
+		clock_buttons.advance.disabled = true
+		clock_buttons.batch.disabled = true
+		clock_buttons.cancel.disabled = true
+		speed_picker.disabled = true
+		copy_from_main_button.disabled = true
 	if dialogue_button != null and batching:
 		dialogue_button.disabled = true
 		cancel_talks_button.disabled = true
-	clock_status.text = "LAB CLOCK: %s | %d queued day(s) | 30-day advance remaining: %d. Lab time is independent and continues while running, even on another tab." % ["running" if running else "paused", floori(elapsed), batch_remaining]
+	clock_status.text = "SHARED WORLD: use the main clock above; lab load and clock controls are disabled until you leave." if shared_mode else "LAB CLOCK: %s | %d queued day(s) | 30-day advance remaining: %d. Lab time is independent and continues while running, even on another tab." % ["running" if running else "paused", floori(elapsed), batch_remaining]
+
+func set_shared_mode(enabled: bool) -> void:
+	shared_mode = enabled
+	running = false
+	batch_remaining = 0
+	elapsed = 0.0
+	lab_note.text = "SHARED WORLD: the main game controls one lab country and its clock advances both countries. Lab selection does not change the controlled country. All values are fictional. Leave shared world before loading another save." if enabled else "This experimental world has its own clock and save slot. Its US sandbox and Coastal Republic have fictional values. It does not control the main game or map. Advance days here to update both countries together."
+	refresh()
 
 func _process(delta: float) -> void:
-	if not initialized:
+	if not initialized or shared_mode:
 		return
 	if running:
 		elapsed += maxf(0.0, delta) * speed_picker.get_selected_id()
@@ -272,6 +311,8 @@ func _process(delta: float) -> void:
 		_refresh_clock()
 
 func _action(action: String) -> void:
+	if shared_mode and action in ["toggle", "advance", "batch", "cancel", "load", "backup"]:
+		return
 	match action:
 		"toggle":
 			running = not running
@@ -291,6 +332,8 @@ func _action(action: String) -> void:
 		"backup": _request_load(true)
 
 func _request_load(backup: bool) -> void:
+	if shared_mode:
+		return
 	running = false
 	batch_remaining = 0
 	elapsed = 0.0
@@ -307,7 +350,7 @@ func _confirm_load() -> void:
 		load_from(path)
 
 func advance_day() -> void:
-	if not initialized:
+	if not initialized or shared_mode:
 		return
 	registry.advance_day()
 	message.text = "Advanced both lab countries by one day."
@@ -319,6 +362,7 @@ func apply_tax() -> void:
 	var result: Dictionary = registry.execute_country(selected_id(), {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}})
 	message.text = result.message
 	refresh()
+	lab_state_changed.emit(selected_id())
 
 func start_dialogue() -> void:
 	if not initialized:
@@ -326,12 +370,14 @@ func start_dialogue() -> void:
 	var kind := "cooperation" if proposal_picker.selected == 1 else "dialogue"
 	message.text = "%s talks opened; they conclude after 30 lab days." % kind.capitalize() if registry.start_talks(USA, COAST, kind) else "Talks are already active or unavailable."
 	refresh()
+	lab_state_changed.emit("")
 
 func cancel_talks() -> void:
 	if not initialized:
 		return
 	message.text = "Talks cancelled." if registry.cancel_talks(USA, COAST) else "No talks are active."
 	refresh()
+	lab_state_changed.emit("")
 
 func save_to(path: String) -> String:
 	if not initialized:
@@ -367,6 +413,8 @@ func build_from_main(snapshot: Variant) -> Dictionary:
 	return {"error": "", "snapshot": candidate.export_snapshot()}
 
 func replace_world(snapshot: Variant) -> String:
+	if shared_mode:
+		return "Leave shared world before replacing the lab."
 	var candidate = Registry.new()
 	var error: String = candidate.import_snapshot(snapshot)
 	if error.is_empty():
@@ -392,7 +440,7 @@ func _accept_registry(candidate: Variant, text: String) -> void:
 	_selection_changed()
 
 func load_from(path: String) -> String:
-	if not initialized:
+	if not initialized or shared_mode:
 		return "World lab is unavailable."
 	var candidate = Registry.new()
 	var error: String = candidate.load_game(path)

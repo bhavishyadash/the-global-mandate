@@ -117,6 +117,11 @@ func run_checks() -> void:
 	screen._select_shared_map_country("USA")
 	assert(screen._shared_partner_id() == "usa_sandbox")
 	assert(screen.shared_country_overview.visible and screen.shared_country_rows.Population.text == str(screen.world_lab.registry.country_snapshot("usa_sandbox").country.population))
+	assert(screen.inspector_buttons.size() == 4 and screen.inspector_sections[0].visible and not screen.inspector_sections[1].visible)
+	for section in range(4):
+		screen._set_inspector_section(section)
+		for index in range(4):
+			assert(screen.inspector_sections[index].visible == (index == section))
 	assert(("YOUR GOVERNMENT" if shared_id == "usa_sandbox" else "OTHER SIMULATED COUNTRY") in screen.shared_country_heading.text)
 	for country in screen.world_map.countries:
 		if country.id == "USA":
@@ -130,6 +135,9 @@ func run_checks() -> void:
 	assert("no map location" in screen.shared_country_heading.text)
 	screen._select_shared_map_country("FRA")
 	assert(screen._shared_partner_id().is_empty() and screen.shared_talk_button.disabled and not screen.shared_country_overview.visible)
+	assert(screen.inspector_reference.visible and "REFERENCE ONLY" in screen.inspector_reference.text)
+	screen._set_inspector_section(2)
+	assert("economic data" in screen.inspector_reference.text)
 	var other_id := "usa_sandbox" if shared_id == "coastal_republic" else "coastal_republic"
 	for index in range(screen.shared_partner_picker.item_count):
 		if screen.shared_partner_picker.get_item_metadata(index) == other_id:

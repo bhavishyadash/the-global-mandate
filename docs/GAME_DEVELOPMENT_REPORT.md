@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 95
+**Report status:** Living record; updated through session 96
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 96:** Reorganized the shared-world map inspector into four sections and visually checked maximized and very small windows. Small-window text scaling remains open as issue #142. [Detailed session record](SESSION_96.md).
 
 **Session 95:** Added a live, tabular country overview and clearer controlled, simulated, reference-only, and unmapped country states. [Detailed session record](SESSION_95.md).
 

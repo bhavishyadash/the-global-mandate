@@ -628,6 +628,15 @@ func run_checks() -> void:
 	screen._compare_budget()
 	assert("does not apply changes" in screen.comparison_label.text)
 	assert(screen.comparison_current)
+	screen.comparison_scope.select(1)
+	screen._invalidate_comparison()
+	screen._compare_budget()
+	assert(screen.comparison_current and "other category amounts are unchanged" in screen.comparison_label.text)
+	screen.category_amount.value += 1
+	assert(not screen.comparison_current and "OUT OF DATE" in screen.comparison_label.text)
+	screen.comparison_scope.select(0)
+	screen._compare_budget()
+	assert(screen.comparison_current and "resets category shares" in screen.comparison_label.text)
 	screen.tax.value = 21
 	assert(not screen.comparison_current and "OUT OF DATE" in screen.comparison_label.text)
 	assert(screen.forecast_current)

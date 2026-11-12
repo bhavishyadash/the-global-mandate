@@ -116,14 +116,28 @@ func run_checks() -> void:
 	assert(screen.shared_map_panel.visible and screen.shared_diplomacy_note.visible and not screen.diplomacy_picker.visible)
 	screen._select_shared_map_country("USA")
 	assert(screen._shared_partner_id() == "usa_sandbox")
+	assert(screen.shared_country_overview.visible and screen.shared_country_rows.Population.text == str(screen.world_lab.registry.country_snapshot("usa_sandbox").country.population))
+	assert(("YOUR GOVERNMENT" if shared_id == "usa_sandbox" else "OTHER SIMULATED COUNTRY") in screen.shared_country_heading.text)
+	for country in screen.world_map.countries:
+		if country.id == "USA":
+			screen.world_map.focus_country(country)
+			break
+	for index in range(screen.shared_partner_picker.item_count):
+		if screen.shared_partner_picker.get_item_metadata(index) == "coastal_republic":
+			screen.shared_partner_picker.select(index)
+	screen._shared_country_picker_changed(screen.shared_partner_picker.selected)
+	assert(screen.world_map.selected_id.is_empty() and screen._shared_partner_id() == "coastal_republic")
+	assert("no map location" in screen.shared_country_heading.text)
 	screen._select_shared_map_country("FRA")
-	assert(screen._shared_partner_id().is_empty() and screen.shared_talk_button.disabled)
+	assert(screen._shared_partner_id().is_empty() and screen.shared_talk_button.disabled and not screen.shared_country_overview.visible)
 	var other_id := "usa_sandbox" if shared_id == "coastal_republic" else "coastal_republic"
 	for index in range(screen.shared_partner_picker.item_count):
 		if screen.shared_partner_picker.get_item_metadata(index) == other_id:
 			screen.shared_partner_picker.select(index)
 	screen._refresh_shared_diplomacy()
 	assert(not screen.shared_talk_button.disabled and "Relations:" in screen.shared_diplomacy_details.text)
+	assert("OTHER SIMULATED COUNTRY" in screen.shared_country_heading.text)
+	assert(screen.shared_country_rows.Approval.text == "%.1f%%" % screen.world_lab.registry.country_snapshot(other_id).country.approval)
 	screen._request_shared_talk()
 	assert(not screen.pending_shared_talk.is_empty())
 	screen.pending_shared_talk.clear()
@@ -134,10 +148,13 @@ func run_checks() -> void:
 	screen._confirm_shared_talk()
 	screen.shared_talk_dialog.hide()
 	assert("out of date" in screen.status.text and screen.world_lab.registry.dialogue_progress(shared_id, other_id) == -1)
+	screen._refresh()
+	assert(screen.shared_country_rows["Income tax"].text == "20.0%")
 	screen._request_shared_talk()
 	screen._confirm_shared_talk()
 	screen.shared_talk_dialog.hide()
 	assert(screen.world_lab.registry.dialogue_progress(shared_id, other_id) == 0 and "day 0" in screen.world_lab.overview.text)
+	assert("day 0/30" in screen.shared_country_rows.Diplomacy.text)
 	screen._cancel_shared_talk()
 	assert(screen.world_lab.registry.dialogue_progress(shared_id, other_id) == -1)
 	assert(screen.main_save_button.text == "Save shared world" and screen.main_load_button.disabled and screen.scenario_start_button.disabled)
@@ -181,6 +198,7 @@ func run_checks() -> void:
 	screen.shared_switch_dialog.hide()
 	assert(screen.world.country.id == target_id and screen.world == screen.world_lab.registry.controlled_country(target_id))
 	assert(screen.world_lab.shared_controlled_id == target_id and screen.world_lab.shared_buttons.switch.disabled)
+	assert("YOUR GOVERNMENT" in screen.shared_country_heading.text)
 	assert(screen.tax.value == 25.0 and screen.world_lab.registry.export_snapshot() == switch_state)
 	screen.tax.value = 35
 	screen._apply_tax()
@@ -199,6 +217,7 @@ func run_checks() -> void:
 	assert(screen.world_lab.registry.dialogue_progress("usa_sandbox", "coastal_republic") == -1)
 	assert(screen.world_lab.registry.relationship("usa_sandbox", "coastal_republic") == 5.0)
 	assert("Relations: 5.0" in screen.shared_diplomacy_details.text)
+	assert(screen.shared_country_rows.Diplomacy.text == "None active")
 	screen.shared_proposal_picker.select(1)
 	screen._refresh_shared_diplomacy()
 	assert("Conditions are checked at completion" in screen.shared_diplomacy_details.text and not screen.shared_talk_button.disabled)

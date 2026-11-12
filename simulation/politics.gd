@@ -37,6 +37,37 @@ func approval() -> float:
 		result += group.approval * group.share
 	return result
 
+# Allocate a whole population using the existing fixed group shares. Largest
+# fractional remainders get the remaining people; ties use group order.
+func population_counts(population: int) -> Array:
+	if population < 0 or population > 10000000000 or groups.is_empty():
+		return []
+	var total_share := 0.0
+	for group in groups:
+		if not group is Dictionary or not _number(group.get("share")) or group.share < 0.0 or group.share > 1.0:
+			return []
+		total_share += float(group.share)
+	if not is_finite(total_share) or absf(total_share - 1.0) > 0.00001:
+		return []
+	var counts: Array = []
+	var remainders: Array[Dictionary] = []
+	var allocated := 0
+	for index in range(groups.size()):
+		var exact: float = float(population) * float(groups[index].share) / total_share
+		var whole := floori(exact)
+		counts.append(whole)
+		allocated += whole
+		remainders.append({"index": index, "fraction": exact - whole})
+	var remaining := population - allocated
+	if remaining < 0 or remaining > groups.size():
+		return []
+	remainders.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.index < b.index if a.fraction == b.fraction else a.fraction > b.fraction
+	)
+	for i in range(remaining):
+		counts[remainders[i].index] += 1
+	return counts
+
 func votes_for_policy() -> int:
 	var result := 0
 	for party in parties:

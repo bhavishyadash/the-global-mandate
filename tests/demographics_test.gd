@@ -6,6 +6,20 @@ const Registry = preload("res://simulation/world_registry.gd")
 
 func _initialize() -> void:
 	var model = Demographics.new()
+	var groups = World.Politics.new()
+	assert(groups.population_counts(0) == [0, 0, 0])
+	assert(groups.population_counts(1) == [1, 0, 0])
+	assert(groups.population_counts(2) == [1, 1, 0])
+	assert(groups.population_counts(7) == [3, 3, 1])
+	assert(groups.population_counts(-1).is_empty() and groups.population_counts(10000000001).is_empty())
+	for population in [3, 11, 9999999, 10000000000]:
+		var allocation: Array = groups.population_counts(population)
+		assert(allocation.size() == 3 and allocation[0] + allocation[1] + allocation[2] == population)
+	for group in groups.groups:
+		group.share = 0.333333
+	assert(groups.population_counts(2) == [1, 1, 0])
+	groups.groups[0].share = NAN
+	assert(groups.population_counts(100).is_empty())
 	var rules := {"birth_rate_tenths": 100, "death_rate_tenths": 50, "migration_rate_tenths": -20}
 	assert(model.configure(rules))
 	var before: Dictionary = model.export_state()

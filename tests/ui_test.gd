@@ -47,6 +47,12 @@ func run_checks() -> void:
 	root.add_child(screen)
 	screen.set_process(false)
 	assert(screen.dashboard_tabs.get_tab_count() == 11)
+	assert("1 sample ·" in screen.indicator_summary.text and screen.indicator_chart.metric == "approval")
+	screen.indicator_picker.select(1)
+	screen._refresh_indicators()
+	assert(screen.indicator_chart.metric == "cash" and "M USD" in screen.indicator_summary.text)
+	screen.indicator_picker.select(0)
+	screen._refresh_indicators()
 	var fiscal_original: Dictionary = screen.world.export_snapshot()
 	screen.tax.value = 25.0
 	var found_tax_review := false

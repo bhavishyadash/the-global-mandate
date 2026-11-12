@@ -33,7 +33,9 @@ var fiscal: Dictionary = _new_fiscal_period(false)
 var previous_fiscal: Dictionary = {}
 var events: Array[String] = ["Scenario started. All figures are fictional test data."]
 var event_records: Array = []
+var indicator_history: Array = []
 const MAX_EVENTS := 200
+const MAX_INDICATOR_SAMPLES := 120
 const EVENT_CATEGORIES := ["scenario", "finance", "policy", "institution", "diplomacy", "election", "general", "legacy"]
 
 func _init() -> void:
@@ -74,7 +76,14 @@ func apply_scenario(data: Variant) -> String:
 	previous_fiscal = {}
 	events = ["Scenario started. All figures are fictional test data."]
 	event_records = [{"category": "scenario", "date": date.duplicate(), "text": events[0], "cause": "scenario_started", "severity": "info"}]
+	indicator_history = []
+	_sample_indicators()
 	return ""
+
+func _sample_indicators() -> void:
+	indicator_history.append({"date": date.duplicate(true), "cash": float(country.treasury), "debt": float(country.debt), "approval": float(country.approval), "revenue": total_annual_revenue(), "balance": annual_balance()})
+	if indicator_history.size() > MAX_INDICATOR_SAMPLES:
+		indicator_history.pop_front()
 
 func next_random_u32() -> int:
 	# 32-bit LCG, specified explicitly for stable replay across platforms.
@@ -225,6 +234,7 @@ func advance_day() -> void:
 			date.year += 1
 			if date.year >= 2030 and (date.year - 2030) % 4 == 0:
 				_conduct_election()
+		_sample_indicators()
 
 func next_election_year() -> int:
 	if date.year < 2030:
@@ -263,7 +273,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 22, "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 23, "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -349,7 +359,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 22:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 23:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -364,6 +374,9 @@ func import_snapshot(parsed: Variant) -> String:
 	var day := int(d.day)
 	if year < 1 or year > 9999 or month < 1 or month > 12 or day < 1 or day > days_in_month(year, month):
 		return "Save has an invalid date."
+	var loaded_history: Variant = parsed.get("indicator_history") if parsed.version >= 23 else []
+	if not _valid_indicator_history(loaded_history, year * 10000 + month * 100 + day):
+		return "Save has invalid indicator history."
 	if not c.has("name") or not c.name is String or c.name.is_empty() or not c.has("population") or not _is_whole_number(c.population) or c.population < 0:
 		return "Save has invalid country data."
 	for key in ["treasury", "annual_revenue", "annual_spending", "income_tax_rate", "approval"]:
@@ -522,7 +535,39 @@ func import_snapshot(parsed: Variant) -> String:
 	for event in e:
 		events.append(event)
 	event_records = loaded_records
+	indicator_history = loaded_history.duplicate(true)
+	for sample in indicator_history:
+		var sample_date: Dictionary = sample.date
+		sample.date = {"year": int(sample_date.year), "month": int(sample_date.month), "day": int(sample_date.day)}
+		for field in ["cash", "debt", "approval", "revenue", "balance"]:
+			sample[field] = float(sample[field])
 	return ""
+
+static func _valid_indicator_history(history: Variant, current_date: int) -> bool:
+	if not history is Array or history.size() > MAX_INDICATOR_SAMPLES:
+		return false
+	var previous_date := 0
+	for sample in history:
+		if not sample is Dictionary or sample.size() != 6 or not sample.get("date") is Dictionary:
+			return false
+		var d: Dictionary = sample.date
+		if d.size() != 3 or not _is_whole_number(d.get("year")) or not _is_whole_number(d.get("month")) or not _is_whole_number(d.get("day")):
+			return false
+		var year := int(d.year)
+		var month := int(d.month)
+		var day := int(d.day)
+		if year < 1 or year > 9999 or month < 1 or month > 12 or day < 1 or day > days_in_month(year, month):
+			return false
+		var stamp := year * 10000 + month * 100 + day
+		if stamp <= previous_date or stamp > current_date:
+			return false
+		previous_date = stamp
+		for field in ["cash", "debt", "approval", "revenue", "balance"]:
+			if not _is_number(sample.get(field)):
+				return false
+		if sample.cash < 0.0 or sample.debt < 0.0 or sample.revenue < 0.0 or sample.approval < 0.0 or sample.approval > 100.0:
+			return false
+	return true
 
 static func _valid_event_records(records: Variant, texts: Array) -> bool:
 	if not records is Array or records.size() != texts.size():

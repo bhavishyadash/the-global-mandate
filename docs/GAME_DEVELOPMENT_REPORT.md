@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 105
+**Report status:** Living record; updated through session 106
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 106:** Added bounded monthly financial and approval histories, save migration and a selectable trend chart. [Detailed session record](SESSION_106.md).
 
 **Session 105:** Added selectable forecast horizons and clearer proposal differences and cash warnings. [Detailed session record](SESSION_105.md).
 

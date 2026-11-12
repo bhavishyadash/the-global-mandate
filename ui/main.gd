@@ -106,6 +106,11 @@ var shared_country_heading: Label
 var shared_country_overview: VBoxContainer
 var shared_country_rows: Dictionary = {}
 var preserve_shared_picker := false
+var inspector_buttons: Array[Button] = []
+var inspector_selected := 0
+var inspector_sections: Array = []
+var inspector_reference: Label
+var map_inspector_scroll: ScrollContainer
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -383,6 +388,7 @@ func _ready() -> void:
 	if map_binding_error.is_empty():
 		map_bindings = map_binding_data.bindings.duplicate(true)
 	var map_sidebar_scroll := ScrollContainer.new()
+	map_inspector_scroll = map_sidebar_scroll
 	map_sidebar_scroll.custom_minimum_size = Vector2(290, 360)
 	map_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_sidebar_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -442,20 +448,53 @@ func _ready() -> void:
 	shared_heading.text = "SHARED WORLD COUNTRY"
 	shared_map_panel.add_child(shared_heading)
 	shared_partner_picker = OptionButton.new()
+	shared_partner_picker.fit_to_longest_item = false
+	shared_partner_picker.clip_text = true
 	shared_map_panel.add_child(shared_partner_picker)
 	shared_partner_picker.item_selected.connect(_shared_country_picker_changed)
+	var inspector_navigation := GridContainer.new()
+	inspector_navigation.columns = 2
+	shared_map_panel.add_child(inspector_navigation)
+	var inspector_group := ButtonGroup.new()
+	for section_title in ["Overview", "Government", "Economy", "Diplomacy"]:
+		var section_button := Button.new()
+		section_button.text = section_title
+		section_button.toggle_mode = true
+		section_button.button_group = inspector_group
+		section_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var section_index := inspector_buttons.size()
+		section_button.pressed.connect(func(): _set_inspector_section(section_index))
+		inspector_navigation.add_child(section_button)
+		inspector_buttons.append(section_button)
+	inspector_reference = Label.new()
+	inspector_reference.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inspector_reference.text = "REFERENCE ONLY — no simulated government, economic or diplomatic data is available. Select a simulated country above."
+	shared_map_panel.add_child(inspector_reference)
 	shared_country_overview = VBoxContainer.new()
 	shared_map_panel.add_child(shared_country_overview)
 	shared_country_heading = Label.new()
 	shared_country_heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	shared_country_heading.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
 	shared_country_overview.add_child(shared_country_heading)
-	var country_rows := GridContainer.new()
-	country_rows.columns = 2
-	country_rows.add_theme_constant_override("h_separation", 14)
-	country_rows.add_theme_constant_override("v_separation", 5)
-	shared_country_overview.add_child(country_rows)
+	for section_name in ["OVERVIEW", "GOVERNMENT", "ECONOMY", "DIPLOMACY"]:
+		var section := VBoxContainer.new()
+		section.name = section_name
+		shared_country_overview.add_child(section)
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 14)
+		grid.add_theme_constant_override("v_separation", 5)
+		section.add_child(grid)
+		inspector_sections.append(section)
 	for row_name in ["Date", "Government bloc", "Population", "Approval", "Income tax", "Annual revenue", "Base spending", "Annual balance", "Cash", "Debt", "Diplomacy"]:
+		var section_index := 0
+		if row_name in ["Government bloc", "Approval"]:
+			section_index = 1
+		elif row_name in ["Income tax", "Annual revenue", "Base spending", "Annual balance", "Cash", "Debt"]:
+			section_index = 2
+		elif row_name == "Diplomacy":
+			section_index = 3
+		var country_rows: GridContainer = inspector_sections[section_index].get_child(0)
 		var caption := Label.new()
 		caption.text = row_name
 		caption.add_theme_color_override("font_color", GovernmentTheme.MUTED)
@@ -466,29 +505,34 @@ func _ready() -> void:
 		country_rows.add_child(value)
 		shared_country_rows[row_name] = value
 	var country_note := Label.new()
-	country_note.text = "Fictional test data. Government bloc seats use the simplified 100-seat model. Annual balance includes modeled policy costs and interest."
+	country_note.text = "Fictional test data. Government bloc seats use a simplified 100-seat model."
 	country_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	country_note.add_theme_color_override("font_color", GovernmentTheme.MUTED)
-	shared_country_overview.add_child(country_note)
+	inspector_sections[1].add_child(country_note)
+	var economy_note := Label.new()
+	economy_note.text = "Fictional test data. Annual balance includes modeled policy costs and interest."
+	economy_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	economy_note.add_theme_color_override("font_color", GovernmentTheme.MUTED)
+	inspector_sections[2].add_child(economy_note)
 	var shared_diplomacy_heading := Label.new()
 	shared_diplomacy_heading.text = "DIPLOMACY"
-	shared_map_panel.add_child(shared_diplomacy_heading)
+	inspector_sections[3].add_child(shared_diplomacy_heading)
 	shared_proposal_picker = OptionButton.new()
 	shared_proposal_picker.add_item("Open dialogue")
 	shared_proposal_picker.add_item("Cooperation agreement")
 	shared_proposal_picker.item_selected.connect(func(_index: int): _refresh_shared_diplomacy())
-	shared_map_panel.add_child(shared_proposal_picker)
+	inspector_sections[3].add_child(shared_proposal_picker)
 	shared_diplomacy_details = Label.new()
 	shared_diplomacy_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	shared_map_panel.add_child(shared_diplomacy_details)
+	inspector_sections[3].add_child(shared_diplomacy_details)
 	shared_talk_button = Button.new()
 	shared_talk_button.text = "Review talks"
 	shared_talk_button.pressed.connect(_request_shared_talk)
-	shared_map_panel.add_child(shared_talk_button)
+	inspector_sections[3].add_child(shared_talk_button)
 	shared_cancel_button = Button.new()
 	shared_cancel_button.text = "Cancel active talks"
 	shared_cancel_button.pressed.connect(_cancel_shared_talk)
-	shared_map_panel.add_child(shared_cancel_button)
+	inspector_sections[3].add_child(shared_cancel_button)
 	map_results = ItemList.new()
 	map_results.custom_minimum_size = Vector2(0, 150)
 	map_results.visible = false
@@ -499,6 +543,8 @@ func _ready() -> void:
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; the US sandbox uses fictional test values."
 	map_sidebar.add_child(map_selection)
+	map_sidebar.move_child(map_results, map_search_status.get_index() + 1)
+	map_sidebar.move_child(map_selection, shared_map_panel.get_index())
 	world_map.country_selected.connect(_map_country_selected)
 	world_map.city_selected.connect(_map_city_selected)
 	world_map.selection_cleared.connect(_map_selection_cleared)
@@ -845,6 +891,8 @@ func _map_country_selected(id: String, country_name: String) -> void:
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\nCOUNTRY  •  %s\nCapital: %s\nMapped places: %d\n\nGeography and place names are reference data. Regional simulation is not implemented." % [country_name, id, capital, count]
 	_refresh_map_simulation()
+	if shared_world_active:
+		_open_country_inspector.call_deferred()
 
 func _map_city_selected(city: Dictionary) -> void:
 	_select_shared_map_country(city.get("country", ""))
@@ -852,6 +900,15 @@ func _map_city_selected(city: Dictionary) -> void:
 	map_clear_button.disabled = false
 	map_selection.text = "%s\n\n%s  •  %s\nLatitude: %.2f°\nLongitude: %.2f°\n\nReference city marker only. Detailed city art and simulation are not implemented yet." % [city.name, "National capital" if city.capital else "City", city.country, float(city.point[1]), float(city.point[0])]
 	_refresh_map_simulation()
+	if shared_world_active:
+		_open_country_inspector.call_deferred()
+
+func _open_country_inspector() -> void:
+	# Let the selected-country text wrap and the containers settle before scrolling.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if shared_world_active and is_instance_valid(map_inspector_scroll):
+		map_inspector_scroll.scroll_vertical = roundi(shared_map_panel.position.y)
 
 func _map_selection_cleared() -> void:
 	if not preserve_shared_picker:
@@ -893,6 +950,7 @@ func _select_shared_map_country(map_id: String) -> void:
 		if str(shared_partner_picker.get_item_metadata(index)) == target:
 			shared_partner_picker.select(index)
 			break
+	_set_inspector_section(0)
 	_refresh_shared_diplomacy()
 
 func _shared_country_picker_changed(_index: int) -> void:
@@ -901,10 +959,22 @@ func _shared_country_picker_changed(_index: int) -> void:
 		preserve_shared_picker = true
 		world_map.clear_selection()
 		preserve_shared_picker = false
+	_set_inspector_section(0)
 	_refresh_shared_diplomacy()
+
+func _set_inspector_section(index: int) -> void:
+	inspector_selected = clampi(index, 0, 3)
+	for i in range(inspector_buttons.size()):
+		inspector_buttons[i].set_pressed_no_signal(i == inspector_selected)
+	for i in range(inspector_sections.size()):
+		inspector_sections[i].visible = i == inspector_selected
+	if inspector_reference != null:
+		inspector_reference.text = "REFERENCE ONLY — no simulated %s data is available. Select a simulated country above." % ["country", "government", "economic", "diplomatic"][inspector_selected]
 
 func _refresh_shared_country_overview(target: String, ids: Array) -> void:
 	shared_country_overview.visible = target in ids
+	inspector_reference.visible = not shared_country_overview.visible
+	_set_inspector_section(inspector_selected)
 	if not shared_country_overview.visible:
 		return
 	var selected = world_lab.registry.controlled_country(target)

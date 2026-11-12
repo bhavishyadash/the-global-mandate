@@ -6,6 +6,7 @@ const Institutions = preload("res://simulation/institutions.gd")
 const Diplomacy = preload("res://simulation/diplomacy.gd")
 const Healthcare = preload("res://simulation/healthcare.gd")
 const PolicyRules = preload("res://simulation/policy_rules.gd")
+const Demographics = preload("res://simulation/demographics.gd")
 const DEFAULT_SEED := 12345
 const MAX_SEED := 4294967295
 
@@ -31,6 +32,8 @@ static func validate(data: Variant) -> String:
 		return "Scenario institutional rules are missing or invalid."
 	if not PolicyRules.valid(data.get("policy_rules") if data.version >= 5 else PolicyRules.defaults()):
 		return "Scenario baseline policy rules are missing or invalid."
+	if not Demographics.valid_rules(data.get("population_rules", Demographics.default_rules())):
+		return "Scenario population rules are invalid."
 	if data.has("seed") and (not _whole(data.seed) or data.seed < 0 or data.seed > MAX_SEED):
 		return "Scenario seed must be a whole 32-bit unsigned number."
 	var date: Variant = data.get("date")
@@ -50,6 +53,9 @@ static func validate(data: Variant) -> String:
 		return "Scenario day is out of range."
 	if not _id(c.get("id")) or not c.get("name") is String or c.name.strip_edges().is_empty() or not _whole(c.get("population")) or c.population <= 0:
 		return "Scenario country identity or population is invalid."
+	var population_rules: Dictionary = data.get("population_rules", Demographics.default_rules())
+	if c.population > Demographics.MAX_POPULATION and (population_rules.birth_rate_tenths != 0 or population_rules.death_rate_tenths != 0 or population_rules.migration_rate_tenths != 0):
+		return "Scenario population exceeds the demographic model's supported bound."
 	for key in ["treasury", "debt", "annual_revenue", "annual_spending", "income_tax_rate", "consumption_tax_rate", "corporate_tax_rate", "approval"]:
 		if not _number(c.get(key)):
 			return "Scenario financial values must be finite numbers."

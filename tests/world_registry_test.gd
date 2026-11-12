@@ -37,6 +37,7 @@ func _initialize() -> void:
 	var forecast_country: Dictionary = forecast_actual.country_snapshot("test_republic")
 	assert(forecast_actual.agreement_days("test_republic", "coastal_republic") > 0)
 	assert(absf(projected.cash - forecast_country.country.treasury) < 0.01)
+	assert(projected.population == forecast_country.country.population)
 	assert(is_equal_approx(projected.approval, forecast_country.country.approval))
 	assert(absf(projected.spending - forecast_country.previous_fiscal.spending - forecast_country.fiscal.spending) < 0.01)
 	assert(absf(projected.revenue - forecast_country.previous_fiscal.revenue - forecast_country.fiscal.revenue) < 0.01)

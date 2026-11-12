@@ -2,6 +2,7 @@
   "version": 2,
   "id": "usa_sandbox",
   "seed": 12345,
+  "population_rules": {"birth_rate_tenths": 120, "death_rate_tenths": 90, "migration_rate_tenths": 20},
   "description": "US geography sandbox. All population, budgets, parties, behavior and other values are fictional test data, not US statistics.",
   "date": {
     "year": 2026,

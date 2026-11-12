@@ -23,6 +23,11 @@ var summary: Label
 var history: Label
 var tax: SpinBox
 var pause_button: Button
+var main_save_button: Button
+var main_load_button: Button
+var main_backup_button: Button
+var scenario_start_button: Button
+var mode_notice: Label
 var status: Label
 var speed_status: Label
 var simulation_budget_usec := DEFAULT_SIMULATION_BUDGET_USEC
@@ -80,6 +85,9 @@ var lab_handoff_dialog: ConfirmationDialog
 var pending_lab_handoff: Dictionary = {}
 var main_to_lab_dialog: ConfirmationDialog
 var pending_main_to_lab: Dictionary = {}
+var shared_world_active := false
+var shared_entry_dialog: ConfirmationDialog
+var pending_shared_entry: Dictionary = {}
 var government_status: Label
 var budget_chart: Control
 var budget_mode: OptionButton
@@ -130,10 +138,10 @@ func _ready() -> void:
 	government_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	government_status.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
 	layout.add_child(government_status)
-	var notice := Label.new()
-	notice.text = "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
-	notice.add_theme_color_override("font_color", GovernmentTheme.MUTED)
-	layout.add_child(notice)
+	mode_notice = Label.new()
+	mode_notice.text = "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+	mode_notice.add_theme_color_override("font_color", GovernmentTheme.MUTED)
+	layout.add_child(mode_notice)
 	summary = Label.new()
 	layout.add_child(summary)
 	var controls := HBoxContainer.new()
@@ -159,18 +167,18 @@ func _ready() -> void:
 	apply.text = "Apply income tax"
 	apply.pressed.connect(_apply_tax)
 	controls.add_child(apply)
-	var save_button := Button.new()
-	save_button.text = "Save"
-	save_button.pressed.connect(_save_game)
-	controls.add_child(save_button)
-	var load_button := Button.new()
-	load_button.text = "Load"
-	load_button.pressed.connect(_load_game)
-	controls.add_child(load_button)
-	var backup_button := Button.new()
-	backup_button.text = "Load backup"
-	backup_button.pressed.connect(_load_backup)
-	controls.add_child(backup_button)
+	main_save_button = Button.new()
+	main_save_button.text = "Save"
+	main_save_button.pressed.connect(_save_game)
+	controls.add_child(main_save_button)
+	main_load_button = Button.new()
+	main_load_button.text = "Load"
+	main_load_button.pressed.connect(_load_game)
+	controls.add_child(main_load_button)
+	main_backup_button = Button.new()
+	main_backup_button.text = "Load backup"
+	main_backup_button.pressed.connect(_load_backup)
+	controls.add_child(main_backup_button)
 	var income_controls := HBoxContainer.new()
 	layout.add_child(income_controls)
 	for node in [tax_label, tax, apply]:
@@ -428,14 +436,14 @@ func _ready() -> void:
 	for entry in SCENARIOS:
 		scenario_picker.add_item(entry.name)
 	scenario_controls.add_child(scenario_picker)
-	var new_game_button := Button.new()
-	new_game_button.text = "Start selected scenario"
-	scenario_controls.add_child(new_game_button)
+	scenario_start_button = Button.new()
+	scenario_start_button.text = "Start selected scenario"
+	scenario_controls.add_child(scenario_start_button)
 	new_game_confirmation = ConfirmationDialog.new()
 	new_game_confirmation.title = "Start a new scenario?"
 	new_game_confirmation.dialog_text = "This replaces your current session. Save first if you want to keep your progress."
 	add_child(new_game_confirmation)
-	new_game_button.pressed.connect(func(): _request_new_scenario(scenario_picker.selected))
+	scenario_start_button.pressed.connect(func(): _request_new_scenario(scenario_picker.selected))
 	new_game_confirmation.confirmed.connect(_confirm_new_scenario)
 	new_game_confirmation.canceled.connect(func(): pending_scenario_index = -1)
 	lab_handoff_dialog = ConfirmationDialog.new()
@@ -456,6 +464,22 @@ func _ready() -> void:
 	main_to_lab_dialog.canceled.connect(_cancel_main_to_lab)
 	add_child(main_to_lab_dialog)
 	world_lab.copy_from_main_requested.connect(_request_main_to_lab)
+	shared_entry_dialog = ConfirmationDialog.new()
+	shared_entry_dialog.title = "Enter shared world?"
+	shared_entry_dialog.ok_button_text = "Enter shared world"
+	shared_entry_dialog.dialog_autowrap = true
+	shared_entry_dialog.min_size = Vector2i(600, 0)
+	shared_entry_dialog.confirmed.connect(_confirm_shared_entry)
+	shared_entry_dialog.canceled.connect(func(): pending_shared_entry.clear())
+	add_child(shared_entry_dialog)
+	world_lab.shared_world_requested.connect(_request_shared_entry)
+	world_lab.leave_shared_world_requested.connect(_leave_shared_world)
+	world_lab.lab_state_changed.connect(func(country_id: String):
+		if shared_world_active:
+			if country_id == world.country.id:
+				tax.value = world.country.income_tax_rate * 100.0
+			_refresh()
+	)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
 	var chart_controls := HBoxContainer.new()
@@ -816,6 +840,9 @@ func _export_diagnostics() -> void:
 
 func _forecast_budget() -> void:
 	forecast_current = false
+	if shared_world_active:
+		forecast_label.text = "Forecast unavailable in shared world: bilateral events are not modeled by the single-country forecast."
+		return
 	var result: Dictionary = world.forecast_fiscal(365)
 	if result.is_empty():
 		forecast_label.text = "Forecast unavailable for this state."
@@ -827,6 +854,9 @@ func _forecast_budget() -> void:
 
 func _compare_budget() -> void:
 	comparison_current = false
+	if shared_world_active:
+		comparison_label.text = "Comparison unavailable in shared world: bilateral events are not modeled by the single-country forecast."
+		return
 	var baseline: Dictionary = world.forecast_fiscal(365)
 	var kind := _additional_tax_kind()
 	var changes := {"income_tax": tax.value / 100.0, "spending": spending.value * 1000000.0}
@@ -858,7 +888,7 @@ func _process(delta: float) -> void:
 			if processed > 0 and Time.get_ticks_usec() - started >= simulation_budget_usec:
 				break
 			elapsed -= 1.0
-			world.advance_day()
+			_advance_world_tick()
 			processed += 1
 		if processed > 0:
 			_refresh()
@@ -869,10 +899,19 @@ func _toggle_pause() -> void:
 	_update_speed_status()
 
 func _advance_day() -> void:
-	world.advance_day()
+	_advance_world_tick()
 	_refresh()
 
+func _advance_world_tick() -> void:
+	if shared_world_active:
+		world_lab.registry.advance_day()
+	else:
+		world.advance_day()
+
 func _request_new_scenario(index: int) -> void:
+	if shared_world_active:
+		status.text = "Leave the shared world before starting another scenario."
+		return
 	if index < 0 or index >= SCENARIOS.size():
 		status.text = "Select a built-in scenario first."
 		return
@@ -887,6 +926,9 @@ func _confirm_new_scenario() -> void:
 		_start_scenario(SCENARIOS[index].path)
 
 func _start_scenario(path: String) -> bool:
+	if shared_world_active:
+		status.text = "Leave the shared world before starting another scenario."
+		return false
 	var error: String = world.apply_scenario(World.Scenario.read_file(path))
 	if not error.is_empty():
 		status.text = "Could not start scenario: " + error
@@ -934,6 +976,8 @@ func _sync_directive_picker() -> void:
 
 func _apply_tax() -> void:
 	status.text = Decisions.execute(world, {"id": "set_income_tax", "args": {"rate": tax.value / 100.0}}).message
+	if shared_world_active and world_lab.selected_id() == world.country.id:
+		world_lab.tax.value = world.country.income_tax_rate * 100.0
 	_refresh()
 
 func _start_talks() -> void:
@@ -1206,8 +1250,8 @@ func _revoke_directive() -> void:
 	_refresh()
 
 func _save_game() -> void:
-	var error: String = world.save_game(SAVE_PATH)
-	status.text = "Game saved." if error.is_empty() else error
+	var error: String = world_lab.save_to(world_lab.LAB_SAVE) if shared_world_active else world.save_game(SAVE_PATH)
+	status.text = ("Shared world saved to the lab slot." if shared_world_active else "Game saved.") if error.is_empty() else error
 
 func _load_game() -> void:
 	_load_from(SAVE_PATH)
@@ -1216,6 +1260,9 @@ func _load_backup() -> void:
 	_load_from(SAVE_PATH + ".bak")
 
 func _load_from(path: String) -> void:
+	if shared_world_active:
+		status.text = "Leave the shared world before loading a single-country save."
+		return
 	var error: String = world.load_game(path)
 	if error.is_empty():
 		_sync_loaded_world("Game loaded and paused.")
@@ -1237,6 +1284,9 @@ func _sync_loaded_world(text: String) -> void:
 	_refresh()
 
 func _request_lab_handoff(id: String) -> void:
+	if shared_world_active:
+		status.text = "Leave the shared world before copying a lab country."
+		return
 	if not world_lab.initialized or world_lab.batch_remaining > 0 or id != world_lab.selected_id():
 		status.text = "Lab handoff is unavailable while a batch is running or selection changed."
 		return
@@ -1263,7 +1313,7 @@ func _confirm_lab_handoff() -> void:
 		return
 	var request := pending_lab_handoff.duplicate(true)
 	_cancel_lab_handoff()
-	if running or world_lab.running or world_lab.batch_remaining > 0 or world_lab.selected_id() != request.id or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.country_snapshot(request.id)) != request.lab_snapshot:
+	if shared_world_active or running or world_lab.running or world_lab.batch_remaining > 0 or world_lab.selected_id() != request.id or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.country_snapshot(request.id)) != request.lab_snapshot:
 		status.text = "Lab handoff is out of date. Review it again."
 		return
 	var error: String = world.import_snapshot(request.snapshot)
@@ -1274,6 +1324,9 @@ func _confirm_lab_handoff() -> void:
 	dashboard_tabs.current_tab = 0
 
 func _request_main_to_lab() -> void:
+	if shared_world_active:
+		status.text = "Leave the shared world before replacing the lab."
+		return
 	if not world_lab.initialized or world_lab.batch_remaining > 0:
 		status.text = "Cannot create a lab world while a batch is running."
 		return
@@ -1299,7 +1352,7 @@ func _confirm_main_to_lab() -> void:
 		return
 	var request := pending_main_to_lab.duplicate(true)
 	_cancel_main_to_lab()
-	if running or world_lab.running or world_lab.batch_remaining > 0 or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab_snapshot:
+	if shared_world_active or running or world_lab.running or world_lab.batch_remaining > 0 or JSON.stringify(world.export_snapshot()) != request.main_snapshot or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab_snapshot:
 		status.text = "New lab world review is out of date. Review it again."
 		return
 	var error: String = world_lab.replace_world(request.proposed)
@@ -1309,9 +1362,69 @@ func _confirm_main_to_lab() -> void:
 	status.text = "Lab world created from main US sandbox; both worlds remain separate."
 	dashboard_tabs.current_tab = 10
 
+func _request_shared_entry(id: String) -> void:
+	if shared_world_active or not world_lab.initialized or world_lab.batch_remaining > 0 or id != world_lab.selected_id():
+		status.text = "Shared world entry is unavailable while a batch is running or selection changed."
+		return
+	var state: Dictionary = world_lab.registry.country_snapshot(id)
+	var candidate = World.new()
+	var error: String = candidate.import_snapshot(state)
+	if not error.is_empty():
+		status.text = "Cannot enter shared world: " + error
+		return
+	if running:
+		_toggle_pause()
+	world_lab.running = false
+	world_lab._refresh_clock()
+	pending_shared_entry = {"id": id, "main": JSON.stringify(world.export_snapshot()), "lab": JSON.stringify(world_lab.registry.export_snapshot())}
+	shared_entry_dialog.dialog_text = "Play %s in the shared lab world? This replaces the current main session; save it first if needed. Both clocks are paused and queued time will be cleared. The main clock will advance both lab countries. Main Save writes the separate lab world slot; load and new-scenario controls are disabled until you leave. Neither save is written now. Bilateral lab diplomacy is separate from the legacy Diplomacy tab." % state.country.name
+	shared_entry_dialog.popup_centered()
+
+func _confirm_shared_entry() -> void:
+	if pending_shared_entry.is_empty():
+		return
+	var request := pending_shared_entry.duplicate(true)
+	pending_shared_entry.clear()
+	if shared_world_active or running or world_lab.running or world_lab.batch_remaining > 0 or world_lab.selected_id() != request.id or JSON.stringify(world.export_snapshot()) != request.main or JSON.stringify(world_lab.registry.export_snapshot()) != request.lab:
+		status.text = "Shared world review is out of date. Review it again."
+		return
+	var selected: Variant = world_lab.registry.controlled_country(request.id)
+	if selected == null:
+		status.text = "Shared country is unavailable."
+		return
+	world = selected
+	shared_world_active = true
+	world_lab.set_shared_mode(true)
+	_update_shared_controls()
+	_sync_loaded_world("Shared world active; main clock advances both countries.")
+	dashboard_tabs.current_tab = 0
+
+func _leave_shared_world() -> void:
+	if not shared_world_active:
+		return
+	var detached = World.new()
+	var error: String = detached.import_snapshot(world.export_snapshot())
+	if not error.is_empty():
+		status.text = "Cannot leave shared world: " + error
+		return
+	world = detached
+	shared_world_active = false
+	world_lab.set_shared_mode(false)
+	_update_shared_controls()
+	_sync_loaded_world("Shared world left; main country is now an independent copy.")
+
+func _update_shared_controls() -> void:
+	main_save_button.text = "Save shared world" if shared_world_active else "Save"
+	main_load_button.disabled = shared_world_active
+	main_backup_button.disabled = shared_world_active
+	scenario_start_button.disabled = shared_world_active
+	mode_notice.text = "SHARED WORLD  ·  Main clock advances both fictional countries  ·  Bilateral talks in World Lab" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+
 func _refresh() -> void:
 	_invalidate_forecasts()
 	_update_speed_status()
+	if shared_world_active:
+		world_lab.refresh()
 	_refresh_map_simulation()
 	world_lab.set_main_import_available(world.scenario_id == "usa_sandbox" and world.country.id == "usa_sandbox" and world.date.year <= 9998)
 	var c: Dictionary = world.country

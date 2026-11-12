@@ -11,6 +11,7 @@ const BudgetBreakdown = preload("res://ui/budget_breakdown.gd")
 const BudgetChart = preload("res://ui/budget_chart.gd")
 const LawCatalogData = preload("res://ui/law_catalog_data.gd")
 const IndicatorChart = preload("res://ui/indicator_chart.gd")
+const USReference = preload("res://ui/us_reference.gd")
 const SCENARIOS := [
 	{"id": "test_republic", "name": "Federal Republic (fictional)", "path": "res://data/scenarios/test_republic.json"},
 	{"id": "coastal_test", "name": "Coastal Republic (fictional)", "path": "res://data/scenarios/coastal_test.json"},
@@ -453,6 +454,8 @@ func _ready() -> void:
 	map_tab_scroll = map_tab.get_parent() as ScrollContainer
 	var executive := _make_dashboard_tab("Executive Orders")
 	var lab_tab := _make_dashboard_tab("World Lab")
+	var us_reference_tab := _make_dashboard_tab("US Reference")
+	_build_us_reference(us_reference_tab)
 	world_lab = WorldLab.new()
 	lab_tab.add_child(world_lab)
 	map_navigation = HBoxContainer.new()
@@ -1026,6 +1029,50 @@ func _ready() -> void:
 	review_dialog.canceled.connect(_cancel_review)
 	add_child(review_dialog)
 	_refresh()
+
+func _build_us_reference(column: VBoxContainer) -> void:
+	var notice := Label.new()
+	notice.text = "OFFICIAL HISTORICAL REFERENCE — NOT LIVE SIMULATION VALUES"
+	notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(notice)
+	var data: Variant = USReference.read()
+	var error: String = USReference.validate(data)
+	if not error.is_empty():
+		notice.text += "\n" + error
+		return
+	var description := Label.new()
+	description.text = "Census resident population estimate, %s: %s people\n\nFederal budget: %s\nAmounts below are millions of US dollars. Spending includes net interest. Negative functions are offsets; figures may differ by rounding. Sources appear below the table." % [data.population.period, str(int(data.population.value)), data.budget.period]
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(description)
+	var economy := Label.new()
+	economy.text = "Current-dollar GDP: $%.1f billion (%s)\nUnemployment: %.1f%% (%s)" % [data.economy.gdp_billions, data.economy.gdp_period, data.economy.unemployment_percent, data.economy.unemployment_period]
+	economy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(economy)
+	var table := Tree.new()
+	table.name = "USReferenceTable"
+	table.columns = 2
+	table.column_titles_visible = true
+	table.set_column_title(0, "Federal receipts and outlays")
+	table.set_column_title(1, "Millions USD")
+	table.set_column_expand(0, true)
+	table.set_column_expand(1, false)
+	table.set_column_custom_minimum_width(1, 120)
+	table.hide_root = true
+	table.custom_minimum_size = Vector2(0, 360)
+	column.add_child(table)
+	var root_item := table.create_item()
+	for row in [["Total receipts", data.budget.receipts_millions], ["Total outlays", data.budget.outlays_millions], ["Deficit", data.budget.deficit_millions]]:
+		var item := table.create_item(root_item)
+		item.set_text(0, row[0])
+		item.set_text(1, str(int(row[1])))
+	for row in data.budget.functions:
+		var item := table.create_item(root_item)
+		item.set_text(0, row.name)
+		item.set_text(1, str(int(row.millions)))
+	var sources := Label.new()
+	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". FY2025 is a historical baseline; the existing sandbox still uses fictional inputs."
+	sources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(sources)
 
 func _make_dashboard_tab(title: String) -> VBoxContainer:
 	var panel := ScrollContainer.new()

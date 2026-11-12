@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 110
+**Report status:** Living record; updated through session 111
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -17,7 +17,7 @@
 | Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
 | Simulation | Framework prototype in tracked project | Gregorian calendar, fictional budget, population, institutions, diplomacy and single-slot save/load |
-| World data | Fictional scenarios only | Real-country research sources, licensing, dates, gaps and uncertainty remain open |
+| World data | US historical reference started | Sourced population, GDP, unemployment and FY2025 federal budget functions are viewable offline; gameplay remains fictional. Broader coverage and integration remain open |
 | Political systems | Early fictional prototype | Three population groups, a three-party legislature, procurement and healthcare test laws, and a simplified election; real country institutions remain future work |
 | Economy | Early fictional budget prototype | Sectors, households, employment, prices and trade remain open |
 | Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 111:** Added an offline, sourced US historical reference for population, GDP, unemployment and federal receipts, deficit and all 19 FY2025 budget functions. The playable scenario is still fictional; real-data integration and coverage remain open. [Detailed session record](SESSION_111.md).
 
 **Session 110:** Added scenario-specific fictional group responses to consumption and corporate tax changes, with legacy save migration. [Detailed session record](SESSION_110.md).
 

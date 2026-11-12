@@ -1,0 +1,109 @@
+{
+  "title": "United States: official historical reference",
+  "retrieved": "2026-11-12",
+  "note": "Historical observations; not connected to the fictional simulation. Figures refer to different periods and scopes.",
+  "sources": {
+    "treasury": "https://fiscal.treasury.gov/system/files/files/reports-statements/combined-statement/cs2025/2025-cs-final.pdf",
+    "census": "https://www.census.gov/quickfacts/fact/table/US/PST045222",
+    "bea": "https://apps.bea.gov/scb/issues/2026/09-september/0926-nea-annual-update.htm",
+    "bls": "https://www.bls.gov/cps/"
+  },
+  "population": {
+    "value": 341784857,
+    "period": "July 1, 2025",
+    "scope": "Resident population; Census Vintage 2025 estimate.",
+    "source": "census"
+  },
+  "budget": {
+    "period": "FY 2025 (October 2024–September 2025)",
+    "scope": "US federal budget, on-budget and off-budget, in millions of USD; amounts rounded by Treasury. Interest is included in outlays. Negative functions are net offsets.",
+    "source": "treasury",
+    "receipts_millions": 5234617,
+    "outlays_millions": 7009992,
+    "deficit_millions": 1775375,
+    "functions": [
+      {
+        "name": "National Defense",
+        "millions": 916649
+      },
+      {
+        "name": "International Affairs",
+        "millions": 45170
+      },
+      {
+        "name": "General Science, Space, and Technology",
+        "millions": 42084
+      },
+      {
+        "name": "Energy",
+        "millions": 20892
+      },
+      {
+        "name": "Natural Resources and Environment",
+        "millions": 88312
+      },
+      {
+        "name": "Agriculture",
+        "millions": 49358
+      },
+      {
+        "name": "Commerce and Housing Credit",
+        "millions": -28621
+      },
+      {
+        "name": "Transportation",
+        "millions": 145804
+      },
+      {
+        "name": "Community and Regional Development",
+        "millions": 84530
+      },
+      {
+        "name": "Education, Training, Employment, and Social Services",
+        "millions": 71014
+      },
+      {
+        "name": "Health",
+        "millions": 978878
+      },
+      {
+        "name": "Medicare",
+        "millions": 996719
+      },
+      {
+        "name": "Income Security",
+        "millions": 701584
+      },
+      {
+        "name": "Social Security",
+        "millions": 1580686
+      },
+      {
+        "name": "Veterans Benefits and Services",
+        "millions": 377162
+      },
+      {
+        "name": "Administration of Justice",
+        "millions": 85182
+      },
+      {
+        "name": "General Government",
+        "millions": 34454
+      },
+      {
+        "name": "Net Interest",
+        "millions": 970359
+      },
+      {
+        "name": "Undistributed Offsetting Receipts",
+        "millions": -150225
+      }
+    ]
+  },
+  "economy": {
+    "gdp_billions": 30861.3,
+    "gdp_period": "Calendar 2025; current-dollar GDP, September 2026 annual revision",
+    "unemployment_percent": 4.3,
+    "unemployment_period": "Calendar 2025 annual average; civilian labor force"
+  }
+}

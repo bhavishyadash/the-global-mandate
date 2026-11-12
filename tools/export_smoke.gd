@@ -5,8 +5,13 @@ const WorldMap = preload("res://ui/world_map.gd")
 const MapScenarioRegistry = preload("res://ui/map_scenario_registry.gd")
 const Registry = preload("res://simulation/world_registry.gd")
 const LawCatalogData = preload("res://ui/law_catalog_data.gd")
+const USReference = preload("res://ui/us_reference.gd")
 
 func _initialize() -> void:
+	if not USReference.validate(USReference.read()).is_empty():
+		push_error("Packaged US historical reference could not be loaded.")
+		quit(1)
+		return
 	if not LawCatalogData.validate(LawCatalogData.read()).is_empty():
 		push_error("Packaged law catalogue could not be loaded.")
 		quit(1)

@@ -17,6 +17,9 @@ var message: Label
 var load_confirmation: ConfirmationDialog
 var pending_load_path := ""
 var dialogue_button: Button
+var cancel_talks_button: Button
+var proposal_picker: OptionButton
+var diplomacy_preview: Label
 var lab_map: Control
 var map_status: Label
 var initialized := false
@@ -109,10 +112,25 @@ func _ready() -> void:
 	selected_details = Label.new()
 	selected_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(selected_details)
+	proposal_picker = OptionButton.new()
+	proposal_picker.add_item("Open dialogue")
+	proposal_picker.add_item("Cooperation agreement")
+	add_child(proposal_picker)
+	guarded_controls.append(proposal_picker)
+	proposal_picker.item_selected.connect(func(_index: int): refresh())
+	diplomacy_preview = Label.new()
+	diplomacy_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(diplomacy_preview)
+	var diplomacy_actions := HBoxContainer.new()
+	add_child(diplomacy_actions)
 	dialogue_button = Button.new()
-	dialogue_button.text = "Open dialogue between the two countries"
+	dialogue_button.text = "Start selected talks"
 	dialogue_button.pressed.connect(start_dialogue)
-	add_child(dialogue_button)
+	diplomacy_actions.add_child(dialogue_button)
+	cancel_talks_button = Button.new()
+	cancel_talks_button.text = "Cancel talks"
+	cancel_talks_button.pressed.connect(cancel_talks)
+	diplomacy_actions.add_child(cancel_talks_button)
 	add_child(message)
 	var map_title := Label.new()
 	map_title.text = "LAB MAP — click the US to select its sandbox"
@@ -176,13 +194,22 @@ func refresh() -> void:
 	var b: Dictionary = registry.country_snapshot(COAST)
 	var d: Dictionary = a.date
 	var progress: int = registry.dialogue_progress(USA, COAST)
-	var talk := "No active dialogue." if progress < 0 else "Dialogue: day %d / %d." % [progress, Registry.TALK_DAYS]
+	var talk := "No active talks." if progress < 0 else "%s talks: day %d / %d." % [registry.talk_kind(USA, COAST).capitalize(), progress, Registry.TALK_DAYS]
+	var remaining: int = registry.agreement_days(USA, COAST)
 	overview.text = "LAB DATE: %04d-%02d-%02d (both countries)\n%s\n%s: approval %.1f%% | cash $%.1fM\n%s: approval %.1f%% | cash $%.1fM\nRelationship: %.1f / 100 | %s" % [d.year, d.month, d.day, "All figures and relationships are fictional.", a.country.name, a.country.approval, a.country.treasury / 1000000.0, b.country.name, b.country.approval, b.country.treasury / 1000000.0, registry.relationship(USA, COAST), talk]
+	overview.text += "\nCooperation: %s" % ("active for %d more days" % remaining if remaining > 0 else "no active agreement")
 	var state: Dictionary = registry.country_snapshot(selected_id())
 	if not state.is_empty():
 		var c: Dictionary = state.country
 		selected_details.text = "SELECTED: %s\nPopulation %d | income tax %.1f%% | approval %.1f%%\nAnnual revenue $%.1fM | spending $%.1fM | debt $%.1fM" % [c.name, c.population, c.income_tax_rate * 100.0, c.approval, c.annual_revenue / 1000000.0, c.annual_spending / 1000000.0, c.debt / 1000000.0]
-	dialogue_button.disabled = progress >= 0
+	var cooperation := proposal_picker.selected == 1
+	var available := not cooperation or remaining == 0
+	if cooperation:
+		diplomacy_preview.text = "COOPERATION — fictional test rules\nTalks last 30 days. If relations are at least %.0f and both countries have $%.1fM cash when talks finish, each pays a one-time $%.1fM, relations rise by %.0f and an agreement lasts %d days. No recurring payments or trade effects are modeled. Current eligibility: %s.%s" % [Registry.COOPERATION_MIN_RELATION, Registry.COOPERATION_COST / 1000000.0, Registry.COOPERATION_COST / 1000000.0, Registry.COOPERATION_GAIN, Registry.AGREEMENT_DAYS, "eligible" if registry.cooperation_eligible(USA, COAST) else "not eligible", " An existing agreement prevents new cooperation talks." if not available else ""]
+	else:
+		diplomacy_preview.text = "DIALOGUE — fictional test rules\nTalks last 30 days and add %.0f relations when complete; no direct cash cost." % Registry.RELATION_GAIN
+	dialogue_button.disabled = progress >= 0 or not available
+	cancel_talks_button.disabled = progress < 0
 	_refresh_clock()
 
 func _refresh_clock() -> void:
@@ -202,6 +229,7 @@ func _refresh_clock() -> void:
 			control.disabled = batching
 	if dialogue_button != null and batching:
 		dialogue_button.disabled = true
+		cancel_talks_button.disabled = true
 	clock_status.text = "LAB CLOCK: %s | %d queued day(s) | 30-day advance remaining: %d. Lab time is independent and continues while running, even on another tab." % ["running" if running else "paused", floori(elapsed), batch_remaining]
 
 func _process(delta: float) -> void:
@@ -279,7 +307,14 @@ func apply_tax() -> void:
 func start_dialogue() -> void:
 	if not initialized:
 		return
-	message.text = "Dialogue opened; it completes after 30 lab days." if registry.start_dialogue(USA, COAST) else "Dialogue is already active or unavailable."
+	var kind := "cooperation" if proposal_picker.selected == 1 else "dialogue"
+	message.text = "%s talks opened; they conclude after 30 lab days." % kind.capitalize() if registry.start_talks(USA, COAST, kind) else "Talks are already active or unavailable."
+	refresh()
+
+func cancel_talks() -> void:
+	if not initialized:
+		return
+	message.text = "Talks cancelled." if registry.cancel_talks(USA, COAST) else "No talks are active."
 	refresh()
 
 func save_to(path: String) -> String:

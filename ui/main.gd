@@ -18,6 +18,10 @@ const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
 const BASE_CANVAS_SIZE := Vector2i(1152, 648)
 const MIN_CANVAS_SCALE := 2.0
+const UI_SCALES := [1.5, 2.0, 2.5]
+const UI_PREFERENCES_PATH := "user://ui_preferences.cfg"
+var ui_size_index := 1
+var ui_size_picker: OptionButton
 var world = World.new()
 var running := false
 var elapsed := 0.0
@@ -131,17 +135,42 @@ var pending_decision: Dictionary = {}
 var review_snapshot := ""
 const SAVE_PATH := "user://prototype_save.json"
 
-static func _canvas_size_for_window(pixels: Vector2i) -> Vector2i:
+static func _canvas_size_for_window(pixels: Vector2i, minimum_scale: float = MIN_CANVAS_SCALE) -> Vector2i:
 	if pixels.x <= 0 or pixels.y <= 0:
 		return BASE_CANVAS_SIZE
-	return Vector2i(mini(BASE_CANVAS_SIZE.x, maxi(1, floori(pixels.x / MIN_CANVAS_SCALE))), mini(BASE_CANVAS_SIZE.y, maxi(1, floori(pixels.y / MIN_CANVAS_SCALE))))
+	var safe_scale := clampf(minimum_scale, UI_SCALES[0], UI_SCALES[2])
+	return Vector2i(mini(BASE_CANVAS_SIZE.x, maxi(1, floori(pixels.x / safe_scale))), mini(BASE_CANVAS_SIZE.y, maxi(1, floori(pixels.y / safe_scale))))
+
+static func _read_ui_size(path: String) -> int:
+	var settings := ConfigFile.new()
+	if settings.load(path) != OK:
+		return 1
+	var value: Variant = settings.get_value("display", "small_window_size", 1)
+	return value if value is int and value >= 0 and value < UI_SCALES.size() else 1
+
+static func _write_ui_size(path: String, index: int) -> String:
+	if index < 0 or index >= UI_SCALES.size():
+		return "Invalid UI size."
+	var settings := ConfigFile.new()
+	if FileAccess.file_exists(path) and settings.load(path) != OK:
+		return "Could not read existing UI preferences; the file was not overwritten."
+	settings.set_value("display", "small_window_size", index)
+	return "" if settings.save(path) == OK else "Could not save UI preferences."
+
+func _set_ui_size(index: int) -> void:
+	if index < 0 or index >= UI_SCALES.size():
+		return
+	ui_size_index = index
+	_update_canvas_size()
+	var error := _write_ui_size(UI_PREFERENCES_PATH, index)
+	status.text = "Small-window UI size saved." if error.is_empty() else error + " Size changed for this run."
 
 func _update_canvas_size() -> void:
 	var window := get_window()
 	var pixels := window.size
 	if pixels.x <= 0 or pixels.y <= 0:
 		return
-	window.content_scale_size = _canvas_size_for_window(pixels)
+	window.content_scale_size = _canvas_size_for_window(pixels, UI_SCALES[ui_size_index])
 	_update_map_layout.call_deferred()
 
 func _update_map_layout() -> void:
@@ -149,6 +178,7 @@ func _update_map_layout() -> void:
 		map_layout.vertical = get_viewport_rect().size.x < 800.0
 
 func _ready() -> void:
+	ui_size_index = _read_ui_size(UI_PREFERENCES_PATH)
 	get_window().size_changed.connect(_update_canvas_size)
 	_update_canvas_size()
 	theme = GovernmentTheme.create()
@@ -224,7 +254,7 @@ func _ready() -> void:
 	main_backup_button.text = "Load backup"
 	main_backup_button.pressed.connect(_load_backup)
 	controls.add_child(main_backup_button)
-	var restore_controls := HBoxContainer.new()
+	var restore_controls := HFlowContainer.new()
 	layout.add_child(restore_controls)
 	var shared_restore := Button.new()
 	shared_restore.text = "Review restore shared world"
@@ -234,6 +264,16 @@ func _ready() -> void:
 	shared_backup_restore.text = "Review shared backup"
 	shared_backup_restore.pressed.connect(func(): _request_shared_restore(world_lab.LAB_SAVE + ".bak"))
 	restore_controls.add_child(shared_backup_restore)
+	var ui_size_label := Label.new()
+	ui_size_label.text = "Small-window UI:"
+	restore_controls.add_child(ui_size_label)
+	ui_size_picker = OptionButton.new()
+	for size_name in ["Compact", "Standard", "Large"]:
+		ui_size_picker.add_item(size_name)
+	ui_size_picker.select(ui_size_index)
+	ui_size_picker.tooltip_text = "Changes the minimum interface size in smaller windows; larger windows retain the usual layout."
+	ui_size_picker.item_selected.connect(_set_ui_size)
+	restore_controls.add_child(ui_size_picker)
 	var income_controls := HBoxContainer.new()
 	layout.add_child(income_controls)
 	for node in [tax_label, tax, apply]:

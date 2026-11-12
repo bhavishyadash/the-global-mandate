@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 97
+**Report status:** Living record; updated through session 98
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 98:** Added a saved Compact / Standard / Large preference for small-window interface sizing. Broader DPI validation remains open. [Detailed session record](SESSION_98.md).
 
 **Session 97:** Prevented small restored windows from shrinking text excessively and stacked the map and inspector when narrow. Visual checks still show nested scrolling; a player UI-scale setting remains future work. [Detailed session record](SESSION_97.md).
 

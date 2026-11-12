@@ -74,6 +74,7 @@ var diagnostic_steps: TextEdit
 var world_map: Control
 var map_selection: Label
 var map_search: LineEdit
+var map_search_scope: OptionButton
 var map_results: ItemList
 var map_search_status: Label
 var map_hover: Label
@@ -486,6 +487,7 @@ func _ready() -> void:
 	map_tab.add_child(map_layout)
 	get_viewport().size_changed.connect(_update_map_layout)
 	world_map = WorldMap.new()
+	world_map.tooltip_text = "With the map focused: arrow keys pan, + and - zoom, and Home resets the view."
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
@@ -519,8 +521,14 @@ func _ready() -> void:
 	map_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_sidebar.add_child(map_legend)
 	map_search = LineEdit.new()
-	map_search.placeholder_text = "Search countries or cities"
+	map_search.placeholder_text = "Search name or country code"
+	map_search.tooltip_text = "Type a country, city, or country code. Press Enter to open the first result."
 	map_sidebar.add_child(map_search)
+	map_search_scope = OptionButton.new()
+	for scope in ["Search: all places", "Search: countries", "Search: cities"]:
+		map_search_scope.add_item(scope)
+	map_search_scope.item_selected.connect(func(_index: int): _search_map(map_search.text))
+	map_sidebar.add_child(map_search_scope)
 	map_search_status = Label.new()
 	map_search_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	map_sidebar.add_child(map_search_status)
@@ -648,6 +656,7 @@ func _ready() -> void:
 	map_results.visible = false
 	map_sidebar.add_child(map_results)
 	map_search.text_changed.connect(_search_map)
+	map_search.text_submitted.connect(_submit_map_search)
 	map_results.item_selected.connect(_select_map_result)
 	map_selection = Label.new()
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1259,19 +1268,37 @@ func _search_map(query: String) -> void:
 	map_search_status.text = ""
 	if text.is_empty():
 		return
-	var matches := 0
+	var matches: Array[Dictionary] = []
 	for kind in ["country", "city"]:
+		if (map_search_scope.selected == 1 and kind != "country") or (map_search_scope.selected == 2 and kind != "city"):
+			continue
 		var entries: Array = world_map.countries if kind == "country" else world_map.cities
 		for i in range(entries.size()):
-			if text not in entries[i].name.to_lower():
+			var name: String = entries[i].name.to_lower()
+			var code: String = str(entries[i].get("id", "")).to_lower() if kind == "country" else str(entries[i].get("country", "")).to_lower()
+			if text not in name and text != code:
 				continue
-			matches += 1
-			if map_results.item_count < 30:
-				map_results.add_item("%s • %s" % ["Country" if kind == "country" else "City", entries[i].name])
-				map_results.set_item_metadata(map_results.item_count - 1, {"kind": kind, "index": i})
-	map_search_status.text = "No matches." if matches == 0 else ("Showing 30 of %d results." % matches if matches > 30 else "%d result(s)." % matches)
+			var rank := 0 if name == text or code == text else (1 if name.begins_with(text) else 2)
+			matches.append({"kind": kind, "index": i, "name": entries[i].name, "rank": rank})
+	matches.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a.rank != b.rank:
+			return a.rank < b.rank
+		if a.kind != b.kind:
+			return a.kind == "country"
+		return a.name.naturalnocasecmp_to(b.name) < 0
+	)
+	for result in matches.slice(0, 30):
+		map_results.add_item("%s • %s" % ["Country" if result.kind == "country" else "City", result.name])
+		map_results.set_item_metadata(map_results.item_count - 1, {"kind": result.kind, "index": result.index})
+	map_search_status.text = "No matches." if matches.is_empty() else ("Showing 30 of %d results. Enter opens the first." % matches.size() if matches.size() > 30 else "%d result(s). Enter opens the first." % matches.size())
+
+func _submit_map_search(_query: String) -> void:
+	if map_results.visible and map_results.item_count > 0:
+		_select_map_result(0)
 
 func _select_map_result(index: int) -> void:
+	if index < 0 or index >= map_results.item_count:
+		return
 	var selection: Dictionary = map_results.get_item_metadata(index)
 	if selection.kind == "country":
 		world_map.focus_country(world_map.countries[selection.index])

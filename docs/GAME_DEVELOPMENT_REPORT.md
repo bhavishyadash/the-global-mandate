@@ -672,3 +672,7 @@ Fixed resize redraw, UI scaling and starting budget proposals; visually checked 
 ### Session 123 - Department navigation
 Added map-first department shortcuts and active-state highlighting; see [Session 123](SESSION_123.md).
 
+
+### Session 124 - Treasury workspace redesign
+Rebuilt the budget panel into a centered, two-column map-backed workspace. See [Session 124](SESSION_124.md).
+

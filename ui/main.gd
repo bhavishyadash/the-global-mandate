@@ -368,10 +368,10 @@ func _ready() -> void:
 		speed_picker.add_item("%d days/sec" % multiplier, multiplier)
 	speed_picker.item_selected.connect(func(index: int): speed = speed_picker.get_item_id(index))
 	budget_controls.add_child(speed_picker)
-	var category_controls := HBoxContainer.new()
+	var category_controls := HFlowContainer.new()
 	layout.add_child(category_controls)
 	var category_label := Label.new()
-	category_label.text = "Category proposal ($ millions)"
+	category_label.text = "Adjust spending · $ millions"
 	category_controls.add_child(category_label)
 	category_picker = OptionButton.new()
 	for category in World.CATEGORY_SHARES:
@@ -385,7 +385,7 @@ func _ready() -> void:
 	category_amount.value = world.country.spending_categories[category_picker.get_item_text(0)] / 1000000.0
 	category_controls.add_child(category_amount)
 	var category_button := Button.new()
-	category_button.text = "Review category ($ millions)"
+	category_button.text = "Review proposal"
 	category_button.pressed.connect(func(): _request_review("set_category_spending", {"category": category_picker.get_item_text(category_picker.selected), "amount": category_amount.value * 1000000.0}))
 	category_controls.add_child(category_button)
 	var tax_controls := HBoxContainer.new()
@@ -868,22 +868,28 @@ func _ready() -> void:
 	add_child(shared_talk_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
+	var budget_title := Label.new()
+	budget_title.text = "TREASURY  /  NATIONAL BUDGET"
+	budget_title.add_theme_font_size_override("font_size", 24)
+	budget_title.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	finances.add_child(budget_title)
+	finances.move_child(budget_title, 0)
 	budget_fiscal_summary = Label.new()
 	budget_fiscal_summary.name = "BudgetFiscalSummary"
 	budget_fiscal_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	finances.add_child(budget_fiscal_summary)
-	finances.move_child(budget_fiscal_summary, 0)
+	finances.move_child(budget_fiscal_summary, 1)
 	var tax_link := Button.new()
 	tax_link.name = "BudgetTaxShortcut"
 	tax_link.text = "Open tax controls"
 	tax_link.pressed.connect(func(): dashboard_tabs.current_tab = 2; _set_dashboard_open(true))
 	finances.add_child(tax_link)
-	finances.move_child(tax_link, 1)
-	var chart_controls := HBoxContainer.new()
+	finances.move_child(tax_link, 2)
+	var chart_controls := HFlowContainer.new()
 	finances.add_child(chart_controls)
-	finances.move_child(chart_controls, 2)
+	finances.move_child(chart_controls, 3)
 	var chart_heading := Label.new()
-	chart_heading.text = "ANNUAL EXPENDITURE BREAKDOWN"
+	chart_heading.text = "EXPENDITURE BREAKDOWN"
 	chart_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart_controls.add_child(chart_heading)
 	budget_mode = OptionButton.new()
@@ -891,12 +897,12 @@ func _ready() -> void:
 	budget_mode.add_item("Proposed category")
 	budget_mode.item_selected.connect(func(_index: int): _refresh_budget_breakdown())
 	chart_controls.add_child(budget_mode)
-	finances.move_child(category_controls, 3)
+	finances.move_child(category_controls, 4)
 	var chart_layout := BoxContainer.new()
 	budget_chart_layout = chart_layout
 	chart_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	finances.add_child(chart_layout)
-	finances.move_child(chart_layout, 4)
+	finances.move_child(chart_layout, 5)
 	budget_chart = BudgetChart.new()
 	chart_layout.add_child(budget_chart)
 	var table := GridContainer.new()
@@ -931,7 +937,26 @@ func _ready() -> void:
 	budget_chart_note = Label.new()
 	budget_chart_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	finances.add_child(budget_chart_note)
-	finances.move_child(budget_chart_note, 5)
+	finances.move_child(budget_chart_note, 6)
+	# A two-column department desk keeps context beside the spending actions.
+	var insights := VBoxContainer.new()
+	insights.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	insights.add_theme_constant_override("separation", 8)
+	chart_layout.add_child(insights)
+	var actions := VBoxContainer.new()
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_theme_constant_override("separation", 8)
+	chart_layout.add_child(actions)
+	chart_controls.reparent(insights)
+	budget_chart.reparent(insights)
+	budget_chart_note.reparent(insights)
+	var actions_heading := Label.new()
+	actions_heading.text = "SPENDING  /  REVIEW CHANGES"
+	actions_heading.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	actions.add_child(actions_heading)
+	table.reparent(actions)
+	category_controls.reparent(actions)
+	category_preview.reparent(actions)
 	forecast_horizon = OptionButton.new()
 	for days in [30, 90, 180, 365]:
 		forecast_horizon.add_item("Forecast horizon: %d days" % days, days)
@@ -1286,15 +1311,16 @@ func _update_dashboard_geometry() -> void:
 		return
 	var width := _dashboard_panel_width(dashboard_stage.size.x, responsive_compact)
 	if dashboard_tabs.current_tab == 1 and not responsive_compact:
-		width = minf(900.0, maxf(1.0, dashboard_stage.size.x * 0.78))
+		width = minf(1100.0, maxf(1.0, dashboard_stage.size.x * 0.78))
 	if is_instance_valid(budget_chart_layout):
-		budget_chart_layout.vertical = width < 610.0
-	dashboard_panel.anchor_left = 1.0
-	dashboard_panel.anchor_right = 1.0
+		budget_chart_layout.vertical = width < 760.0
+	var centered := dashboard_tabs.current_tab == 1 and not responsive_compact
+	dashboard_panel.anchor_left = 0.5 if centered else 1.0
+	dashboard_panel.anchor_right = 0.5 if centered else 1.0
 	dashboard_panel.anchor_top = 0.0
 	dashboard_panel.anchor_bottom = 1.0
-	dashboard_panel.offset_left = -width
-	dashboard_panel.offset_right = 0.0
+	dashboard_panel.offset_left = -width / 2.0 if centered else -width
+	dashboard_panel.offset_right = width / 2.0 if centered else 0.0
 	dashboard_panel.offset_top = 0.0
 	dashboard_panel.offset_bottom = 0.0
 

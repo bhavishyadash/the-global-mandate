@@ -66,6 +66,12 @@ var dashboard_stage: Control
 var dashboard_panel: PanelContainer
 var dashboard_picker: OptionButton
 var dashboard_toggle: Button
+var compact_menu: MenuButton
+var compact_title: Label
+var next_day_button: Button
+var budget_shortcut: Button
+var laws_shortcut: Button
+var responsive_compact := false
 var healthcare_picker: OptionButton
 var healthcare_summary: Label
 var appropriation_picker: OptionButton
@@ -151,6 +157,8 @@ var law_catalog: Tree
 var law_catalog_note: Label
 var law_catalog_data: Dictionary = {}
 var law_catalog_error := ""
+var law_heading_label: Label
+var law_explanation_label: Label
 var law_edit_panel: VBoxContainer
 var law_edit_kind := ""
 var law_edit_amount: SpinBox
@@ -203,6 +211,7 @@ func _update_canvas_size() -> void:
 		return
 	window.content_scale_size = _canvas_size_for_window(pixels, UI_SCALES[ui_size_index])
 	_update_map_layout.call_deferred()
+	_update_responsive_layout.call_deferred()
 
 func _update_map_layout() -> void:
 	if not is_instance_valid(map_layout) or not is_instance_valid(map_inspector_scroll) or not is_instance_valid(map_back_button):
@@ -256,6 +265,7 @@ func _ready() -> void:
 	layout.add_theme_constant_override("separation", 8)
 	margin.add_child(layout)
 	var title := Label.new()
+	compact_title = title
 	title.text = "THE GLOBAL MANDATE"
 	title.add_theme_font_size_override("font_size", 22)
 	layout.add_child(title)
@@ -265,6 +275,7 @@ func _ready() -> void:
 	layout.add_child(government_status)
 	mode_notice = Label.new()
 	mode_notice.text = "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"
+	mode_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	mode_notice.add_theme_color_override("font_color", GovernmentTheme.MUTED)
 	layout.add_child(mode_notice)
 	summary = Label.new()
@@ -276,6 +287,7 @@ func _ready() -> void:
 	pause_button.pressed.connect(_toggle_pause)
 	controls.add_child(pause_button)
 	var next_day := Button.new()
+	next_day_button = next_day
 	next_day.text = "Advance one day"
 	next_day.pressed.connect(_advance_day)
 	controls.add_child(next_day)
@@ -492,11 +504,13 @@ func _ready() -> void:
 	dashboard_picker.select(8)
 	controls.add_child(dashboard_picker)
 	var open_laws := Button.new()
+	laws_shortcut = open_laws
 	open_laws.name = "OpenLaws"
 	open_laws.text = "Laws"
 	open_laws.pressed.connect(func(): dashboard_tabs.current_tab = 7; _set_dashboard_open(true))
 	controls.add_child(open_laws)
 	var open_budget := Button.new()
+	budget_shortcut = open_budget
 	open_budget.name = "OpenBudget"
 	open_budget.text = "Budget"
 	open_budget.pressed.connect(func(): dashboard_tabs.current_tab = 1; _set_dashboard_open(true))
@@ -508,6 +522,19 @@ func _ready() -> void:
 	dashboard_picker.item_selected.connect(func(index: int): dashboard_tabs.current_tab = index; _set_dashboard_open(true))
 	dashboard_toggle.pressed.connect(func(): _set_dashboard_open(not dashboard_panel.visible))
 	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index))
+	compact_menu = MenuButton.new()
+	compact_menu.name = "CompactMenu"
+	compact_menu.text = "More"
+	controls.add_child(compact_menu)
+	var menu := compact_menu.get_popup()
+	for index in range(dashboard_tabs.get_tab_count()):
+		menu.add_item(dashboard_tabs.get_tab_title(index), index)
+	menu.add_separator()
+	menu.add_item("Save", 100)
+	menu.add_item("Load", 101)
+	menu.add_item("Load backup", 102)
+	menu.id_pressed.connect(_compact_menu_selected)
+	get_viewport().size_changed.connect(_update_responsive_layout)
 	_build_us_reference(us_reference_tab)
 	world_lab = WorldLab.new()
 	lab_tab.add_child(world_lab)
@@ -1016,9 +1043,11 @@ func _ready() -> void:
 	diagnostic_button.pressed.connect(_export_diagnostics)
 	decisions.add_child(diagnostic_button)
 	var law_heading := Label.new()
+	law_heading_label = law_heading
 	law_heading.text = "LAW CATALOGUE — US-ORIENTED POLICY TOPICS"
 	laws.add_child(law_heading)
 	var law_explanation := Label.new()
+	law_explanation_label = law_explanation
 	law_explanation.text = "Choose a category or search across categories. Planned topics are not playable laws; existing prototypes use fictional rules. Federal and state authority is not yet modeled."
 	law_explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	laws.add_child(law_explanation)
@@ -1030,12 +1059,16 @@ func _ready() -> void:
 	for category in law_catalog_data.get("categories", ["Unavailable"]):
 		law_categories.add_tab(category)
 	laws.add_child(law_categories)
+	var law_search_row := HBoxContainer.new()
+	laws.add_child(law_search_row)
 	law_search = LineEdit.new()
 	law_search.placeholder_text = "Search policy topics"
-	laws.add_child(law_search)
+	law_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	law_search_row.add_child(law_search)
 	law_search_all = CheckBox.new()
-	law_search_all.text = "Search all categories"
-	laws.add_child(law_search_all)
+	law_search_all.text = "All"
+	law_search_all.tooltip_text = "Search all categories"
+	law_search_row.add_child(law_search_all)
 	law_catalog = Tree.new()
 	law_catalog.columns = 2
 	law_catalog.hide_root = true
@@ -1124,6 +1157,7 @@ func _ready() -> void:
 	review_dialog.confirmed.connect(_confirm_review)
 	review_dialog.canceled.connect(_cancel_review)
 	add_child(review_dialog)
+	_update_responsive_layout()
 	_refresh()
 
 func _build_us_reference(column: VBoxContainer) -> void:
@@ -1217,7 +1251,7 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 func _update_dashboard_geometry() -> void:
 	if not is_instance_valid(dashboard_panel) or not is_instance_valid(dashboard_stage):
 		return
-	var width := minf(520.0, maxf(300.0, dashboard_stage.size.x * 0.55))
+	var width := _dashboard_panel_width(dashboard_stage.size.x, responsive_compact)
 	dashboard_panel.anchor_left = 1.0
 	dashboard_panel.anchor_right = 1.0
 	dashboard_panel.anchor_top = 0.0
@@ -1229,8 +1263,58 @@ func _update_dashboard_geometry() -> void:
 
 func _set_dashboard_open(open: bool) -> void:
 	dashboard_panel.visible = open
-	dashboard_toggle.text = "Close panel" if open else "Open panel"
+	dashboard_toggle.text = ("Close" if open else "Panel") if responsive_compact else ("Close panel" if open else "Open panel")
 	_update_dashboard_geometry()
+
+func _compact_menu_selected(id: int) -> void:
+	if id >= 0 and id < dashboard_tabs.get_tab_count():
+		dashboard_tabs.current_tab = id
+		_set_dashboard_open(true)
+	elif id == 100:
+		_save_game()
+	elif id == 101:
+		_load_game()
+	elif id == 102:
+		_load_backup()
+
+func _update_responsive_layout() -> void:
+	if not is_instance_valid(compact_menu) or not is_instance_valid(dashboard_stage):
+		return
+	_apply_responsive_layout(get_viewport_rect().size.x < 700.0)
+
+static func _dashboard_panel_width(stage_width: float, compact: bool) -> float:
+	return minf(520.0, maxf(1.0, stage_width * (0.72 if compact else 0.55)))
+
+func _apply_responsive_layout(compact: bool) -> void:
+	responsive_compact = compact
+	compact_title.visible = not responsive_compact
+	mode_notice.visible = not responsive_compact
+	main_save_button.visible = not responsive_compact
+	main_load_button.visible = not responsive_compact
+	main_backup_button.visible = not responsive_compact
+	dashboard_picker.visible = not responsive_compact
+	budget_shortcut.visible = not responsive_compact
+	compact_menu.visible = responsive_compact
+	if is_instance_valid(law_heading_label):
+		law_heading_label.text = "LAWS" if responsive_compact else "LAW CATALOGUE — US-ORIENTED POLICY TOPICS"
+		law_explanation_label.visible = not responsive_compact
+		_update_law_catalog_note()
+	next_day_button.text = "Day +1" if responsive_compact else "Advance one day"
+	speed_status.visible = not responsive_compact
+	dashboard_toggle.text = ("Close" if dashboard_panel.visible else "Panel") if responsive_compact else ("Close panel" if dashboard_panel.visible else "Open panel")
+	_update_dashboard_geometry()
+	_update_government_status()
+
+func _update_government_status() -> void:
+	if not is_instance_valid(government_status) or world.country.is_empty():
+		return
+	var c: Dictionary = world.country
+	var d: Dictionary = world.date
+	if responsive_compact:
+		var short_name: String = "United States" if world.scenario_id == "usa_sandbox" else c.name
+		government_status.text = "%s  |  Deficit %s  |  Approval %.1f%%" % [short_name, world.format_deficit(world.annual_deficit()), c.approval]
+	else:
+		government_status.text = "%s   |   %04d-%02d-%02d   |   Annual deficit %s   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, world.format_deficit(world.annual_deficit()), c.approval]
 
 func _map_country_selected(id: String, country_name: String) -> void:
 	if not dashboard_panel.visible:
@@ -1825,7 +1909,7 @@ func _show_law_detail(id: String) -> void:
 	healthcare_panel.visible = id == "healthcare"
 	procurement_panel.visible = id == "procurement"
 	law_edit_panel.visible = id in ["test_budget_category", "test_income_tax", "test_corporate_tax", "test_consumption_tax"]
-	law_catalog_note.text = "Prototype: values and political rules are fictional." if id in ["healthcare", "procurement"] or law_edit_panel.visible else "Planned topic: not yet a proposal or enacted law. Legal authority, options, costs and effects are not modeled."
+	_update_law_catalog_note()
 	if law_edit_panel.visible:
 		law_edit_kind = id
 		law_edit_category.visible = id == "test_budget_category"
@@ -1834,6 +1918,17 @@ func _show_law_detail(id: String) -> void:
 		_sync_law_edit_value()
 	if id == "procurement":
 		procurement_detail.text = "PROCUREMENT POLICY — fictional test rules\nCurrent: %s | rollout: %d%% | votes for adoption: %d/100 | votes for repeal: %d/100\nOnce fully implemented, the policy costs $%.1fM per year. A majority is required." % ["active" if world.politics.procurement_policy else "not enacted", world.politics.procurement_progress, world.politics.votes_for_policy(), world.politics.votes_for_repeal(), float(world.policy_rules.procurement_annual_cost) / 1000000.0]
+
+func _update_law_catalog_note() -> void:
+	if not is_instance_valid(law_catalog_note) or not law_catalog_error.is_empty():
+		return
+	if is_instance_valid(law_catalog) and law_catalog.get_root() != null and law_catalog.get_root().get_first_child() == null:
+		return
+	var prototype := selected_law_id in ["healthcare", "procurement", "test_budget_category", "test_income_tax", "test_corporate_tax", "test_consumption_tax"]
+	if responsive_compact:
+		law_catalog_note.text = "Simplified prototype." if prototype else "Planned — not playable."
+	else:
+		law_catalog_note.text = "Prototype: values and political rules are fictional." if prototype else "Planned topic: not yet a proposal or enacted law. Legal authority, options, costs and effects are not modeled."
 
 func _sync_law_edit_value() -> void:
 	if not law_edit_panel.visible:
@@ -2322,6 +2417,10 @@ func _update_shared_controls() -> void:
 	main_save_button.text = "Save shared world" if shared_world_active else "Save"
 	main_load_button.disabled = shared_world_active
 	main_backup_button.disabled = shared_world_active
+	if is_instance_valid(compact_menu):
+		var menu := compact_menu.get_popup()
+		menu.set_item_disabled(menu.get_item_index(101), shared_world_active)
+		menu.set_item_disabled(menu.get_item_index(102), shared_world_active)
 	scenario_start_button.disabled = shared_world_active
 	mode_notice.text = "US SANDBOX  ·  Census population and FY2026 federal finances; politics and tax model fictional" if world.country.has("fiscal_calibration") else ("MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"))
 
@@ -2336,7 +2435,7 @@ func _refresh() -> void:
 	world_lab.set_main_import_available(world.scenario_id == "usa_sandbox" and world.country.id == "usa_sandbox" and world.date.year <= 9998)
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
-	government_status.text = "%s   |   %04d-%02d-%02d   |   Annual deficit %s   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, world.format_deficit(world.annual_deficit()), c.approval]
+	_update_government_status()
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nDebt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual deficit: %s (negative means surplus)\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.format_deficit(world.annual_deficit()), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	if c.has("fiscal_calibration"):

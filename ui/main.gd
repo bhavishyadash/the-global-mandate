@@ -146,6 +146,8 @@ var map_back_button: Button
 var map_tab_scroll: ScrollContainer
 var map_inspector_view := false
 var government_status: Label
+var budget_fiscal_summary: Label
+var budget_chart_layout: BoxContainer
 var budget_chart: Control
 var budget_mode: OptionButton
 var budget_chart_note: Label
@@ -521,7 +523,7 @@ func _ready() -> void:
 	controls.add_child(dashboard_toggle)
 	dashboard_picker.item_selected.connect(func(index: int): dashboard_tabs.current_tab = index; _set_dashboard_open(true))
 	dashboard_toggle.pressed.connect(func(): _set_dashboard_open(not dashboard_panel.visible))
-	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index))
+	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index); _update_dashboard_geometry())
 	compact_menu = MenuButton.new()
 	compact_menu.name = "CompactMenu"
 	compact_menu.text = "More"
@@ -850,9 +852,20 @@ func _ready() -> void:
 	add_child(shared_talk_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
+	budget_fiscal_summary = Label.new()
+	budget_fiscal_summary.name = "BudgetFiscalSummary"
+	budget_fiscal_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	finances.add_child(budget_fiscal_summary)
+	finances.move_child(budget_fiscal_summary, 0)
+	var tax_link := Button.new()
+	tax_link.name = "BudgetTaxShortcut"
+	tax_link.text = "Open tax controls"
+	tax_link.pressed.connect(func(): dashboard_tabs.current_tab = 2; _set_dashboard_open(true))
+	finances.add_child(tax_link)
+	finances.move_child(tax_link, 1)
 	var chart_controls := HBoxContainer.new()
 	finances.add_child(chart_controls)
-	finances.move_child(chart_controls, 0)
+	finances.move_child(chart_controls, 2)
 	var chart_heading := Label.new()
 	chart_heading.text = "ANNUAL EXPENDITURE BREAKDOWN"
 	chart_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -862,11 +875,12 @@ func _ready() -> void:
 	budget_mode.add_item("Proposed category")
 	budget_mode.item_selected.connect(func(_index: int): _refresh_budget_breakdown())
 	chart_controls.add_child(budget_mode)
-	finances.move_child(category_controls, 1)
-	var chart_layout := HBoxContainer.new()
+	finances.move_child(category_controls, 3)
+	var chart_layout := BoxContainer.new()
+	budget_chart_layout = chart_layout
 	chart_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	finances.add_child(chart_layout)
-	finances.move_child(chart_layout, 2)
+	finances.move_child(chart_layout, 4)
 	budget_chart = BudgetChart.new()
 	chart_layout.add_child(budget_chart)
 	var table := GridContainer.new()
@@ -901,7 +915,7 @@ func _ready() -> void:
 	budget_chart_note = Label.new()
 	budget_chart_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	finances.add_child(budget_chart_note)
-	finances.move_child(budget_chart_note, 3)
+	finances.move_child(budget_chart_note, 5)
 	forecast_horizon = OptionButton.new()
 	for days in [30, 90, 180, 365]:
 		forecast_horizon.add_item("Forecast horizon: %d days" % days, days)
@@ -1252,6 +1266,10 @@ func _update_dashboard_geometry() -> void:
 	if not is_instance_valid(dashboard_panel) or not is_instance_valid(dashboard_stage):
 		return
 	var width := _dashboard_panel_width(dashboard_stage.size.x, responsive_compact)
+	if dashboard_tabs.current_tab == 1 and not responsive_compact:
+		width = minf(900.0, maxf(1.0, dashboard_stage.size.x * 0.78))
+	if is_instance_valid(budget_chart_layout):
+		budget_chart_layout.vertical = width < 610.0
 	dashboard_panel.anchor_left = 1.0
 	dashboard_panel.anchor_right = 1.0
 	dashboard_panel.anchor_top = 0.0
@@ -2442,6 +2460,7 @@ func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	_update_government_status()
+	budget_fiscal_summary.text = "NATIONAL BUDGET  |  Annual deficit: %s\nRevenue: $%.1fB   •   Total expenses: $%.1fB" % [world.format_deficit(world.annual_deficit()), world.total_annual_revenue() / 1000000000.0, (float(c.annual_spending) + world.policy_annual_cost() + world.debt_interest()) / 1000000000.0]
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nDebt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual deficit: %s (negative means surplus)\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.format_deficit(world.annual_deficit()), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	if c.has("fiscal_calibration"):
@@ -2619,4 +2638,4 @@ func _refresh_budget_breakdown() -> void:
 		cells[0].text = "$%.1fM" % (float(result.current[name]) / 1000000.0)
 		cells[1].text = "$%.1fM" % (float(result.proposed[name]) / 1000000.0) if result.valid else "—"
 		cells[2].text = "%.1f%%" % (100.0 * float(shown[name]) / shown_total) if shown_total > 0.0 and (result.valid or not proposed_view) else "—"
-	budget_chart_note.text = "Share uses %s annual expenses. Proposed changes apply only to the selected category and are not enacted. Policy costs and debt interest are separate from the five category budgets. Figures are fictional." % ("proposed" if proposed_view else "current") if result.valid else "Proposed category amount is unavailable because the total exceeds the budget limit. Current spending remains unchanged."
+	budget_chart_note.text = "Share uses %s annual expenses. Proposed changes apply only to the selected category and are not enacted. Policy costs and debt interest are separate from the five category budgets. Category allocations are approximate model values." % ("proposed" if proposed_view else "current") if result.valid else "Proposed category amount is unavailable because the total exceeds the budget limit. Current spending remains unchanged."

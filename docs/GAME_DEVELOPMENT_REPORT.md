@@ -660,3 +660,7 @@ On 2026-11-10, created 53 initial roadmap issues in the private repository: http
 ### Session 120 - US tax calibration
 US income and corporate tax sensitivities now use scenario-specific FY 2026 revenue anchors. Full tests and packaged scenario checks passed. The income index and linear response remain approximations; see [Session 120](SESSION_120.md).
 
+
+### Session 121 - Map-first budget workspace
+Expanded the budget workspace, added fiscal context and a tax shortcut, and stacked the chart and table for narrow panels. See [Session 121](SESSION_121.md) for validation and limitations.
+

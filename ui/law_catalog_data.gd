@@ -1,7 +1,7 @@
 extends RefCounted
 
 const PATH := "res://data/rules/law_catalog.json"
-const HANDLERS := {"healthcare": "Healthcare", "procurement": "Finance"}
+const HANDLERS := {"healthcare": "Healthcare", "procurement": "Finance", "test_budget_category": "Finance", "test_income_tax": "Tax", "test_corporate_tax": "Tax", "test_consumption_tax": "Tax"}
 
 static func read() -> Variant:
 	var file := FileAccess.open(PATH, FileAccess.READ)

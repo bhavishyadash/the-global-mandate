@@ -7,31 +7,43 @@
     "death_rate_tenths": 0,
     "migration_rate_tenths": 0
   },
-  "description": "US sandbox with Census Vintage 2025 resident population on July 1, 2025. Other figures, budgets, politics and behavior are fictional test values; population growth is not modeled.",
+  "description": "Mixed-source US starting baseline: Census population July 2025, Treasury federal FY2025 annual flows and September 2025 cash and public debt; other values and behavior are provisional.",
   "date": {
     "year": 2025,
-    "month": 7,
+    "month": 10,
     "day": 1
   },
   "country": {
     "id": "usa_sandbox",
     "name": "United States (mixed-data sandbox)",
     "population": 341784857,
-    "treasury": 1000000000.0,
-    "debt": 0.0,
-    "annual_revenue": 1200000000.0,
-    "annual_spending": 1100000000.0,
+    "treasury": 890825093623,
+    "debt": 30200000000000,
+    "annual_revenue": 5234617000000,
+    "annual_spending": 6039633000000,
     "spending_categories": {
-      "Health": 330000000.0,
-      "Education": 275000000.0,
-      "Security": 220000000.0,
-      "Infrastructure": 165000000.0,
-      "Administration": 110000000.0
+      "Health": 1975597000000,
+      "Education": 71014000000,
+      "Security": 1378993000000,
+      "Infrastructure": 430980000000,
+      "Administration": 2183049000000
     },
     "income_tax_rate": 0.2,
     "consumption_tax_rate": 0.0,
     "corporate_tax_rate": 0.0,
-    "approval": 50.0
+    "approval": 50.0,
+    "fiscal_calibration": {
+      "max_spending": 100000000000000,
+      "interest_rate": 0.03213109271523179,
+      "baseline_population": 341784857,
+      "service_baselines": {
+        "Health": 1975597000000,
+        "Education": 71014000000,
+        "Security": 1378993000000,
+        "Infrastructure": 430980000000,
+        "Administration": 2183049000000
+      }
+    }
   },
   "politics": {
     "groups": [

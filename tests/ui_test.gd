@@ -566,6 +566,8 @@ func run_checks() -> void:
 	screen._confirm_new_scenario()
 	screen.new_game_confirmation.hide()
 	assert(screen.world.scenario_id == "usa_sandbox" and screen.world.country.id == "usa_sandbox")
+	assert(screen.spending.max_value == 100000000.0 and screen.spending.value == 6039633.0)
+	assert(screen.category_amount.max_value == 100000000.0)
 	assert(screen.world_map.active_id == "USA" and screen.world_map.country_fill_color("USA") == screen.world_map.ACTIVE)
 	assert(screen.map_scenario_button.text == "Open government" and "ACTIVE US SANDBOX" in screen.map_simulation.text)
 	assert(screen.world.set_income_tax(0.6))

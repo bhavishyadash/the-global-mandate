@@ -78,7 +78,7 @@ func apply_scenario(data: Variant) -> String:
 		diplomacy.import_state(data.diplomacy)
 	fiscal = _new_fiscal_period(date.month != 1 or date.day != 1)
 	previous_fiscal = {}
-	events = ["Scenario started. All figures are fictional test data."]
+	events = ["Scenario started. Sourced starting population and FY2025 Treasury finances; political and behavioral rules are fictional." if country.has("fiscal_calibration") else "Scenario started. All figures are fictional test data."]
 	event_records = [{"category": "scenario", "date": date.duplicate(), "text": events[0], "cause": "scenario_started", "severity": "info"}]
 	indicator_history = []
 	_sample_indicators()
@@ -105,7 +105,7 @@ func total_annual_revenue() -> float:
 	return country.annual_revenue + diplomacy.annual_partner_contribution()
 
 func debt_interest() -> float:
-	return country.debt * ANNUAL_DEBT_RATE
+	return country.debt * float(country.fiscal_calibration.interest_rate if country.has("fiscal_calibration") else ANNUAL_DEBT_RATE)
 
 func income_tax_revenue() -> float:
 	return country.income_tax_rate * TEST_TAXABLE_BASE
@@ -125,7 +125,7 @@ func reporting_effect_active() -> bool:
 	return institutions.kind == "reporting" and institutions.status == "implemented"
 
 func service_target(category: String, spending: float) -> float:
-	return services.target(category, spending, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus())
+	return services.target(category, spending, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus(), country.get("fiscal_calibration"))
 
 func daily_balance() -> float:
 	return annual_balance() / (366.0 if is_leap_year(date.year) else 365.0)
@@ -217,7 +217,7 @@ func advance_day() -> void:
 		country.treasury += balance - repayment
 	var population_change: Dictionary = demographics.advance(country.population, is_leap_year(date.year))
 	country.population = population_change.population
-	services.advance_day(country.spending_categories, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus())
+	services.advance_day(country.spending_categories, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus(), country.get("fiscal_calibration"))
 	politics.apply_service_bonuses(services.group_bonuses())
 	country.approval = politics.approval()
 	if politics.advance_day(int(policy_rules.procurement_progress_per_day)):
@@ -389,7 +389,9 @@ func import_snapshot(parsed: Variant) -> String:
 	for key in ["treasury", "annual_revenue", "annual_spending", "income_tax_rate", "approval"]:
 		if not c.has(key) or not (c[key] is float or c[key] is int) or not is_finite(float(c[key])):
 			return "Save has invalid financial or approval data."
-	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > 10000000000.0 or e.size() > MAX_EVENTS:
+	if not Scenario.valid_fiscal_calibration(c.get("fiscal_calibration")):
+		return "Save has invalid fiscal calibration."
+	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > Scenario.spending_limit(c) or e.size() > MAX_EVENTS:
 		return "Save has out-of-range policy or approval data."
 	c = c.duplicate(true)
 	var loaded_scenario_id := "test_republic"
@@ -841,7 +843,7 @@ func _conduct_election() -> void:
 	add_event("Illustrative election held: government won %d of 100 seats." % politics.parties[0].seats, "election", "election_held")
 
 func preview_annual_spending(amount: float) -> Dictionary:
-	if not is_finite(amount) or amount < 0.0 or amount > 10000000000.0:
+	if not is_finite(amount) or amount < 0.0 or amount > Scenario.spending_limit(country):
 		return {}
 	var balance: float = total_annual_revenue() - amount - policy_annual_cost() - debt_interest()
 	var year_days := 366.0 if is_leap_year(date.year) else 365.0
@@ -851,7 +853,7 @@ func set_annual_spending(amount: float) -> bool:
 	if preview_annual_spending(amount).is_empty():
 		return false
 	var previous: float = country.annual_spending
-	if is_equal_approx(previous, amount):
+	if absf(previous - amount) < 0.005:
 		return true
 	country.annual_spending = amount
 	country.spending_categories = _split_spending(amount)
@@ -868,7 +870,7 @@ func set_category_spending(category: String, amount: float) -> bool:
 	if preview_category_spending(category, amount).is_empty():
 		return false
 	var previous: float = country.spending_categories[category]
-	if is_equal_approx(previous, amount):
+	if absf(previous - amount) < 0.005:
 		return true
 	country.spending_categories[category] = amount
 	country.annual_spending += amount - previous

@@ -9,6 +9,8 @@ const PolicyRules = preload("res://simulation/policy_rules.gd")
 const Demographics = preload("res://simulation/demographics.gd")
 const DEFAULT_SEED := 12345
 const MAX_SEED := 4294967295
+const DEFAULT_SPENDING_LIMIT := 10000000000.0
+const ABSOLUTE_SPENDING_LIMIT := 100000000000000.0
 
 # One country per scenario; v1 uses original defaults, v2 includes subsystem
 # state, v3 adds healthcare, v4 institutions, and v5 baseline policy rules.
@@ -59,7 +61,9 @@ static func validate(data: Variant) -> String:
 	for key in ["treasury", "debt", "annual_revenue", "annual_spending", "income_tax_rate", "consumption_tax_rate", "corporate_tax_rate", "approval"]:
 		if not _number(c.get(key)):
 			return "Scenario financial values must be finite numbers."
-	if c.treasury < 0 or c.debt < 0 or c.annual_revenue < 0 or c.annual_spending < 0 or c.annual_spending > 10000000000.0:
+	if not valid_fiscal_calibration(c.get("fiscal_calibration")):
+		return "Scenario fiscal calibration is invalid."
+	if c.treasury < 0 or c.debt < 0 or c.annual_revenue < 0 or c.annual_spending < 0 or c.annual_spending > spending_limit(c):
 		return "Scenario budget is out of range."
 	for key in ["income_tax_rate", "consumption_tax_rate", "corporate_tax_rate"]:
 		if c[key] < 0.0 or c[key] > 0.60:
@@ -95,6 +99,19 @@ static func validate(data: Variant) -> String:
 	if absf(total - float(c.annual_spending)) > 0.01:
 		return "Scenario categories do not match annual spending."
 	return ""
+
+static func spending_limit(country: Dictionary) -> float:
+	return float(country.fiscal_calibration.max_spending) if country.has("fiscal_calibration") else DEFAULT_SPENDING_LIMIT
+
+static func valid_fiscal_calibration(value: Variant) -> bool:
+	if value == null:
+		return true
+	if not value is Dictionary or value.size() != 4 or not _number(value.get("max_spending")) or value.max_spending < DEFAULT_SPENDING_LIMIT or value.max_spending > ABSOLUTE_SPENDING_LIMIT or not _number(value.get("interest_rate")) or value.interest_rate < 0 or value.interest_rate > 1 or not _whole(value.get("baseline_population")) or value.baseline_population <= 0 or not value.get("service_baselines") is Dictionary or value.service_baselines.size() != CATEGORIES.size():
+		return false
+	for category in CATEGORIES:
+		if not _number(value.service_baselines.get(category)) or value.service_baselines[category] <= 0 or value.service_baselines[category] > ABSOLUTE_SPENDING_LIMIT:
+			return false
+	return true
 
 static func _id(value: Variant) -> bool:
 	return value is String and not value.is_empty() and value.is_valid_identifier() and value.length() <= 64

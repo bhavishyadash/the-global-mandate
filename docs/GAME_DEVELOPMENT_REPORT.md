@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 114
+**Report status:** Living record; updated through session 115
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -17,7 +17,7 @@
 | Vision | Defined at a high level | Modern, highly detailed political simulation; diplomacy before war |
 | Godot project | Located and updated | `C:\Users\Shadow\Documents\ChatGPT\Geopolitical Simulator\the-global-mandate`; tracked Godot 4.7 project |
 | Simulation | Framework prototype in tracked project | Gregorian calendar, fictional budget, population, institutions, diplomacy and single-slot save/load |
-| World data | US historical reference started | Sourced population, GDP, unemployment and FY2025 federal budget functions are viewable offline; gameplay remains fictional. Broader coverage and integration remain open |
+| World data | US starting baseline partially integrated | Sourced Census population and Treasury FY2025 federal finances initialize new US games. GDP, unemployment and broader population, legal and political datasets need integration; simulated behaviors remain provisional |
 | Political systems | Early fictional prototype | Three population groups, a three-party legislature, procurement and healthcare test laws, and a simplified election; real country institutions remain future work |
 | Economy | Early fictional budget prototype | Sectors, households, employment, prices and trade remain open |
 | Diplomacy and military | Early fictional diplomacy prototype | Timed talks and bilateral relations; strategic conflict and optional military models remain future work |
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 115:** US new games now use Treasury FY2025 federal receipts and outlays, operating cash and public debt alongside the Census population. Five provisional spending groups reconcile to reported totals; tax and service effects remain simplified assumptions. [Detailed session record](SESSION_115.md).
 
 **Session 114:** New US scenarios now initialize population from the July 1, 2025 Census estimate. Growth is held constant pending sourced demographic modeling; fiscal and political systems remain fictional and uncalibrated. [Detailed session record](SESSION_114.md).
 

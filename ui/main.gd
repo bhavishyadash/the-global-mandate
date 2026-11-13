@@ -20,11 +20,11 @@ const SCENARIOS := [
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
-const BASE_CANVAS_SIZE := Vector2i(1152, 648)
-const MIN_CANVAS_SCALE := 2.0
-const UI_SCALES := [1.5, 2.0, 2.5]
+const BASE_CANVAS_SIZE := Vector2i(1600, 900)
+const MIN_CANVAS_SCALE := 1.0
+const UI_SCALES := [1.0, 1.25, 1.5]
 const UI_PREFERENCES_PATH := "user://ui_preferences.cfg"
-var ui_size_index := 1
+var ui_size_index := 0
 var ui_size_picker: OptionButton
 var world = World.new()
 var running := false
@@ -185,9 +185,9 @@ static func _canvas_size_for_window(pixels: Vector2i, minimum_scale: float = MIN
 static func _read_ui_size(path: String) -> int:
 	var settings := ConfigFile.new()
 	if settings.load(path) != OK:
-		return 1
-	var value: Variant = settings.get_value("display", "small_window_size", 1)
-	return value if value is int and value >= 0 and value < UI_SCALES.size() else 1
+		return 0
+	var value: Variant = settings.get_value("display", "small_window_size", 0)
+	return value if value is int and value >= 0 and value < UI_SCALES.size() else 0
 
 static func _write_ui_size(path: String, index: int) -> String:
 	if index < 0 or index >= UI_SCALES.size():
@@ -348,6 +348,7 @@ func _ready() -> void:
 	spending_label.text = "Reset total budget ($ millions) "
 	budget_controls.add_child(spending_label)
 	spending = SpinBox.new()
+	spending.custom_minimum_size.x = 145
 	spending.min_value = 0
 	spending.max_value = 10000
 	spending.step = 0.01
@@ -375,6 +376,7 @@ func _ready() -> void:
 		category_picker.add_item(category)
 	category_controls.add_child(category_picker)
 	category_amount = SpinBox.new()
+	category_amount.custom_minimum_size.x = 145
 	category_amount.min_value = 0
 	category_amount.max_value = 10000
 	category_amount.step = 0.01
@@ -1171,6 +1173,9 @@ func _ready() -> void:
 	review_dialog.confirmed.connect(_confirm_review)
 	review_dialog.canceled.connect(_cancel_review)
 	add_child(review_dialog)
+	_sync_budget_bounds()
+	spending.value = world.country.annual_spending / 1000000.0
+	_category_selected(category_picker.selected)
 	_update_responsive_layout()
 	_refresh()
 

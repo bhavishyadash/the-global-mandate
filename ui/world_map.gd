@@ -39,6 +39,7 @@ func _ready() -> void:
 	focus_mode = Control.FOCUS_ALL
 	custom_minimum_size = Vector2(0, 360)
 	mouse_exited.connect(_clear_hover)
+	resized.connect(queue_redraw)
 	load_error = load_map()
 	queue_redraw()
 
@@ -96,6 +97,8 @@ func screen_to_unit(point: Vector2) -> Vector2:
 	return Vector2(relative.x / width, relative.y / (width / 2.0))
 
 func _draw() -> void:
+	if size.x <= 6.0 or size.y <= 6.0:
+		return
 	draw_rect(Rect2(Vector2.ZERO, size), OCEAN)
 	if not load_error.is_empty():
 		draw_string(ThemeDB.fallback_font, Vector2(18, 30), load_error, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)

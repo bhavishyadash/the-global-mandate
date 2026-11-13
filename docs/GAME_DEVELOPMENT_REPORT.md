@@ -664,3 +664,7 @@ US income and corporate tax sensitivities now use scenario-specific FY 2026 reve
 ### Session 121 - Map-first budget workspace
 Expanded the budget workspace, added fiscal context and a tax shortcut, and stacked the chart and table for narrow panels. See [Session 121](SESSION_121.md) for validation and limitations.
 
+
+### Session 122 - Map and budget display fixes
+Fixed resize redraw, UI scaling and starting budget proposals; visually checked the 1600 x 900 budget screen. See [Session 122](SESSION_122.md).
+

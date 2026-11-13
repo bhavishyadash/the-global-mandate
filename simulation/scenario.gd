@@ -63,6 +63,8 @@ static func validate(data: Variant) -> String:
 			return "Scenario financial values must be finite numbers."
 	if not valid_fiscal_calibration(c.get("fiscal_calibration")):
 		return "Scenario fiscal calibration is invalid."
+	if not valid_tax_calibration(c.get("tax_calibration")):
+		return "Scenario tax calibration is invalid."
 	if c.has("nominal_gdp") and (not _number(c.nominal_gdp) or c.nominal_gdp <= 0):
 		return "Scenario GDP must be a positive finite value."
 	if c.treasury < 0 or c.debt < 0 or c.annual_revenue < 0 or c.annual_spending < 0 or c.annual_spending > spending_limit(c):
@@ -87,7 +89,7 @@ static func validate(data: Variant) -> String:
 			return "Scenario group approval and service conditions are inconsistent."
 	if absf(politics.approval() - float(c.approval)) > 0.001:
 		return "Scenario group and national approval are inconsistent."
-	var tax_revenue: float = c.income_tax_rate * 2000000000.0 + c.consumption_tax_rate * 1500000000.0 + c.corporate_tax_rate * 1000000000.0
+	var tax_revenue: float = c.income_tax_rate * tax_base(c, "income") + c.consumption_tax_rate * tax_base(c, "consumption") + c.corporate_tax_rate * tax_base(c, "corporate")
 	if c.annual_revenue < tax_revenue:
 		return "Scenario revenue cannot be less than modeled tax revenue."
 	var categories: Variant = c.get("spending_categories")
@@ -104,6 +106,20 @@ static func validate(data: Variant) -> String:
 
 static func spending_limit(country: Dictionary) -> float:
 	return float(country.fiscal_calibration.max_spending) if country.has("fiscal_calibration") else DEFAULT_SPENDING_LIMIT
+
+static func tax_base(country: Dictionary, kind: String) -> float:
+	var defaults := {"income": 2000000000.0, "consumption": 1500000000.0, "corporate": 1000000000.0}
+	return float(country.tax_calibration[kind]) if country.has("tax_calibration") else float(defaults[kind])
+
+static func valid_tax_calibration(value: Variant) -> bool:
+	if value == null:
+		return true
+	if not value is Dictionary or value.size() != 3:
+		return false
+	for kind in ["income", "consumption", "corporate"]:
+		if not _number(value.get(kind)) or value[kind] < 0 or value[kind] > ABSOLUTE_SPENDING_LIMIT:
+			return false
+	return true
 
 static func valid_fiscal_calibration(value: Variant) -> bool:
 	if value == null:

@@ -66,6 +66,8 @@ var dashboard_stage: Control
 var dashboard_panel: PanelContainer
 var dashboard_picker: OptionButton
 var dashboard_toggle: Button
+var department_navigation: HBoxContainer
+var department_buttons: Dictionary = {}
 var compact_menu: MenuButton
 var compact_title: Label
 var next_day_button: Button
@@ -525,7 +527,7 @@ func _ready() -> void:
 	controls.add_child(dashboard_toggle)
 	dashboard_picker.item_selected.connect(func(index: int): dashboard_tabs.current_tab = index; _set_dashboard_open(true))
 	dashboard_toggle.pressed.connect(func(): _set_dashboard_open(not dashboard_panel.visible))
-	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index); _update_dashboard_geometry())
+	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index); _update_dashboard_geometry(); _sync_department_navigation(index))
 	compact_menu = MenuButton.new()
 	compact_menu.name = "CompactMenu"
 	compact_menu.text = "More"
@@ -538,6 +540,18 @@ func _ready() -> void:
 	menu.add_item("Load", 101)
 	menu.add_item("Load backup", 102)
 	menu.id_pressed.connect(_compact_menu_selected)
+	department_navigation = HBoxContainer.new()
+	department_navigation.name = "DepartmentNavigation"
+	department_navigation.add_theme_constant_override("separation", 6)
+	layout.add_child(department_navigation)
+	for item in [["Budget", 1], ["Tax", 2], ["Laws", 7], ["Government", 3], ["Population", 4], ["Diplomacy", 5], ["Executive orders", 9]]:
+		var button := Button.new()
+		button.text = item[0]
+		button.toggle_mode = true
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_open_department.bind(int(item[1])))
+		department_navigation.add_child(button)
+		department_buttons[item[1]] = button
 	get_viewport().size_changed.connect(_update_responsive_layout)
 	_build_us_reference(us_reference_tab)
 	world_lab = WorldLab.new()
@@ -1286,8 +1300,18 @@ func _update_dashboard_geometry() -> void:
 
 func _set_dashboard_open(open: bool) -> void:
 	dashboard_panel.visible = open
+	_sync_department_navigation(dashboard_tabs.current_tab)
 	dashboard_toggle.text = ("Close" if open else "Panel") if responsive_compact else ("Close panel" if open else "Open panel")
 	_update_dashboard_geometry()
+
+func _open_department(index: int) -> void:
+	dashboard_tabs.current_tab = index
+	_sync_department_navigation(index)
+	_set_dashboard_open(true)
+
+func _sync_department_navigation(index: int) -> void:
+	for key in department_buttons:
+		department_buttons[key].set_pressed_no_signal(int(key) == index and dashboard_panel.visible)
 
 func _compact_menu_selected(id: int) -> void:
 	if id >= 0 and id < dashboard_tabs.get_tab_count():
@@ -1318,6 +1342,7 @@ func _apply_responsive_layout(compact: bool) -> void:
 	dashboard_picker.visible = not responsive_compact
 	budget_shortcut.visible = not responsive_compact
 	compact_menu.visible = responsive_compact
+	department_navigation.visible = not responsive_compact
 	if is_instance_valid(law_heading_label):
 		law_heading_label.text = "LAWS" if responsive_compact else "LAW CATALOGUE — US-ORIENTED POLICY TOPICS"
 		law_explanation_label.visible = not responsive_compact

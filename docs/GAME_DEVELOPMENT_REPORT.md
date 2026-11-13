@@ -668,3 +668,7 @@ Expanded the budget workspace, added fiscal context and a tax shortcut, and stac
 ### Session 122 - Map and budget display fixes
 Fixed resize redraw, UI scaling and starting budget proposals; visually checked the 1600 x 900 budget screen. See [Session 122](SESSION_122.md).
 
+
+### Session 123 - Department navigation
+Added map-first department shortcuts and active-state highlighting; see [Session 123](SESSION_123.md).
+

@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 117
+**Report status:** Living record; updated through session 118
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 118:** Moved the interactive world map into the persistent main view, added a collapsible panel with Laws and Budget shortcuts, simplified law-list scrolling, and started the UI in the US scenario. [Detailed session record](SESSION_118.md).
 
 **Session 117:** Added editable prototype income, corporate and consumption taxes and budget-category controls directly in the law catalogue, with deficit previews and confirmation. Most topics remain planned. [Detailed session record](SESSION_117.md).
 

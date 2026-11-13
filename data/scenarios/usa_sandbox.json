@@ -30,7 +30,7 @@
     },
     "income_tax_rate": 0.2,
     "consumption_tax_rate": 0.0,
-    "corporate_tax_rate": 0.0,
+    "corporate_tax_rate": 0.21,
     "approval": 50.0,
     "fiscal_calibration": {
       "max_spending": 100000000000000,
@@ -44,7 +44,12 @@
         "Administration": 2953800000000
       }
     },
-    "nominal_gdp": 33010000000000
+    "nominal_gdp": 33010000000000,
+    "tax_calibration": {
+      "income": 14230000000000,
+      "corporate": 1814285714285.7144,
+      "consumption": 1500000000
+    }
   },
   "politics": {
     "groups": [

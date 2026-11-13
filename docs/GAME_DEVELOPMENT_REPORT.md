@@ -656,3 +656,7 @@ The director requests a GitHub commit and push after each completed development 
 ### GitHub development backlog
 
 On 2026-11-10, created 53 initial roadmap issues in the private repository: https://github.com/bhavishyadash/the-global-mandate/issues. Issues #1–#53 cover the technical foundation, economy, population, politics, diplomacy, AI, military, data, interface, modding, quality and release. These are broad planning issues, not a complete prediction of future defects or an approved release scope; split and refine them as development reveals the detailed work. No issues are marked complete by this planning step. Sessions 6–15 were subsequently completed as the focused prototype batch described above.
+
+### Session 120 - US tax calibration
+US income and corporate tax sensitivities now use scenario-specific FY 2026 revenue anchors. Full tests and packaged scenario checks passed. The income index and linear response remain approximations; see [Session 120](SESSION_120.md).
+

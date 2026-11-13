@@ -1912,6 +1912,10 @@ func _show_law_detail(id: String) -> void:
 	_update_law_catalog_note()
 	if law_edit_panel.visible:
 		law_edit_kind = id
+		if world.country.has("tax_calibration") and id == "test_income_tax":
+			law_catalog_note.text = "Simplified income-tax index; 20% is a model assumption, not the US progressive tax system."
+		elif world.country.has("tax_calibration") and id == "test_corporate_tax":
+			law_catalog_note.text = "21% statutory starting rate; revenue response is a fixed-base approximation."
 		law_edit_category.visible = id == "test_budget_category"
 		law_edit_amount.max_value = World.Scenario.spending_limit(world.country) / 1000000.0 if law_edit_category.visible else 60.0
 		law_edit_amount.suffix = "million USD / year" if law_edit_category.visible else "%"
@@ -1969,7 +1973,9 @@ func _review_text(id: String, args: Dictionary) -> String:
 			if preview.is_empty():
 				return ""
 			var field: String = "income_tax_rate" if kind == "income" else world.ADDITIONAL_TAXES[kind].field
-			var lines := PackedStringArray(["%s TAX — fictional fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			var lines := PackedStringArray(["%s TAX — simplified fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			if world.country.has("tax_calibration"):
+				lines.append("US income and corporate responses are rough fixed-base estimates; the income rate is a model index, not actual tax brackets. Consumption uses a fictional test base.")
 			lines.append("Annual deficit: %s → %s (negative means surplus)" % [world.format_deficit(world.annual_deficit()), world.format_deficit(world.annual_deficit() + world.total_annual_revenue() - preview.annual_revenue)])
 			for group in preview.groups:
 				lines.append("%s approval: %.1f%%" % [group.name, group.approval])
@@ -2442,7 +2448,7 @@ func _refresh() -> void:
 		budget_lines.append("Starting figures use FY2026 federal receipts, outlays and public debt. GDP is the latest Q3 2026 annualized estimate and remains fixed; this mixed-period ratio differs from CBO fiscal-year GDP. Five categories are a provisional crosswalk; interest is separate. Tax rates, tax responses, service scores and political effects are fictional assumptions. Historical annual totals are not forecasts.")
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")
 	var corporate_revenue: float = world.additional_tax_revenue("corporate")
-	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
+	budget_lines.append("Tax revenue (simplified fixed-base model): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
 	budget_lines.append("Fictional partner contributions: $%.0f/year | cooperation costs: $%.0f/year" % [world.diplomacy.annual_partner_contribution(), world.diplomacy.annual_agreement_cost()])
 	for category in World.CATEGORY_SHARES:
 		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.service_target(category, c.spending_categories[category])])

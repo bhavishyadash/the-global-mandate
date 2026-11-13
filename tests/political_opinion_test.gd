@@ -19,7 +19,7 @@ func _initialize() -> void:
 	assert(is_equal_approx(first.politics.groups[0].approval - first_start, -14.0))
 	assert(is_equal_approx(second.politics.groups[0].approval - second_start, -11.0))
 	var before_corporate: float = first.politics.groups[0].approval
-	assert(first.set_additional_tax("corporate", 0.1))
+	assert(first.set_additional_tax("corporate", 0.31))
 	assert(is_equal_approx(first.politics.groups[0].approval - before_corporate, 2.0))
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(first.export_snapshot()))
 	var restored = World.new()
@@ -41,9 +41,9 @@ func _initialize() -> void:
 	var forecast_world = World.new()
 	assert(forecast_world.apply_scenario(usa).is_empty())
 	var before_forecast: Dictionary = forecast_world.export_snapshot()
-	var prediction: Dictionary = forecast_world.forecast_fiscal(90, {"corporate_tax": 0.1})
+	var prediction: Dictionary = forecast_world.forecast_fiscal(90, {"corporate_tax": 0.31})
 	assert(not prediction.is_empty() and forecast_world.export_snapshot() == before_forecast)
-	assert(forecast_world.set_additional_tax("corporate", 0.1))
+	assert(forecast_world.set_additional_tax("corporate", 0.31))
 	for day in range(90):
 		forecast_world.advance_day()
 	assert(is_equal_approx(prediction.approval, forecast_world.country.approval))

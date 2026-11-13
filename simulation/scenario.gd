@@ -63,6 +63,8 @@ static func validate(data: Variant) -> String:
 			return "Scenario financial values must be finite numbers."
 	if not valid_fiscal_calibration(c.get("fiscal_calibration")):
 		return "Scenario fiscal calibration is invalid."
+	if c.has("nominal_gdp") and (not _number(c.nominal_gdp) or c.nominal_gdp <= 0):
+		return "Scenario GDP must be a positive finite value."
 	if c.treasury < 0 or c.debt < 0 or c.annual_revenue < 0 or c.annual_spending < 0 or c.annual_spending > spending_limit(c):
 		return "Scenario budget is out of range."
 	for key in ["income_tax_rate", "consumption_tax_rate", "corporate_tax_rate"]:

@@ -58,7 +58,7 @@ func _initialize() -> void:
 	assert(combined.institutions.status == "implemented")
 	assert(combined.services.levels.Administration > 50.0)
 	assert(combined.country.approval > 50.0)
-	assert(absf(combined.country.treasury - combined_forecast.cash) < 0.1)
+	assert(absf(combined.country.debt - combined_forecast.debt) < 0.1)
 	assert(absf(combined_loaded.country.treasury - combined.country.treasury) < 0.1)
 	assert(absf(combined_loaded.country.approval - combined.country.approval) < 0.001)
 	assert(combined_loaded.diplomacy.agreements == combined.diplomacy.agreements)

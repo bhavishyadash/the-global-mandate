@@ -239,7 +239,7 @@ func refresh() -> void:
 	var progress: int = registry.dialogue_progress(USA, COAST)
 	var talk := "No active talks." if progress < 0 else "%s talks: day %d / %d." % [registry.talk_kind(USA, COAST).capitalize(), progress, Registry.TALK_DAYS]
 	var remaining: int = registry.agreement_days(USA, COAST)
-	overview.text = "LAB DATE: %04d-%02d-%02d (both countries)\n%s\n%s: approval %.1f%% | cash $%.1fM\n%s: approval %.1f%% | cash $%.1fM\nRelationship: %.1f / 100 | %s" % [d.year, d.month, d.day, "Political figures and relationships are fictional; US starting finances are sourced.", a.country.name, a.country.approval, a.country.treasury / 1000000.0, b.country.name, b.country.approval, b.country.treasury / 1000000.0, registry.relationship(USA, COAST), talk]
+	overview.text = "LAB DATE: %04d-%02d-%02d (both countries)\n%s\n%s: approval %.1f%% | debt $%.1fM\n%s: approval %.1f%% | debt $%.1fM\nRelationship: %.1f / 100 | %s" % [d.year, d.month, d.day, "Political figures and relationships are fictional; US starting finances are sourced.", a.country.name, a.country.approval, a.country.debt / 1000000.0, b.country.name, b.country.approval, b.country.debt / 1000000.0, registry.relationship(USA, COAST), talk]
 	overview.text += "\nCooperation: %s" % ("active for %d more days" % remaining if remaining > 0 else "no active agreement")
 	var state: Dictionary = registry.country_snapshot(selected_id())
 	if not state.is_empty():
@@ -248,9 +248,9 @@ func refresh() -> void:
 	var cooperation := proposal_picker.selected == 1
 	var available := not cooperation or remaining == 0
 	if cooperation:
-		diplomacy_preview.text = "COOPERATION — fictional test rules\nTalks last 30 days. If relations are at least %.0f and both countries have $%.1fM cash when talks finish, each pays a one-time $%.1fM, relations rise by %.0f and an agreement lasts %d days. No recurring payments or trade effects are modeled. Current eligibility: %s.%s" % [Registry.COOPERATION_MIN_RELATION, Registry.COOPERATION_COST / 1000000.0, Registry.COOPERATION_COST / 1000000.0, Registry.COOPERATION_GAIN, Registry.AGREEMENT_DAYS, "eligible" if registry.cooperation_eligible(USA, COAST) else "not eligible", " An existing agreement prevents new cooperation talks." if not available else ""]
+		diplomacy_preview.text = "COOPERATION — fictional test rules\nTalks last 30 days. If relations are at least %.0f, each borrows a one-time $%.1fM, relations rise by %.0f and an agreement lasts %d days. No recurring payments or trade effects are modeled. Current eligibility: %s.%s" % [Registry.COOPERATION_MIN_RELATION, Registry.COOPERATION_COST / 1000000.0, Registry.COOPERATION_GAIN, Registry.AGREEMENT_DAYS, "eligible" if registry.cooperation_eligible(USA, COAST) else "not eligible", " An existing agreement prevents new cooperation talks." if not available else ""]
 	else:
-		diplomacy_preview.text = "DIALOGUE — fictional test rules\nTalks last 30 days and add %.0f relations when complete; no direct cash cost." % Registry.RELATION_GAIN
+		diplomacy_preview.text = "DIALOGUE — fictional test rules\nTalks last 30 days and add %.0f relations when complete; no direct cost." % Registry.RELATION_GAIN
 	dialogue_button.disabled = progress >= 0 or not available
 	cancel_talks_button.disabled = progress < 0
 	_refresh_clock()

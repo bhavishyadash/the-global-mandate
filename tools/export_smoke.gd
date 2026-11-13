@@ -36,8 +36,12 @@ func _initialize() -> void:
 		push_error("Packaged US sandbox did not initialize.")
 		quit(1)
 		return
-	if absf(world.annual_balance() + 1775375000000.0) > 1.0:
+	if absf(world.annual_balance() + 1992500000000.0) > 1.0:
 		push_error("Packaged US federal baseline does not reconcile.")
+		quit(1)
+		return
+	if not FileAccess.file_exists("res://data/reference/usa_fy2026.json"):
+		push_error("Packaged FY2026 fiscal provenance is missing.")
 		quit(1)
 		return
 	world.advance_day()
@@ -52,7 +56,7 @@ func _initialize() -> void:
 		quit(1)
 		return
 	registry.advance_day()
-	if registry.country_snapshot("usa_sandbox").date.day != 2 or registry.country_snapshot("coastal_republic").date.day != 2:
+	if registry.country_snapshot("usa_sandbox").date.day != 13 or registry.country_snapshot("coastal_republic").date.day != 13:
 		push_error("Packaged world lab did not advance together.")
 		quit(1)
 		return

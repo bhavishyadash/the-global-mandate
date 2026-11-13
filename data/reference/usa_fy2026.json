@@ -1,0 +1,18 @@
+{
+  "period": "FY2026, ended September 30, 2026",
+  "published_data": "October 2026, November 2026 review",
+  "retrieved": "2026-11-12",
+  "receipts_usd": 5403300000000,
+  "outlays_usd": 7395800000000,
+  "deficit_usd": 1992500000000,
+  "debt_public_usd": 32245400000000,
+  "net_interest_public_usd_approx": 1142000000000,
+  "sources": {
+    "annual_totals": "https://www.govinfo.gov/content/pkg/ECONI-2026-10/pdf/ECONI-2026-10.pdf",
+    "categories_and_interest": "https://www.cbo.gov/publication/61986",
+    "gdp": "https://www.govinfo.gov/content/pkg/ECONI-2026-10/pdf/ECONI-2026-10.pdf"
+  },
+  "note": "Annual totals rounded to $0.1 billion; CBO categories and interest rounded to $1 billion. Public-debt interest differs from broader net interest outlays. Figures do not establish the FY2027 year-to-date deficit. GDP denominator is Q3 annualized, not CBO FY2026 annual GDP; their published fiscal-year deficit ratio is 6.2%. In-game GDP remains fixed until an economic model exists.",
+  "gdp_usd": 33010000000000,
+  "gdp_period": "2026 Q3 advance estimate, seasonally adjusted annual rate"
+}

@@ -381,7 +381,7 @@ func _ready() -> void:
 	status_row.add_child(status)
 	explanation = Label.new()
 	explanation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits use cash then borrow; surpluses repay debt then add cash. Category funding gradually affects service conditions and approval in the fictional test model. Resetting the total restores initial shares."
+	explanation.text = "Balance = revenue minus categories, policy costs and debt interest. Deficits increase public debt; surpluses repay debt up to zero. Surplus beyond zero debt is not allocated. Category funding gradually affects service conditions and approval in the fictional test model. Resetting the total restores initial shares."
 	layout.add_child(explanation)
 	tax_preview = Label.new()
 	tax_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -618,11 +618,11 @@ func _ready() -> void:
 		grid.add_theme_constant_override("v_separation", 5)
 		section.add_child(grid)
 		inspector_sections.append(section)
-	for row_name in ["Date", "Government bloc", "Population", "Approval", "Income tax", "Annual revenue", "Base spending", "Annual balance", "Cash", "Debt", "Diplomacy"]:
+	for row_name in ["Date", "Government bloc", "Population", "Approval", "Income tax", "Annual revenue", "Base spending", "Annual balance", "Debt", "Diplomacy"]:
 		var section_index := 0
 		if row_name in ["Government bloc", "Approval"]:
 			section_index = 1
-		elif row_name in ["Income tax", "Annual revenue", "Base spending", "Annual balance", "Cash", "Debt"]:
+		elif row_name in ["Income tax", "Annual revenue", "Base spending", "Annual balance", "Debt"]:
 			section_index = 2
 		elif row_name == "Diplomacy":
 			section_index = 3
@@ -934,7 +934,7 @@ func _ready() -> void:
 	indicator_title.text = "MONTHLY INDICATORS — fictional values"
 	indicator_panel.add_child(indicator_title)
 	indicator_picker = OptionButton.new()
-	for spec in [["Approval (%)", "approval"], ["Cash ($ millions)", "cash"], ["Debt ($ millions)", "debt"], ["Annual revenue ($ millions)", "revenue"], ["Annual balance ($ millions)", "balance"], ["Population (people)", "population"]]:
+	for spec in [["Approval (%)", "approval"], ["Annual deficit", "deficit"], ["Debt ($ millions)", "debt"], ["Annual revenue ($ millions)", "revenue"], ["Annual balance ($ millions)", "balance"], ["Population (people)", "population"]]:
 		indicator_picker.add_item(spec[0])
 		indicator_picker.set_item_metadata(indicator_picker.item_count - 1, spec[1])
 	indicator_picker.item_selected.connect(func(_index: int): _refresh_indicators())
@@ -1112,7 +1112,7 @@ func _build_us_reference(column: VBoxContainer) -> void:
 	amount.value_changed.connect(func(_value: float): update_preview.call())
 	update_preview.call()
 	var sources := Label.new()
-	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". New US games use the Census population and FY2025 Treasury finances; GDP and unemployment remain reference only."
+	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". New US games use the Census population and FY2026 federal finances; GDP and unemployment remain reference only."
 	sources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(sources)
 
@@ -1258,7 +1258,6 @@ func _refresh_shared_country_overview(target: String, ids: Array) -> void:
 		"Annual revenue": "$%.1fM" % (selected.total_annual_revenue() / 1000000.0),
 		"Base spending": "$%.1fM" % (c.annual_spending / 1000000.0),
 		"Annual balance": "$%.1fM" % (selected.annual_balance() / 1000000.0),
-		"Cash": "$%.1fM" % (c.treasury / 1000000.0),
 		"Debt": "$%.1fM" % (c.debt / 1000000.0),
 		"Diplomacy": "None active" if activity.is_empty() else "\n".join(activity),
 	}
@@ -1304,9 +1303,9 @@ func _refresh_shared_diplomacy() -> void:
 	var remaining: int = registry.agreement_days(world.country.id, target)
 	var kind := "cooperation" if shared_proposal_picker.selected == 1 else "dialogue"
 	var state := "No active talks." if progress < 0 else "%s talks: day %d / %d." % [registry.talk_kind(world.country.id, target).capitalize(), progress, WorldLab.Registry.TALK_DAYS]
-	var rules := "Dialogue completes after 30 days, adding 5 relations without a direct cash cost."
+	var rules := "Dialogue completes after 30 days, adding 5 relations without a direct cost."
 	if kind == "cooperation":
-		rules = "Cooperation concludes after 30 days. If relations are at least 5 and both countries have $5M, each pays $5M, relations rise by 10, and an agreement lasts 365 days. Eligibility now: %s. Conditions are checked at completion." % ("yes" if registry.cooperation_eligible(world.country.id, target) else "no")
+		rules = "Cooperation concludes after 30 days. If relations are at least 5, each borrows $5M for a one-time cost, relations rise by 10, and an agreement lasts 365 days. Eligibility now: %s. Conditions are checked at completion." % ("yes" if registry.cooperation_eligible(world.country.id, target) else "no")
 	shared_diplomacy_details.text = "FICTIONAL TEST VALUES\nRelations: %.1f / 100\n%s\nAgreement: %s\n\n%s" % [registry.relationship(world.country.id, target), state, "%d days remaining" % remaining if remaining > 0 else "none", rules]
 	shared_talk_button.disabled = progress >= 0 or (kind == "cooperation" and remaining > 0)
 	shared_cancel_button.disabled = progress < 0
@@ -1376,12 +1375,12 @@ func _refresh_map_simulation() -> void:
 		map_simulation.text = "REFERENCE ONLY\nNo playable country scenario is linked here yet."
 	elif _map_binding_active(binding):
 		map_scenario_button.text = "Open government"
-		map_simulation.text = "ACTIVE %s — MIXED OR FICTIONAL DATA\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nNew US games start with historical Census and Treasury data; politics and future outcomes are simulated. Older saves may differ. City simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+		map_simulation.text = "ACTIVE %s — MIXED OR FICTIONAL DATA\nPopulation: %d\nApproval: %.1f%%\nAnnual deficit: %s\nNew US games start with historical Census and Treasury data; politics and future outcomes are simulated. Older saves may differ. City simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.format_deficit(world.annual_deficit())]
 	elif shared_world_active:
 		map_simulation.text = "SHARED WORLD COUNTRY\nUse the diplomacy panel below to inspect this country. Scenario changes are unavailable while sharing a world."
 	else:
 		map_scenario_button.text = "Start " + binding.short_name
-		map_simulation.text = "%s AVAILABLE\nNew games use a Census population estimate and Treasury FY2025 finances; other values are fictional. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
+		map_simulation.text = "%s AVAILABLE\nNew games use a Census population estimate and FY2026 federal finances; other values are fictional. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
 
 func _map_scenario_action() -> void:
 	var index := _map_scenario_index(world_map.selected_id)
@@ -1453,13 +1452,13 @@ func _forecast_budget() -> void:
 		forecast_label.text = "Forecast unavailable for this state."
 		return
 	var d: Dictionary = result.end_date
-	var warning := _forecast_cash_warning(result)
+	var warning := _forecast_deficit_summary(result)
 	var model_note := "Shared-world model includes existing bilateral talks and agreements." if shared_world_active else "Single-country model."
-	forecast_label.text = "%d-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nPopulation %d | Cash $%.0f | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [days, d.year, d.month, d.day, result.population, result.cash, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
+	forecast_label.text = "%d-DAY FORECAST to %04d-%02d-%02d (current settings; rerun after changes)\nPopulation %d | Debt $%.0f | Approval %.1f%%\nRevenue $%.0f | Spending $%.0f | Policy $%.0f | Interest $%.0f\n%s %s Fictional model; no unmodeled future shocks or decisions." % [days, d.year, d.month, d.day, result.population, result.debt, result.approval, result.revenue, result.spending, result.policy, result.interest, warning, model_note]
 	forecast_current = true
 
-func _forecast_cash_warning(result: Dictionary) -> String:
-	return "Cash reaches zero at the end of day %d." % result.first_cash_exhaustion_day if result.first_cash_exhaustion_day > 0 else "No end-of-day zero cash observed."
+func _forecast_deficit_summary(result: Dictionary) -> String:
+	return "Period deficit: %s (negative means surplus)." % world.format_deficit(result.spending + result.policy + result.interest - result.revenue)
 
 func _compare_budget() -> void:
 	comparison_current = false
@@ -1481,7 +1480,7 @@ func _compare_budget() -> void:
 		comparison_label.text = "Comparison unavailable for these inputs."
 		return
 	var model_note := "Shared-world forecast includes existing bilateral talks and agreements." if shared_world_active else "Single-country forecast."
-	comparison_label.text = "%d-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nCash: $%.0f → $%.0f (change $%+.0f)\nDebt: $%.0f → $%.0f (change $%+.0f)\nApproval: %.1f%% → %.1f%% (change %+.1f points)\nCurrent: %s\nProposal: %s\nChanges are proposal minus current settings. %s Fictional rules; no future decisions or shocks." % [days, tax.value, kind, additional_tax.value, budget_description, baseline.cash, proposed.cash, proposed.cash - baseline.cash, baseline.debt, proposed.debt, proposed.debt - baseline.debt, baseline.approval, proposed.approval, proposed.approval - baseline.approval, _forecast_cash_warning(baseline), _forecast_cash_warning(proposed), model_note]
+	comparison_label.text = "%d-DAY COMPARISON (does not apply changes; rerun after edits)\nProposed: income %.1f%%, %s %.1f%%, %s.\nDebt: $%.0f → $%.0f (change $%+.0f)\nApproval: %.1f%% → %.1f%% (change %+.1f points)\nCurrent: %s\nProposal: %s\nChanges are proposal minus current settings. %s Fictional rules; no future decisions or shocks." % [days, tax.value, kind, additional_tax.value, budget_description, baseline.debt, proposed.debt, proposed.debt - baseline.debt, baseline.approval, proposed.approval, proposed.approval - baseline.approval, _forecast_deficit_summary(baseline), _forecast_deficit_summary(proposed), model_note]
 	comparison_current = true
 
 func _invalidate_comparison() -> void:
@@ -1717,6 +1716,7 @@ func _review_text(id: String, args: Dictionary) -> String:
 				return ""
 			var field: String = "income_tax_rate" if kind == "income" else world.ADDITIONAL_TAXES[kind].field
 			var lines := PackedStringArray(["%s TAX — fictional fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			lines.append("Annual deficit: %s → %s (negative means surplus)" % [world.format_deficit(world.annual_deficit()), world.format_deficit(world.annual_deficit() + world.total_annual_revenue() - preview.annual_revenue)])
 			for group in preview.groups:
 				lines.append("%s approval: %.1f%%" % [group.name, group.approval])
 			lines.append("This prototype applies the change immediately; legal passage and wider economic effects are not modeled.")
@@ -1730,7 +1730,7 @@ func _review_text(id: String, args: Dictionary) -> String:
 			var label: String = "Total category spending" if is_total else str(args.category) + " category"
 			var previous: float = world.country.annual_spending if is_total else world.country.spending_categories[args.category]
 			var explanation := "This resets every category to the scenario's default shares." if is_total else "Other category amounts remain unchanged."
-			return "%s — fictional budget model\n\nAnnual amount: $%.1fM → $%.1fM\nAnnual balance: $%.1fM → $%.1fM\nProjected daily flow: $%.2f\n\n%s Service and approval effects develop over time; wider economic effects are not modeled." % [label, previous / 1000000.0, amount / 1000000.0, world.annual_balance() / 1000000.0, preview.annual_balance / 1000000.0, preview.daily_balance, explanation]
+			return "%s — simplified budget model\n\nAnnual amount: $%.1fM → $%.1fM\nAnnual deficit: %s → %s (negative means surplus)\n\n%s Service and approval effects develop over time; wider economic effects are not modeled." % [label, previous / 1000000.0, amount / 1000000.0, world.format_deficit(world.annual_deficit()), world.format_deficit(-preview.annual_balance), explanation]
 		"introduce_congress_bill":
 			var preview: Dictionary = world.preview_healthcare(float(args.funding))
 			if preview.is_empty():
@@ -2164,11 +2164,12 @@ func _update_shared_controls() -> void:
 	main_load_button.disabled = shared_world_active
 	main_backup_button.disabled = shared_world_active
 	scenario_start_button.disabled = shared_world_active
-	mode_notice.text = "US SANDBOX  ·  Census population and FY2025 Treasury finances; politics and tax model fictional" if world.country.has("fiscal_calibration") else ("MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"))
+	mode_notice.text = "US SANDBOX  ·  Census population and FY2026 federal finances; politics and tax model fictional" if world.country.has("fiscal_calibration") else ("MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"))
 
 func _refresh() -> void:
 	_invalidate_forecasts()
 	_update_speed_status()
+	_update_shared_controls()
 	if shared_world_active:
 		world_lab.refresh()
 	_refresh_map_simulation()
@@ -2176,11 +2177,11 @@ func _refresh() -> void:
 	world_lab.set_main_import_available(world.scenario_id == "usa_sandbox" and world.country.id == "usa_sandbox" and world.date.year <= 9998)
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
-	government_status.text = "%s   |   %04d-%02d-%02d   |   Cash $%.1fM   |   Annual balance $%.1fM   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, c.treasury / 1000000.0, world.annual_balance() / 1000000.0, c.approval]
-	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
+	government_status.text = "%s   |   %04d-%02d-%02d   |   Annual deficit %s   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, world.format_deficit(world.annual_deficit()), c.approval]
+	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nDebt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual deficit: %s (negative means surplus)\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.format_deficit(world.annual_deficit()), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	if c.has("fiscal_calibration"):
-		budget_lines.append("Starting figures use FY2025 Treasury receipts and outlays, plus September 2025 Treasury cash and debt held by the public. Five categories are a provisional crosswalk; interest is separate. Tax rates, tax responses, service scores and political effects are fictional assumptions. FY2025 figures are historical annual totals, not forecasts.")
+		budget_lines.append("Starting figures use FY2026 federal receipts, outlays and public debt. GDP is the latest Q3 2026 annualized estimate and remains fixed; this mixed-period ratio differs from CBO fiscal-year GDP. Five categories are a provisional crosswalk; interest is separate. Tax rates, tax responses, service scores and political effects are fictional assumptions. Historical annual totals are not forecasts.")
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")
 	var corporate_revenue: float = world.additional_tax_revenue("corporate")
 	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
@@ -2248,7 +2249,11 @@ func _refresh_indicators() -> void:
 	var field: String = indicator_picker.get_item_metadata(indicator_picker.selected)
 	var samples: Array = []
 	for sample in world.indicator_history:
-		if sample.has(field):
+		if field == "deficit" and sample.has("balance"):
+			var converted: Dictionary = sample.duplicate(true)
+			converted["deficit"] = -float(sample.balance) / float(world.country.nominal_gdp) * 100.0 if world.country.has("nominal_gdp") else -float(sample.balance)
+			samples.append(converted)
+		elif sample.has(field):
 			samples.append(sample)
 	indicator_chart.set_series(samples, field)
 	if samples.is_empty():
@@ -2261,8 +2266,9 @@ func _refresh_indicators() -> void:
 		high = maxf(high, float(sample[field]))
 	var first: Dictionary = samples.front().date
 	var last: Dictionary = samples.back().date
-	var divisor := 1.0 if field in ["approval", "population"] else 1000000.0
-	var units := "%" if field == "approval" else ("people" if field == "population" else "M USD")
+	var is_gdp_ratio: bool = field == "deficit" and world.country.has("nominal_gdp")
+	var divisor := 1.0 if field in ["approval", "population"] or is_gdp_ratio else 1000000.0
+	var units := "% of GDP" if is_gdp_ratio else ("%" if field == "approval" else ("people" if field == "population" else "M USD"))
 	var low_text := "%d" % int(low) if field == "population" else "%.1f" % (low / divisor)
 	var high_text := "%d" % int(high) if field == "population" else "%.1f" % (high / divisor)
 	var lines := PackedStringArray(["%d %s · %04d-%02d-%02d to %04d-%02d-%02d\nChart range: %s to %s %s. Each chart scales to its own range." % [samples.size(), "sample" if samples.size() == 1 else "samples", first.year, first.month, first.day, last.year, last.month, last.day, low_text, high_text, units], "RECENT SAMPLES (up to 12)"])
@@ -2320,7 +2326,7 @@ func _update_spending_preview(value: float) -> void:
 	if preview.is_empty():
 		spending_preview.text = "Spending preview unavailable."
 		return
-	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual balance: $%.0f | Daily net flow: $%.2f\nService and approval changes develop over time; employment and wider economic effects are not modeled." % [preview.annual_balance, preview.daily_balance]
+	spending_preview.text = "TOTAL BUDGET PREVIEW (resets category shares)\nAnnual deficit: %s (negative means surplus)\nService and approval changes develop over time; employment and wider economic effects are not modeled." % [world.format_deficit(-preview.annual_balance)]
 
 func _update_category_preview(value: float) -> void:
 	_invalidate_comparison()
@@ -2332,7 +2338,7 @@ func _update_category_preview(value: float) -> void:
 		category_preview.text = "Category preview unavailable: total exceeds budget limit."
 		return
 	var service_target: float = world.service_target(name, value * 1000000.0)
-	category_preview.text = "%s budget preview: annual balance $%.0f | daily net flow $%.2f | long-run service target %.1f/100 (fictional)" % [name, preview.annual_balance, preview.daily_balance, service_target]
+	category_preview.text = "%s budget preview: annual deficit %s (negative means surplus) | long-run service target %.1f/100 (fictional)" % [name, world.format_deficit(-preview.annual_balance), service_target]
 
 func _refresh_budget_breakdown() -> void:
 	var category := category_picker.get_item_text(category_picker.selected)

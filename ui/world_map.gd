@@ -6,6 +6,7 @@ signal selection_cleared
 signal hover_changed(text: String)
 signal zoom_changed(value: float)
 
+const TERRAIN_TEXTURE = preload("res://data/map/blue_marble_3840.jpg")
 const DATA_PATH := "res://data/map/world_110m.json"
 const OCEAN := Color("081b2d")
 const LAND := Color("294859")
@@ -100,11 +101,14 @@ func _draw() -> void:
 	if size.x <= 6.0 or size.y <= 6.0:
 		return
 	draw_rect(Rect2(Vector2.ZERO, size), OCEAN)
+	var map_width := _map_width() * map_zoom
+	var terrain_rect := Rect2(unit_to_screen(Vector2(-0.5, -0.5)), Vector2(map_width, map_width / 2.0))
+	draw_texture_rect(TERRAIN_TEXTURE, terrain_rect, false)
 	if not load_error.is_empty():
 		draw_string(ThemeDB.fallback_font, Vector2(18, 30), load_error, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 		return
 	# Subtle geographic graticule and frame make the flat map readable at zoom.
-	var grid := Color(0.25, 0.50, 0.56, 0.16)
+	var grid := Color(0.45, 0.65, 0.68, 0.08)
 	for longitude in range(-180, 181, 30):
 		draw_line(unit_to_screen(Vector2(longitude / 360.0, -0.5)), unit_to_screen(Vector2(longitude / 360.0, 0.5)), grid, 1.0)
 	for latitude in range(-60, 61, 30):
@@ -126,7 +130,10 @@ func _draw() -> void:
 						projected.append(unit_to_screen(point))
 					# Projection and pixel precision can collapse tiny rings.
 					if not Geometry2D.triangulate_polygon(projected).is_empty():
-						draw_colored_polygon(projected, country_fill_color(country.id))
+						var overlay := country_fill_color(country.id)
+						overlay.a = 0.48 if layer_mode == 1 else (0.38 if country.id == selected_id else (0.23 if country.id == hovered_id else 0.0))
+						if overlay.a > 0.0:
+							draw_colored_polygon(projected, overlay)
 				screen.append(screen[0])
 				draw_polyline(screen, Color("a9ebdf") if country.id == selected_id else BORDER, 1.6 if country.id == selected_id else 1.0, true)
 	var labels: Array[Rect2] = []

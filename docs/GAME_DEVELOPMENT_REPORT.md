@@ -676,3 +676,7 @@ Added map-first department shortcuts and active-state highlighting; see [Session
 ### Session 124 - Treasury workspace redesign
 Rebuilt the budget panel into a centered, two-column map-backed workspace. See [Session 124](SESSION_124.md).
 
+
+### Session 125 - Satellite terrain map
+Added offline NASA Blue Marble terrain below interactive borders and markers. See [Session 125](SESSION_125.md) for source, validation and limitations.
+

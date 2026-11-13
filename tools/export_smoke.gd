@@ -36,6 +36,10 @@ func _initialize() -> void:
 		push_error("Packaged US sandbox did not initialize.")
 		quit(1)
 		return
+	if absf(world.annual_balance() + 1775375000000.0) > 1.0:
+		push_error("Packaged US federal baseline does not reconcile.")
+		quit(1)
+		return
 	world.advance_day()
 	if world.country.population != int(USReference.read().population.value):
 		push_error("Packaged US sandbox population differs from its source reference.")

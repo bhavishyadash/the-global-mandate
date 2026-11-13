@@ -55,18 +55,37 @@ func _initialize() -> void:
 	assert(model.advance(0, false).population == 0)
 	var scenario: Dictionary = World.Scenario.read_file("res://data/scenarios/usa_sandbox.json")
 	var source: Dictionary = preload("res://ui/us_reference.gd").read()
-	assert(scenario.country.population == source.population.value and int(scenario.date.year) == 2025 and int(scenario.date.month) == 7 and int(scenario.date.day) == 1)
+	assert(scenario.country.population == source.population.value and int(scenario.date.year) == 2025 and int(scenario.date.month) == 10 and int(scenario.date.day) == 1)
 	assert(World.Scenario.validate(scenario).is_empty())
 	var invalid_scenario: Dictionary = scenario.duplicate(true)
 	invalid_scenario.population_rules.birth_rate_tenths = 1001
 	assert(not World.Scenario.validate(invalid_scenario).is_empty())
 	var original = World.new()
 	assert(original.apply_scenario(scenario).is_empty())
+	assert(original.country.annual_revenue == 5234617000000.0)
+	assert(original.country.annual_revenue == source.budget.receipts_millions * 1000000.0)
+	assert(original.country.annual_spending == 6039633000000.0)
+	assert(absf(original.country.annual_spending + original.debt_interest() - source.budget.outlays_millions * 1000000.0) < 1.0)
+	assert(absf(original.debt_interest() - 970359000000.0) < 1.0)
+	assert(absf(original.annual_balance() + 1775375000000.0) < 1.0)
+	assert(original.country.treasury == 890825093623.0 and original.country.debt == 30200000000000.0)
+	assert(absf(original.service_target("Health", original.country.spending_categories.Health) - 50.0) < 0.01)
+	assert(not original.preview_category_spending("Health", 2000000000000.0).is_empty())
+	var original_health: float = original.country.spending_categories.Health
+	assert(original.set_category_spending("Health", original_health + 1000000.0))
+	assert(original.country.spending_categories.Health == original_health + 1000000.0)
+	assert(original.set_category_spending("Health", original_health))
+	var bad_calibration: Dictionary = scenario.duplicate(true)
+	bad_calibration.country.fiscal_calibration.interest_rate = -1
+	assert(not World.Scenario.validate(bad_calibration).is_empty())
 	for day in range(120):
 		original.advance_day()
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(original.export_snapshot()))
 	var resumed = World.new()
 	assert(resumed.import_snapshot(saved).is_empty())
+	var bad_saved: Dictionary = saved.duplicate(true)
+	bad_saved.country.fiscal_calibration.service_baselines.Health = 0
+	assert(not resumed.import_snapshot(bad_saved).is_empty())
 	for day in range(500):
 		original.advance_day()
 		resumed.advance_day()

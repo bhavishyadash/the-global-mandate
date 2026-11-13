@@ -52,7 +52,7 @@ func _ready() -> void:
 	add_child(heading)
 	lab_note = Label.new()
 	lab_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	lab_note.text = "This experimental world has its own clock and save slot. The US starts with a 2025 Census population; other values and the Coastal Republic are fictional. Imported saves can differ."
+	lab_note.text = "This experimental world has its own clock and save slot. New US games use Census population and Treasury finances; political behavior and the Coastal Republic are fictional. Imported saves can differ."
 	add_child(lab_note)
 	var scenarios := [World.Scenario.read_file("res://data/scenarios/usa_sandbox.json"), World.Scenario.read_file("res://data/scenarios/coastal_test.json")]
 	if scenarios[0] is Dictionary and scenarios[1] is Dictionary:
@@ -239,7 +239,7 @@ func refresh() -> void:
 	var progress: int = registry.dialogue_progress(USA, COAST)
 	var talk := "No active talks." if progress < 0 else "%s talks: day %d / %d." % [registry.talk_kind(USA, COAST).capitalize(), progress, Registry.TALK_DAYS]
 	var remaining: int = registry.agreement_days(USA, COAST)
-	overview.text = "LAB DATE: %04d-%02d-%02d (both countries)\n%s\n%s: approval %.1f%% | cash $%.1fM\n%s: approval %.1f%% | cash $%.1fM\nRelationship: %.1f / 100 | %s" % [d.year, d.month, d.day, "Political and financial figures and relationships are fictional.", a.country.name, a.country.approval, a.country.treasury / 1000000.0, b.country.name, b.country.approval, b.country.treasury / 1000000.0, registry.relationship(USA, COAST), talk]
+	overview.text = "LAB DATE: %04d-%02d-%02d (both countries)\n%s\n%s: approval %.1f%% | cash $%.1fM\n%s: approval %.1f%% | cash $%.1fM\nRelationship: %.1f / 100 | %s" % [d.year, d.month, d.day, "Political figures and relationships are fictional; US starting finances are sourced.", a.country.name, a.country.approval, a.country.treasury / 1000000.0, b.country.name, b.country.approval, b.country.treasury / 1000000.0, registry.relationship(USA, COAST), talk]
 	overview.text += "\nCooperation: %s" % ("active for %d more days" % remaining if remaining > 0 else "no active agreement")
 	var state: Dictionary = registry.country_snapshot(selected_id())
 	if not state.is_empty():
@@ -295,7 +295,7 @@ func set_shared_mode(enabled: bool, controlled_id: String = "") -> void:
 	running = false
 	batch_remaining = 0
 	elapsed = 0.0
-	lab_note.text = "SHARED WORLD: the main clock advances both countries. US population may be sourced; most values are fictional. Leave shared world before loading another save." if enabled else "This experimental world has its own clock and save slot. The US starts with a 2025 Census population; other values and the Coastal Republic are fictional. Imported saves can differ."
+	lab_note.text = "SHARED WORLD: the main clock advances both countries. US starting population and finances may be sourced; political behavior is fictional. Leave shared world before loading another save." if enabled else "This experimental world has its own clock and save slot. New US games use Census population and Treasury finances; political behavior and the Coastal Republic are fictional. Imported saves can differ."
 	refresh()
 
 func _process(delta: float) -> void:

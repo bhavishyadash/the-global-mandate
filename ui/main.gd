@@ -267,7 +267,7 @@ func _ready() -> void:
 	next_day.pressed.connect(_advance_day)
 	controls.add_child(next_day)
 	var tax_label := Label.new()
-	tax_label.text = "Income tax (%) "
+	tax_label.text = "Test income tax (%) "
 	controls.add_child(tax_label)
 	tax = SpinBox.new()
 	tax.min_value = 0.0
@@ -642,7 +642,7 @@ func _ready() -> void:
 	country_note.add_theme_color_override("font_color", GovernmentTheme.MUTED)
 	inspector_sections[1].add_child(country_note)
 	var economy_note := Label.new()
-	economy_note.text = "Fictional test data. Annual balance includes modeled policy costs and interest."
+	economy_note.text = "Starting US finances may be sourced; tax and service effects are simulated. Annual balance includes policy costs and interest."
 	economy_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	economy_note.add_theme_color_override("font_color", GovernmentTheme.MUTED)
 	inspector_sections[2].add_child(economy_note)
@@ -674,7 +674,7 @@ func _ready() -> void:
 	map_results.item_selected.connect(_select_map_result)
 	map_selection = Label.new()
 	map_selection.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; US population starts from Census data, while other sandbox values are fictional."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nUS starting population and federal finances use historical sources; politics and behavioral rules remain fictional."
 	map_sidebar.add_child(map_selection)
 	map_sidebar.move_child(map_results, map_search_status.get_index() + 1)
 	map_sidebar.move_child(map_selection, shared_map_panel.get_index())
@@ -1112,7 +1112,7 @@ func _build_us_reference(column: VBoxContainer) -> void:
 	amount.value_changed.connect(func(_value: float): update_preview.call())
 	update_preview.call()
 	var sources := Label.new()
-	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". New US games use the Census population estimate; budget and economic reference figures do not yet drive the simulation."
+	sources.text = "Census: " + data.sources.census + "\n\nTreasury: " + data.sources.treasury + "\n\nBEA: " + data.sources.bea + "\n\nBLS: " + data.sources.bls + "\n\nRetrieved: " + data.retrieved + ". New US games use the Census population and FY2025 Treasury finances; GDP and unemployment remain reference only."
 	sources.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(sources)
 
@@ -1169,7 +1169,7 @@ func _map_selection_cleared() -> void:
 		_select_shared_map_country("")
 	map_focus_button.disabled = true
 	map_clear_button.disabled = true
-	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nGeography is reference data; US population starts from Census data, while other sandbox values are fictional."
+	map_selection.text = "WORLD MAP\n\nSelect a country or city.\n\nUS starting population and federal finances use historical sources; politics and behavioral rules remain fictional."
 	_refresh_map_simulation()
 
 func _map_scenario_index(id: String) -> int:
@@ -1376,12 +1376,12 @@ func _refresh_map_simulation() -> void:
 		map_simulation.text = "REFERENCE ONLY\nNo playable country scenario is linked here yet."
 	elif _map_binding_active(binding):
 		map_scenario_button.text = "Open government"
-		map_simulation.text = "ACTIVE %s — MIXED OR FICTIONAL DATA\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nNew US games start from a Census estimate; financial and political values are fictional. Older saves may differ. City simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
+		map_simulation.text = "ACTIVE %s — MIXED OR FICTIONAL DATA\nPopulation: %d\nApproval: %.1f%%\nCash: $%.1fM\nAnnual balance: $%.1fM\nNew US games start with historical Census and Treasury data; politics and future outcomes are simulated. Older saves may differ. City simulation is not implemented." % [binding.short_name.to_upper(), world.country.population, world.country.approval, world.country.treasury / 1000000.0, world.annual_balance() / 1000000.0]
 	elif shared_world_active:
 		map_simulation.text = "SHARED WORLD COUNTRY\nUse the diplomacy panel below to inspect this country. Scenario changes are unavailable while sharing a world."
 	else:
 		map_scenario_button.text = "Start " + binding.short_name
-		map_simulation.text = "%s AVAILABLE\nNew games use a Census population estimate; other values are fictional. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
+		map_simulation.text = "%s AVAILABLE\nNew games use a Census population estimate and Treasury FY2025 finances; other values are fictional. Starting replaces the current session after confirmation." % binding.short_name.to_upper()
 
 func _map_scenario_action() -> void:
 	var index := _map_scenario_index(world_map.selected_id)
@@ -1554,6 +1554,7 @@ func _start_scenario(path: String) -> bool:
 	pause_button.text = "Resume"
 	tax.value = world.country.income_tax_rate * 100.0
 	_additional_tax_selected(additional_tax_picker.selected)
+	_sync_budget_bounds()
 	spending.value = world.country.annual_spending / 1000000.0
 	_category_selected(category_picker.selected)
 	event_filter.select(0)
@@ -1936,6 +1937,7 @@ func _sync_loaded_world(text: String) -> void:
 	pause_button.text = "Resume"
 	tax.value = world.country.income_tax_rate * 100.0
 	_additional_tax_selected(additional_tax_picker.selected)
+	_sync_budget_bounds()
 	spending.value = world.country.annual_spending / 1000000.0
 	_category_selected(category_picker.selected)
 	_sync_scenario_picker()
@@ -1943,6 +1945,11 @@ func _sync_loaded_world(text: String) -> void:
 	_sync_directive_picker()
 	status.text = text
 	_refresh()
+
+func _sync_budget_bounds() -> void:
+	var limit_millions: float = World.Scenario.spending_limit(world.country) / 1000000.0
+	spending.max_value = limit_millions
+	category_amount.max_value = limit_millions
 
 func _request_lab_handoff(id: String) -> void:
 	if shared_world_active:
@@ -2157,7 +2164,7 @@ func _update_shared_controls() -> void:
 	main_load_button.disabled = shared_world_active
 	main_backup_button.disabled = shared_world_active
 	scenario_start_button.disabled = shared_world_active
-	mode_notice.text = "MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype")
+	mode_notice.text = "US SANDBOX  ·  Census population and FY2025 Treasury finances; politics and tax model fictional" if world.country.has("fiscal_calibration") else ("MIXED-DATA US SANDBOX  ·  July 2025 Census starting population; other inputs fictional" if world.country.get("name", "") == "United States (mixed-data sandbox)" else ("SHARED WORLD  ·  Fictional test values  ·  Diplomacy on World Map" if shared_world_active else "FICTIONAL TEST SCENARIO  ·  Early simulation prototype"))
 
 func _refresh() -> void:
 	_invalidate_forecasts()
@@ -2172,6 +2179,8 @@ func _refresh() -> void:
 	government_status.text = "%s   |   %04d-%02d-%02d   |   Cash $%.1fM   |   Annual balance $%.1fM   |   Approval %.1f%%" % [c.name, d.year, d.month, d.day, c.treasury / 1000000.0, world.annual_balance() / 1000000.0, c.approval]
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nCash: $%.0f  |  Debt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual balance: $%.0f   |   Daily net flow: $%.2f\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.treasury, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.annual_balance(), world.daily_balance(), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
+	if c.has("fiscal_calibration"):
+		budget_lines.append("Starting figures use FY2025 Treasury receipts and outlays, plus September 2025 Treasury cash and debt held by the public. Five categories are a provisional crosswalk; interest is separate. Tax rates, tax responses, service scores and political effects are fictional assumptions. FY2025 figures are historical annual totals, not forecasts.")
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")
 	var corporate_revenue: float = world.additional_tax_revenue("corporate")
 	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])

@@ -1,7 +1,7 @@
 {
   "title": "United States: official historical reference",
   "retrieved": "2026-11-12",
-  "note": "Historical observations; not connected to the fictional simulation. Figures refer to different periods and scopes.",
+  "note": "Historical observations; population and Treasury federal amounts initialize new US games. Figures refer to different periods and scopes; behavior remains simulated.",
   "sources": {
     "treasury": "https://fiscal.treasury.gov/system/files/files/reports-statements/combined-statement/cs2025/2025-cs-final.pdf",
     "census": "https://www.census.gov/quickfacts/fact/table/US/PST045222",

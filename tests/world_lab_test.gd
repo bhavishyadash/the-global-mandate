@@ -91,10 +91,14 @@ func run_checks() -> void:
 	assert(after_cancel > before_batch and lab.batch_remaining == 0 and lab.tax.editable)
 	lab._process(10.0)
 	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == after_cancel)
+	var expected_world = Lab.World.new()
+	assert(expected_world.import_snapshot(lab.registry.country_snapshot(lab.USA)).is_empty())
+	for day in range(30):
+		expected_world.advance_day()
 	lab._action("batch")
 	while lab.batch_remaining > 0:
 		lab._process(0.0)
-	assert(lab.registry.country_snapshot(lab.USA).fiscal.days == after_cancel + 30)
+	assert(lab.registry.country_snapshot(lab.USA).date == expected_world.date)
 	assert(lab.registry.country_snapshot(lab.COAST).date == lab.registry.country_snapshot(lab.USA).date)
 	lab._action("toggle")
 	var before_running: int = lab.registry.country_snapshot(lab.USA).fiscal.days

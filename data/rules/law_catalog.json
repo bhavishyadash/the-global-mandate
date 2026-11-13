@@ -35,6 +35,16 @@
       ]
     },
     {
+      "id": "test_budget_category",
+      "name": "Adjust budget category (prototype)",
+      "category": "Finance",
+      "keywords": [
+        "appropriation",
+        "spending",
+        "budget"
+      ]
+    },
+    {
       "id": "topic_finance_federal_budget_framework",
       "name": "Federal budget framework",
       "category": "Finance",
@@ -105,6 +115,36 @@
       "name": "Federal grants to states",
       "category": "Finance",
       "keywords": []
+    },
+    {
+      "id": "test_income_tax",
+      "name": "Flat income tax rate (prototype)",
+      "category": "Tax",
+      "keywords": [
+        "income",
+        "tax",
+        "rate"
+      ]
+    },
+    {
+      "id": "test_corporate_tax",
+      "name": "Corporate tax rate (prototype)",
+      "category": "Tax",
+      "keywords": [
+        "corporate",
+        "tax",
+        "rate"
+      ]
+    },
+    {
+      "id": "test_consumption_tax",
+      "name": "Consumption tax rate (prototype)",
+      "category": "Tax",
+      "keywords": [
+        "consumption",
+        "tax",
+        "rate"
+      ]
     },
     {
       "id": "topic_tax_individual_income_tax_brackets",

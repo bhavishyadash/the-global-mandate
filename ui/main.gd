@@ -147,6 +147,13 @@ var law_catalog: Tree
 var law_catalog_note: Label
 var law_catalog_data: Dictionary = {}
 var law_catalog_error := ""
+var law_edit_panel: VBoxContainer
+var law_edit_kind := ""
+var law_edit_amount: SpinBox
+var law_edit_category: OptionButton
+var law_edit_preview: Label
+var law_edit_button: Button
+var selected_law_id := ""
 var healthcare_panel: VBoxContainer
 var procurement_panel: VBoxContainer
 var procurement_detail: Label
@@ -991,6 +998,29 @@ func _ready() -> void:
 	law_catalog_note = Label.new()
 	law_catalog_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	laws.add_child(law_catalog_note)
+	law_edit_panel = VBoxContainer.new()
+	law_edit_panel.name = "LawEditPanel"
+	laws.add_child(law_edit_panel)
+	law_edit_category = OptionButton.new()
+	law_edit_category.name = "LawEditCategory"
+	for category in World.CATEGORY_SHARES:
+		law_edit_category.add_item(category)
+	law_edit_panel.add_child(law_edit_category)
+	law_edit_amount = SpinBox.new()
+	law_edit_amount.name = "LawEditAmount"
+	law_edit_amount.step = 0.1
+	law_edit_panel.add_child(law_edit_amount)
+	law_edit_preview = Label.new()
+	law_edit_preview.name = "LawEditPreview"
+	law_edit_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	law_edit_panel.add_child(law_edit_preview)
+	law_edit_button = Button.new()
+	law_edit_button.name = "LawEditReview"
+	law_edit_button.text = "Review change"
+	law_edit_panel.add_child(law_edit_button)
+	law_edit_amount.value_changed.connect(func(_value: float): _refresh_law_edit_preview())
+	law_edit_category.item_selected.connect(func(_index: int): _sync_law_edit_value())
+	law_edit_button.pressed.connect(_review_law_edit)
 	healthcare_panel = VBoxContainer.new()
 	healthcare_panel.add_theme_constant_override("separation", 8)
 	laws.add_child(healthcare_panel)
@@ -1660,10 +1690,12 @@ func _refresh_law_catalog() -> void:
 		law_catalog_note.text = law_catalog_error
 		healthcare_panel.visible = false
 		procurement_panel.visible = false
+		law_edit_panel.visible = false
 		return
 	var category := law_categories.get_tab_title(law_categories.current_tab)
 	var query := law_search.text.strip_edges().to_lower()
 	var first_id := ""
+	var selected_row: TreeItem = null
 	for law in law_catalog_data.laws:
 		if not law_search_all.button_pressed and law.category != category:
 			continue
@@ -1679,20 +1711,29 @@ func _refresh_law_catalog() -> void:
 			"procurement":
 				state = "Active" if world.politics.procurement_policy else "Not enacted"
 				cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
+			"test_budget_category", "test_income_tax", "test_corporate_tax", "test_consumption_tax":
+				state = "Editable prototype"
 		var row := law_catalog.create_item(root_item)
 		row.set_text(0, (law.category + " — " if law_search_all.button_pressed else "") + law.name)
 		row.set_text(1, state)
-		row.set_text(2, "Not modeled" if state == "Planned" else "$%.1fM / year" % (cost / 1000000.0))
+		row.set_text(2, "Not modeled" if state == "Planned" else ("See preview" if state == "Editable prototype" else "$%.1fM / year" % (cost / 1000000.0)))
 		row.set_metadata(0, law.id)
 		if first_id.is_empty():
 			first_id = law.id
 			row.select(0)
+		if law.id == selected_law_id:
+			selected_row = row
 	if first_id.is_empty():
 		law_catalog_note.text = "No policy topics match this category and search."
 		healthcare_panel.visible = false
 		procurement_panel.visible = false
+		law_edit_panel.visible = false
 		return
-	_show_law_detail(first_id)
+	if selected_row != null:
+		selected_row.select(0)
+		_show_law_detail(selected_law_id)
+	else:
+		_show_law_detail(first_id)
 
 func _law_catalog_selected() -> void:
 	var selected := law_catalog.get_selected()
@@ -1700,11 +1741,49 @@ func _law_catalog_selected() -> void:
 		_show_law_detail(str(selected.get_metadata(0)))
 
 func _show_law_detail(id: String) -> void:
+	selected_law_id = id
 	healthcare_panel.visible = id == "healthcare"
 	procurement_panel.visible = id == "procurement"
-	law_catalog_note.text = "Prototype: values and political rules are fictional." if id in ["healthcare", "procurement"] else "Planned topic: not yet a proposal or enacted law. Legal authority, options, costs and effects are not modeled."
+	law_edit_panel.visible = id in ["test_budget_category", "test_income_tax", "test_corporate_tax", "test_consumption_tax"]
+	law_catalog_note.text = "Prototype: values and political rules are fictional." if id in ["healthcare", "procurement"] or law_edit_panel.visible else "Planned topic: not yet a proposal or enacted law. Legal authority, options, costs and effects are not modeled."
+	if law_edit_panel.visible:
+		law_edit_kind = id
+		law_edit_category.visible = id == "test_budget_category"
+		law_edit_amount.max_value = World.Scenario.spending_limit(world.country) / 1000000.0 if law_edit_category.visible else 60.0
+		law_edit_amount.suffix = "million USD / year" if law_edit_category.visible else "%"
+		_sync_law_edit_value()
 	if id == "procurement":
 		procurement_detail.text = "PROCUREMENT POLICY — fictional test rules\nCurrent: %s | rollout: %d%% | votes for adoption: %d/100 | votes for repeal: %d/100\nOnce fully implemented, the policy costs $%.1fM per year. A majority is required." % ["active" if world.politics.procurement_policy else "not enacted", world.politics.procurement_progress, world.politics.votes_for_policy(), world.politics.votes_for_repeal(), float(world.policy_rules.procurement_annual_cost) / 1000000.0]
+
+func _sync_law_edit_value() -> void:
+	if not law_edit_panel.visible:
+		return
+	match law_edit_kind:
+		"test_budget_category": law_edit_amount.value = float(world.country.spending_categories[law_edit_category.get_item_text(law_edit_category.selected)]) / 1000000.0
+		"test_income_tax": law_edit_amount.value = float(world.country.income_tax_rate) * 100.0
+		"test_corporate_tax": law_edit_amount.value = float(world.country.corporate_tax_rate) * 100.0
+		"test_consumption_tax": law_edit_amount.value = float(world.country.consumption_tax_rate) * 100.0
+	_refresh_law_edit_preview()
+
+func _law_edit_request() -> Dictionary:
+	match law_edit_kind:
+		"test_budget_category": return {"id": "set_category_spending", "args": {"category": law_edit_category.get_item_text(law_edit_category.selected), "amount": law_edit_amount.value * 1000000.0}}
+		"test_income_tax": return {"id": "set_income_tax", "args": {"rate": law_edit_amount.value / 100.0}}
+		"test_corporate_tax", "test_consumption_tax": return {"id": "set_additional_tax", "args": {"kind": "corporate" if law_edit_kind == "test_corporate_tax" else "consumption", "rate": law_edit_amount.value / 100.0}}
+	return {}
+
+func _refresh_law_edit_preview() -> void:
+	if not is_instance_valid(law_edit_panel) or not law_edit_panel.visible:
+		return
+	var request := _law_edit_request()
+	var details := _review_text(request.id, request.args) if not request.is_empty() else ""
+	law_edit_button.disabled = details.is_empty()
+	law_edit_preview.text = "Preview unavailable for this amount." if details.is_empty() else details
+
+func _review_law_edit() -> void:
+	var request := _law_edit_request()
+	if not request.is_empty():
+		_request_review(request.id, request.args)
 
 func _review_text(id: String, args: Dictionary) -> String:
 	match id:

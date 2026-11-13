@@ -62,6 +62,10 @@ var additional_tax_preview: Label
 var directive_picker: OptionButton
 var directive_summary: Label
 var dashboard_tabs: TabContainer
+var dashboard_stage: Control
+var dashboard_panel: PanelContainer
+var dashboard_picker: OptionButton
+var dashboard_toggle: Button
 var healthcare_picker: OptionButton
 var healthcare_summary: Label
 var appropriation_picker: OptionButton
@@ -153,7 +157,7 @@ var law_edit_amount: SpinBox
 var law_edit_category: OptionButton
 var law_edit_preview: Label
 var law_edit_button: Button
-var selected_law_id := ""
+var selected_law_id := "topic_finance_federal_budget_framework"
 var healthcare_panel: VBoxContainer
 var procurement_panel: VBoxContainer
 var procurement_detail: Label
@@ -210,7 +214,7 @@ func _apply_map_layout(compact: bool) -> void:
 	map_navigation.visible = compact
 	map_controls.visible = not compact or not map_inspector_view
 	map_back_button.visible = compact
-	world_map.visible = not compact or not map_inspector_view
+	world_map.visible = true
 	map_inspector_scroll.visible = not compact or map_inspector_view
 	map_view_button.set_pressed_no_signal(not map_inspector_view)
 	map_inspector_button.set_pressed_no_signal(map_inspector_view)
@@ -226,6 +230,9 @@ func _ready() -> void:
 	get_window().size_changed.connect(_update_canvas_size)
 	_update_canvas_size()
 	theme = GovernmentTheme.create()
+	var startup_error: String = world.apply_scenario(World.Scenario.read_file("res://data/scenarios/usa_sandbox.json"))
+	if not startup_error.is_empty():
+		world.initialization_error = startup_error
 	var background := ColorRect.new()
 	background.color = GovernmentTheme.BACKGROUND
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -243,12 +250,11 @@ func _ready() -> void:
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
 		margin.add_theme_constant_override(edge, 16)
 	add_child(margin)
-	var scroll := ScrollContainer.new()
-	margin.add_child(scroll)
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 8)
-	scroll.add_child(layout)
+	margin.add_child(layout)
 	var title := Label.new()
 	title.text = "THE GLOBAL MANDATE"
 	title.add_theme_font_size_override("font_size", 22)
@@ -263,7 +269,7 @@ func _ready() -> void:
 	layout.add_child(mode_notice)
 	summary = Label.new()
 	layout.add_child(summary)
-	var controls := HBoxContainer.new()
+	var controls := HFlowContainer.new()
 	layout.add_child(controls)
 	pause_button = Button.new()
 	pause_button.text = "Resume"
@@ -446,11 +452,24 @@ func _ready() -> void:
 	layout.add_child(history)
 	# Keep the clock, income tax and save controls visible while grouping the
 	# growing decision panels into independently scrollable sections.
+	dashboard_stage = Control.new()
+	dashboard_stage.name = "MapStage"
+	dashboard_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dashboard_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dashboard_stage.clip_contents = true
+	layout.add_child(dashboard_stage)
+	dashboard_panel = PanelContainer.new()
+	dashboard_panel.name = "DashboardPanel"
+	dashboard_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dashboard_stage.add_child(dashboard_panel)
+	var panel_column := VBoxContainer.new()
+	panel_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dashboard_panel.add_child(panel_column)
 	dashboard_tabs = TabContainer.new()
-	dashboard_tabs.custom_minimum_size = Vector2(0, 440)
+	dashboard_tabs.tabs_visible = false
 	dashboard_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dashboard_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(dashboard_tabs)
+	panel_column.add_child(dashboard_tabs)
 	var overview := _make_dashboard_tab("Overview")
 	var finances := _make_dashboard_tab("Budget & services")
 	var taxes := _make_dashboard_tab("Tax previews")
@@ -464,6 +483,31 @@ func _ready() -> void:
 	var executive := _make_dashboard_tab("Executive Orders")
 	var lab_tab := _make_dashboard_tab("World Lab")
 	var us_reference_tab := _make_dashboard_tab("US Reference")
+	dashboard_picker = OptionButton.new()
+	dashboard_picker.name = "DashboardPicker"
+	dashboard_picker.fit_to_longest_item = false
+	dashboard_picker.custom_minimum_size.x = 180
+	for index in range(dashboard_tabs.get_tab_count()):
+		dashboard_picker.add_item(dashboard_tabs.get_tab_title(index))
+	dashboard_picker.select(8)
+	controls.add_child(dashboard_picker)
+	var open_laws := Button.new()
+	open_laws.name = "OpenLaws"
+	open_laws.text = "Laws"
+	open_laws.pressed.connect(func(): dashboard_tabs.current_tab = 7; _set_dashboard_open(true))
+	controls.add_child(open_laws)
+	var open_budget := Button.new()
+	open_budget.name = "OpenBudget"
+	open_budget.text = "Budget"
+	open_budget.pressed.connect(func(): dashboard_tabs.current_tab = 1; _set_dashboard_open(true))
+	controls.add_child(open_budget)
+	dashboard_toggle = Button.new()
+	dashboard_toggle.name = "DashboardToggle"
+	dashboard_toggle.text = "Open panel"
+	controls.add_child(dashboard_toggle)
+	dashboard_picker.item_selected.connect(func(index: int): dashboard_tabs.current_tab = index; _set_dashboard_open(true))
+	dashboard_toggle.pressed.connect(func(): _set_dashboard_open(not dashboard_panel.visible))
+	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index))
 	_build_us_reference(us_reference_tab)
 	world_lab = WorldLab.new()
 	lab_tab.add_child(world_lab)
@@ -512,6 +556,12 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
+	world_map.reparent(dashboard_stage)
+	dashboard_stage.move_child(world_map, 0)
+	world_map.custom_minimum_size = Vector2.ZERO
+	world_map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_set_dashboard_open(false)
+	dashboard_stage.resized.connect(_update_dashboard_geometry)
 	var map_binding_data: Variant = MapScenarioRegistry.read()
 	map_binding_error = MapScenarioRegistry.validate(map_binding_data, world_map.countries, SCENARIOS)
 	if map_binding_error.is_empty():
@@ -696,6 +746,7 @@ func _ready() -> void:
 	dashboard_tabs.current_tab = 8
 	for node in [summary, explanation]:
 		node.reparent(overview)
+	restore_controls.reparent(overview)
 	var scenario_controls := HBoxContainer.new()
 	overview.add_child(scenario_controls)
 	overview.move_child(scenario_controls, 0)
@@ -986,14 +1037,15 @@ func _ready() -> void:
 	law_search_all.text = "Search all categories"
 	laws.add_child(law_search_all)
 	law_catalog = Tree.new()
-	law_catalog.columns = 3
+	law_catalog.columns = 2
 	law_catalog.hide_root = true
 	law_catalog.column_titles_visible = true
 	law_catalog.set_column_title(0, "Law")
 	law_catalog.set_column_title(1, "Status")
-	law_catalog.set_column_title(2, "Annual cost")
 	law_catalog.set_column_expand(0, true)
-	law_catalog.custom_minimum_size = Vector2(0, 240)
+	law_catalog.set_column_expand_ratio(0, 3)
+	law_catalog.set_column_expand_ratio(1, 2)
+	law_catalog.custom_minimum_size = Vector2(0, 120)
 	laws.add_child(law_catalog)
 	law_catalog_note = Label.new()
 	law_catalog_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1060,6 +1112,10 @@ func _ready() -> void:
 	healthcare_summary = Label.new()
 	healthcare_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	healthcare_panel.add_child(healthcare_summary)
+	# Keep the editor immediately above the list. The list grows to its rows,
+	# leaving one outer scrollbar instead of a nested scrolling region.
+	for node in [law_catalog_note, law_edit_panel, healthcare_panel, procurement_panel]:
+		laws.move_child(node, law_catalog.get_index())
 	review_dialog = ConfirmationDialog.new()
 	review_dialog.title = "Review decision"
 	review_dialog.ok_button_text = "Submit decision"
@@ -1158,7 +1214,28 @@ func _make_dashboard_tab(title: String) -> VBoxContainer:
 	panel.add_child(column)
 	return column
 
+func _update_dashboard_geometry() -> void:
+	if not is_instance_valid(dashboard_panel) or not is_instance_valid(dashboard_stage):
+		return
+	var width := minf(520.0, maxf(300.0, dashboard_stage.size.x * 0.55))
+	dashboard_panel.anchor_left = 1.0
+	dashboard_panel.anchor_right = 1.0
+	dashboard_panel.anchor_top = 0.0
+	dashboard_panel.anchor_bottom = 1.0
+	dashboard_panel.offset_left = -width
+	dashboard_panel.offset_right = 0.0
+	dashboard_panel.offset_top = 0.0
+	dashboard_panel.offset_bottom = 0.0
+
+func _set_dashboard_open(open: bool) -> void:
+	dashboard_panel.visible = open
+	dashboard_toggle.text = "Close panel" if open else "Open panel"
+	_update_dashboard_geometry()
+
 func _map_country_selected(id: String, country_name: String) -> void:
+	if not dashboard_panel.visible:
+		dashboard_tabs.current_tab = 8
+		_set_dashboard_open(true)
 	_select_shared_map_country(id)
 	var capital := "Not in dataset"
 	var count := 0
@@ -1177,6 +1254,9 @@ func _map_country_selected(id: String, country_name: String) -> void:
 		_open_country_inspector.call_deferred()
 
 func _map_city_selected(city: Dictionary) -> void:
+	if not dashboard_panel.visible:
+		dashboard_tabs.current_tab = 8
+		_set_dashboard_open(true)
 	_select_shared_map_country(city.get("country", ""))
 	map_focus_button.disabled = false
 	map_clear_button.disabled = false
@@ -1684,6 +1764,7 @@ func _apply_category() -> void:
 func _refresh_law_catalog() -> void:
 	if law_catalog == null:
 		return
+	var preferred_id := selected_law_id
 	law_catalog.clear()
 	var root_item := law_catalog.create_item()
 	if not law_catalog_error.is_empty():
@@ -1696,6 +1777,7 @@ func _refresh_law_catalog() -> void:
 	var query := law_search.text.strip_edges().to_lower()
 	var first_id := ""
 	var selected_row: TreeItem = null
+	var row_count := 0
 	for law in law_catalog_data.laws:
 		if not law_search_all.button_pressed and law.category != category:
 			continue
@@ -1703,26 +1785,24 @@ func _refresh_law_catalog() -> void:
 		if not query.is_empty() and query not in search_text:
 			continue
 		var state := "Planned"
-		var cost := 0.0
 		match law.id:
 			"healthcare":
 				state = "Active" if world.healthcare.active else "Not enacted"
-				cost = world.healthcare.annual_cost()
 			"procurement":
 				state = "Active" if world.politics.procurement_policy else "Not enacted"
-				cost = float(world.policy_rules.procurement_annual_cost) if world.politics.procurement_policy and world.politics.procurement_progress >= 100 else 0.0
 			"test_budget_category", "test_income_tax", "test_corporate_tax", "test_consumption_tax":
 				state = "Editable prototype"
 		var row := law_catalog.create_item(root_item)
+		row_count += 1
 		row.set_text(0, (law.category + " — " if law_search_all.button_pressed else "") + law.name)
 		row.set_text(1, state)
-		row.set_text(2, "Not modeled" if state == "Planned" else ("See preview" if state == "Editable prototype" else "$%.1fM / year" % (cost / 1000000.0)))
 		row.set_metadata(0, law.id)
 		if first_id.is_empty():
 			first_id = law.id
 			row.select(0)
-		if law.id == selected_law_id:
+		if law.id == preferred_id:
 			selected_row = row
+	law_catalog.custom_minimum_size.y = maxf(120.0, 42.0 + row_count * 32.0)
 	if first_id.is_empty():
 		law_catalog_note.text = "No policy topics match this category and search."
 		healthcare_panel.visible = false
@@ -1731,7 +1811,7 @@ func _refresh_law_catalog() -> void:
 		return
 	if selected_row != null:
 		selected_row.select(0)
-		_show_law_detail(selected_law_id)
+		_show_law_detail(preferred_id)
 	else:
 		_show_law_detail(first_id)
 

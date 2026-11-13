@@ -680,3 +680,7 @@ Rebuilt the budget panel into a centered, two-column map-backed workspace. See [
 ### Session 125 - Satellite terrain map
 Added offline NASA Blue Marble terrain below interactive borders and markers. See [Session 125](SESSION_125.md) for source, validation and limitations.
 
+
+### Session 126 - Full-screen map
+Made the satellite map fill the screen behind the controls and added a readable header. See [Session 126](SESSION_126.md).
+

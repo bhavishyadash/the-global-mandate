@@ -86,7 +86,7 @@ static func _unit_point(point: Array) -> Vector2:
 	return Vector2(float(point[0]) / 360.0, -float(point[1]) / 180.0)
 
 func _map_width() -> float:
-	return maxf(1.0, minf(size.x - 24.0, (size.y - 24.0) * 2.0))
+	return maxf(1.0, maxf(size.x, size.y * 2.0))
 
 func unit_to_screen(point: Vector2) -> Vector2:
 	var width := _map_width() * map_zoom

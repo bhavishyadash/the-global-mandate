@@ -73,7 +73,7 @@ func run_checks() -> void:
 	screen.set_process(false)
 	assert(screen.world.scenario_id == "usa_sandbox" and "6.04% of GDP" in screen.government_status.text)
 	assert(screen.selected_law_id == "topic_finance_federal_budget_framework" and not screen.procurement_panel.visible)
-	assert(screen.world_map.get_parent() == screen.dashboard_stage and screen.world_map.visible and not screen.dashboard_panel.visible)
+	assert(screen.world_map.get_parent() == screen and screen.world_map.visible and not screen.dashboard_panel.visible)
 	screen._apply_responsive_layout(true)
 	assert(screen.compact_menu.visible and not screen.dashboard_picker.visible and not screen.mode_notice.visible)
 	assert(screen.law_heading_label.text == "LAWS" and not screen.law_explanation_label.visible)
@@ -88,7 +88,7 @@ func run_checks() -> void:
 	assert(screen.dashboard_panel.visible and screen.dashboard_tabs.current_tab == 7 and screen.world_map.visible)
 	for index in range(screen.dashboard_tabs.get_tab_count()):
 		screen.dashboard_tabs.current_tab = index
-		assert(screen.world_map.visible and screen.world_map.get_parent() == screen.dashboard_stage)
+		assert(screen.world_map.visible and screen.world_map.get_parent() == screen)
 	var laws_shortcut: Button = screen.find_child("OpenLaws", true, false)
 	laws_shortcut.pressed.emit()
 	assert(screen.dashboard_panel.visible and screen.dashboard_tabs.current_tab == 7)

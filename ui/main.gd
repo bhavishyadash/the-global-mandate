@@ -259,11 +259,13 @@ func _ready() -> void:
 		set_process(false)
 		return
 	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
 		margin.add_theme_constant_override(edge, 16)
 	add_child(margin)
 	var layout := VBoxContainer.new()
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 8)
@@ -472,6 +474,7 @@ func _ready() -> void:
 	# growing decision panels into independently scrollable sections.
 	dashboard_stage = Control.new()
 	dashboard_stage.name = "MapStage"
+	dashboard_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dashboard_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dashboard_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dashboard_stage.clip_contents = true
@@ -601,8 +604,15 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
-	world_map.reparent(dashboard_stage)
-	dashboard_stage.move_child(world_map, 0)
+	world_map.reparent(self)
+	move_child(world_map, 1)
+	var header_backdrop := ColorRect.new()
+	header_backdrop.color = Color(0.015, 0.04, 0.065, 0.88)
+	header_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_backdrop.anchor_right = 1.0
+	header_backdrop.offset_bottom = 188.0
+	add_child(header_backdrop)
+	move_child(header_backdrop, 2)
 	world_map.custom_minimum_size = Vector2.ZERO
 	world_map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_set_dashboard_open(false)

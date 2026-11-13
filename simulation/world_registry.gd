@@ -67,7 +67,7 @@ func forecast_fiscal(id: String, days: int, changes: Dictionary = {}) -> Diction
 	var country = future.controlled_country(id)
 	if not country._apply_forecast_changes(changes):
 		return {}
-	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
+	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0}
 	for i in range(days):
 		var before: Dictionary = country.fiscal.duplicate(true)
 		var year: int = country.date.year
@@ -76,10 +76,7 @@ func forecast_fiscal(id: String, days: int, changes: Dictionary = {}) -> Diction
 		var after: Dictionary = country.previous_fiscal if country.date.year != year else country.fiscal
 		for field in ["revenue", "spending", "policy", "interest"]:
 			result[field] += float(after[field]) - float(before[field])
-		if result.first_cash_exhaustion_day == 0 and country.country.treasury <= 0.0:
-			result.first_cash_exhaustion_day = i + 1
 	result.end_date = country.date.duplicate(true)
-	result.cash = country.country.treasury
 	result.debt = country.country.debt
 	result.approval = country.country.approval
 	result.population = country.country.population
@@ -139,7 +136,7 @@ func agreement_days(a: String, b: String) -> int:
 	return int(_agreements.get(_pair(a, b), 0))
 
 func cooperation_eligible(a: String, b: String) -> bool:
-	return _countries.has(a) and _countries.has(b) and a != b and relationship(a, b) >= COOPERATION_MIN_RELATION and _countries[a].country.treasury >= COOPERATION_COST and _countries[b].country.treasury >= COOPERATION_COST
+	return _countries.has(a) and _countries.has(b) and a != b and relationship(a, b) >= COOPERATION_MIN_RELATION
 
 func advance_day() -> void:
 	for key in _agreements.keys():
@@ -162,8 +159,9 @@ func advance_day() -> void:
 				if kind == "cooperation":
 					_agreements[key] = AGREEMENT_DAYS
 					for id in pair:
-						_countries[id].country.treasury -= COOPERATION_COST
+						_countries[id].country.debt += COOPERATION_COST
 						_countries[id].fiscal.spending += COOPERATION_COST
+						_countries[id].fiscal.borrowed += COOPERATION_COST
 			for id in pair:
 				_countries[id].add_event("Bilateral %s talks concluded: %s%s." % [kind, "accepted" if accepted else "declined", "; one-time cost $%.0f" % COOPERATION_COST if accepted and kind == "cooperation" else ""], "diplomacy", "lab_talks_concluded")
 			_talks.erase(key)

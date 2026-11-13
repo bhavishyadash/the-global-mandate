@@ -78,7 +78,7 @@ func apply_scenario(data: Variant) -> String:
 		diplomacy.import_state(data.diplomacy)
 	fiscal = _new_fiscal_period(date.month != 1 or date.day != 1)
 	previous_fiscal = {}
-	events = ["Scenario started. Sourced starting population and FY2025 Treasury finances; political and behavioral rules are fictional." if country.has("fiscal_calibration") else "Scenario started. All figures are fictional test data."]
+	events = ["Scenario started. Sourced starting population and FY2026 federal finances; political and behavioral rules are fictional." if country.has("fiscal_calibration") else "Scenario started. All figures are fictional test data."]
 	event_records = [{"category": "scenario", "date": date.duplicate(), "text": events[0], "cause": "scenario_started", "severity": "info"}]
 	indicator_history = []
 	_sample_indicators()
@@ -100,6 +100,16 @@ func next_random_fraction() -> float:
 
 func annual_balance() -> float:
 	return total_annual_revenue() - country.annual_spending - policy_annual_cost() - debt_interest()
+
+func annual_deficit() -> float:
+	# A negative result is a surplus.
+	return -annual_balance()
+
+func format_deficit(amount: float) -> String:
+	var gdp: Variant = country.get("nominal_gdp")
+	if _is_number(gdp) and float(gdp) > 0.0:
+		return "%.2f%% of GDP" % (amount * 100.0 / float(gdp))
+	return "$%.1fM (GDP unavailable)" % (amount / 1000000.0)
 
 func total_annual_revenue() -> float:
 	return country.annual_revenue + diplomacy.annual_partner_contribution()
@@ -147,7 +157,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 		return {}
 	if not future._apply_forecast_changes(changes):
 		return {}
-	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0, "first_cash_exhaustion_day": 0}
+	var result := {"days": days, "revenue": 0.0, "spending": 0.0, "policy": 0.0, "interest": 0.0}
 	for i in range(days):
 		var divisor := 366.0 if is_leap_year(future.date.year) else 365.0
 		result.revenue += future.total_annual_revenue() / divisor
@@ -155,10 +165,7 @@ func forecast_fiscal(days: int, changes: Dictionary = {}) -> Dictionary:
 		result.policy += future.policy_annual_cost() / divisor
 		result.interest += future.debt_interest() / divisor
 		future.advance_day()
-		if result.first_cash_exhaustion_day == 0 and future.country.treasury <= 0.0:
-			result.first_cash_exhaustion_day = i + 1
 	result.end_date = future.date.duplicate()
-	result.cash = future.country.treasury
 	result.debt = future.country.debt
 	result.approval = future.country.approval
 	result.population = future.country.population
@@ -201,20 +208,13 @@ func advance_day() -> void:
 	fiscal.policy += policy
 	fiscal.interest += interest
 	if balance < 0.0:
-		var expense := -balance
-		var cash_used: float = minf(country.treasury, expense)
-		country.treasury -= cash_used
-		var borrowing := expense - cash_used
-		if borrowing > 0.0:
-			if country.debt <= 0.0:
-				add_event("Cash exhausted; government borrowing began.", "finance", "cash_exhausted", "warning")
-			country.debt += borrowing
-			fiscal.borrowed += borrowing
+		var borrowing := -balance
+		country.debt += borrowing
+		fiscal.borrowed += borrowing
 	else:
 		var repayment: float = minf(country.debt, balance)
 		country.debt -= repayment
 		fiscal.repaid += repayment
-		country.treasury += balance - repayment
 	var population_change: Dictionary = demographics.advance(country.population, is_leap_year(date.year))
 	country.population = population_change.population
 	services.advance_day(country.spending_categories, country.population, float(policy_rules.reporting_admin_target_bonus) if reporting_effect_active() else 0.0, healthcare.health_bonus(), country.get("fiscal_calibration"))
@@ -280,7 +280,7 @@ static func days_in_month(year: int, month: int) -> int:
 func export_snapshot() -> Dictionary:
 	# Return detached data so consumers cannot mutate the running world through
 	# an exported snapshot. The same representation is used for save files.
-	return {"version": 26, "demographics": demographics.export_state(), "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
+	return {"version": 27, "demographics": demographics.export_state(), "indicator_history": indicator_history.duplicate(true), "congress": congress.export_state(), "policy_rules": policy_rules.duplicate(true), "institution_rules": institutions.rules.duplicate(true), "healthcare_rules": healthcare.rules.duplicate(true), "healthcare": healthcare.export_state(), "scenario_id": scenario_id, "random_seed": random_seed_value, "random_state": random_state, "event_records": event_records.duplicate(true), "diplomacy": diplomacy.export_state(), "fiscal": fiscal.duplicate(true), "previous_fiscal": previous_fiscal.duplicate(true), "date": date.duplicate(true), "country": country.duplicate(true), "events": events.duplicate(), "politics": politics.export_state(), "services": services.export_state(), "institutions": institutions.export_state()}
 
 func save_game(path: String, rename_operation: Callable = Callable(), write_operation: Callable = Callable()) -> String:
 	var temporary := path + ".tmp"
@@ -366,7 +366,7 @@ func load_game(path: String) -> String:
 
 func import_snapshot(parsed: Variant) -> String:
 	# Validate into temporary subsystem objects before replacing live state.
-	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 26:
+	if not parsed is Dictionary or not _is_whole_number(parsed.get("version")) or parsed.version < 1 or parsed.version > 27:
 		return "Save is invalid or uses an unsupported version."
 	var d: Variant = parsed.get("date")
 	var c: Variant = parsed.get("country")
@@ -391,6 +391,8 @@ func import_snapshot(parsed: Variant) -> String:
 			return "Save has invalid financial or approval data."
 	if not Scenario.valid_fiscal_calibration(c.get("fiscal_calibration")):
 		return "Save has invalid fiscal calibration."
+	if c.has("nominal_gdp") and (not _is_number(c.nominal_gdp) or c.nominal_gdp <= 0):
+		return "Save has invalid GDP."
 	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > Scenario.spending_limit(c) or e.size() > MAX_EVENTS:
 		return "Save has out-of-range policy or approval data."
 	c = c.duplicate(true)

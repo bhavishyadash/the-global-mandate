@@ -36,7 +36,7 @@ func _initialize() -> void:
 		forecast_actual.advance_day()
 	var forecast_country: Dictionary = forecast_actual.country_snapshot("test_republic")
 	assert(forecast_actual.agreement_days("test_republic", "coastal_republic") > 0)
-	assert(absf(projected.cash - forecast_country.country.treasury) < 0.01)
+	assert(absf(projected.debt - forecast_country.country.debt) < 0.01)
 	assert(projected.population == forecast_country.country.population)
 	assert(is_equal_approx(projected.approval, forecast_country.country.approval))
 	assert(absf(projected.spending - forecast_country.previous_fiscal.spending - forecast_country.fiscal.spending) < 0.01)
@@ -84,9 +84,9 @@ func _initialize() -> void:
 	insufficient._countries.test_republic.country.treasury = 0.0
 	var coastal_cash: float = insufficient.country_snapshot("coastal_republic").country.treasury
 	insufficient.advance_day()
-	assert(insufficient.agreement_days("test_republic", "coastal_republic") == 0 and insufficient.relationship("test_republic", "coastal_republic") == 5.0)
-	assert(insufficient.country_snapshot("coastal_republic").country.treasury > coastal_cash)
-	# Accepted cooperation charges each country's cash and fiscal ledger once.
+	assert(insufficient.agreement_days("test_republic", "coastal_republic") == 365 and insufficient.relationship("test_republic", "coastal_republic") == 15.0)
+	assert(insufficient.country_snapshot("coastal_republic").country.treasury == coastal_cash)
+	# Accepted cooperation finances the one-time cost with debt and records it in the ledger.
 	var cooperation = Registry.new()
 	var control = Registry.new()
 	assert(cooperation.initialize([federal, coastal]).is_empty() and control.initialize([federal, coastal]).is_empty())
@@ -98,7 +98,7 @@ func _initialize() -> void:
 	for id in ["test_republic", "coastal_republic"]:
 		var accepted: Dictionary = cooperation.country_snapshot(id)
 		var baseline: Dictionary = control.country_snapshot(id)
-		assert(is_equal_approx(baseline.country.treasury - accepted.country.treasury, Registry.COOPERATION_COST))
+		assert(is_equal_approx(accepted.fiscal.borrowed - baseline.fiscal.borrowed, Registry.COOPERATION_COST))
 		assert(is_equal_approx(accepted.fiscal.spending - baseline.fiscal.spending, Registry.COOPERATION_COST))
 	assert(cooperation.relationship("test_republic", "coastal_republic") == 15.0 and cooperation.agreement_days("test_republic", "coastal_republic") == 365)
 	assert(not cooperation.start_talks("test_republic", "coastal_republic", "cooperation"))
@@ -115,7 +115,7 @@ func _initialize() -> void:
 		control.advance_day()
 	assert(agreement_restored.agreement_days("test_republic", "coastal_republic") == 0)
 	for id in ["test_republic", "coastal_republic"]:
-		assert(is_equal_approx(control.country_snapshot(id).country.treasury - agreement_restored.country_snapshot(id).country.treasury, Registry.COOPERATION_COST))
+		assert(agreement_restored.country_snapshot(id).country.treasury == control.country_snapshot(id).country.treasury)
 	assert(registry.country_ids() == ["coastal_republic", "test_republic"])
 	var before: Dictionary = registry.export_snapshot()
 	assert(not registry.initialize([federal, federal]).is_empty())

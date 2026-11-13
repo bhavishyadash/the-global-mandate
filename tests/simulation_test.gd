@@ -190,13 +190,13 @@ func _initialize() -> void:
 	assert(agreement_reload.diplomacy.agreements.maritime == 0)
 	assert(agreement_reload.policy_annual_cost() == 0.0)
 	assert(agreement_reload.diplomacy.annual_partner_contribution() == 0.0)
-	assert(absf(agreement_forecast.cash - agreement_reload.country.treasury) < 0.1)
+	assert(absf(agreement_forecast.debt - agreement_reload.country.debt) < 0.1)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(agreement_path))
 	var before_agreement_cash: float = declined.country.treasury
 	var before_agreement_revenue: float = declined.fiscal.revenue
 	var expected_agreement_flow: float = declined.daily_balance()
 	declined.advance_day()
-	assert(absf(declined.country.treasury - before_agreement_cash - expected_agreement_flow) < 0.01)
+	assert(declined.country.treasury == before_agreement_cash and expected_agreement_flow > 0.0)
 	assert(absf(declined.fiscal.revenue - before_agreement_revenue - declined.total_annual_revenue() / 365.0) < 0.01)
 	assert(declined.diplomacy.agreements.maritime == 364)
 	assert(declined.end_cooperation("maritime"))
@@ -308,7 +308,7 @@ func _initialize() -> void:
 	assert(is_equal_approx(actual_category.country.spending_categories.Education, world.country.spending_categories.Education))
 	for i in range(30):
 		actual_category.advance_day()
-	assert(absf(category_projection.cash - actual_category.country.treasury) < 0.01)
+	assert(absf(category_projection.debt - actual_category.country.debt) < 0.01)
 	assert(is_equal_approx(category_projection.approval, actual_category.country.approval))
 	assert(world.forecast_fiscal(30, {"category_spending": {"category": "Missing", "amount": 1}}).is_empty())
 	assert(world.forecast_fiscal(30, {"category_spending": {"category": "Health", "amount": NAN}}).is_empty())
@@ -320,15 +320,15 @@ func _initialize() -> void:
 	assert(scenario_actual.set_annual_spending(1200000000.0))
 	for i in range(30):
 		scenario_actual.advance_day()
-	assert(absf(scenario.cash - scenario_actual.country.treasury) < 0.01)
+	assert(absf(scenario.debt - scenario_actual.country.debt) < 0.01)
 	assert(is_equal_approx(scenario.approval, scenario_actual.country.approval))
 	for i in range(365):
 		world.advance_day()
-	assert(absf(forecast.cash - world.country.treasury) < 0.01)
+	assert(absf(forecast.debt - world.country.debt) < 0.01)
 	assert(absf(forecast.revenue - world.previous_fiscal.revenue) < 0.01)
 	assert(forecast.end_date == world.date)
 	assert(world.date == {"year": 2027, "month": 1, "day": 1})
-	assert(absf(world.country.treasury - initial_treasury - 100000000.0) < 1.0)
+	assert(world.country.treasury == initial_treasury and world.country.debt == 0.0)
 	assert(world.previous_fiscal.days == 365 and world.fiscal.days == 0)
 	assert(absf(world.previous_fiscal.revenue - 1200000000.0) < 1.0)
 	assert(absf(world.previous_fiscal.spending - 1100000000.0) < 1.0)
@@ -339,13 +339,13 @@ func _initialize() -> void:
 	ledger_world.advance_day()
 	assert(ledger_world.fiscal.borrowed > 0.0)
 	var deficit_forecast: Dictionary = ledger_world.forecast_fiscal(30)
-	assert(deficit_forecast.first_cash_exhaustion_day == 1 and deficit_forecast.debt > ledger_world.country.debt)
+	assert(deficit_forecast.debt > ledger_world.country.debt)
 	assert(is_equal_approx(ledger_world.country.debt, ledger_world.fiscal.borrowed))
 	assert(ledger_world.set_annual_spending(0.0))
 	ledger_world.advance_day()
 	assert(ledger_world.fiscal.interest > 0.0 and ledger_world.fiscal.repaid > 0.0)
 	var accounting_balance: float = ledger_world.fiscal.revenue - ledger_world.fiscal.spending - ledger_world.fiscal.policy - ledger_world.fiscal.interest
-	assert(absf(ledger_world.country.treasury - ledger_world.country.debt - accounting_balance) < 0.01)
+	assert(absf(ledger_world.country.debt - ledger_world.fiscal.borrowed + ledger_world.fiscal.repaid) < 0.01)
 	var ledger_path := "res://tests/fiscal_test.json"
 	assert(ledger_world.save_game(ledger_path).is_empty())
 	var ledger_loaded = World.new()
@@ -526,9 +526,9 @@ func _initialize() -> void:
 	assert(deficit.set_annual_spending(2000000000.0))
 	var first_flow: float = deficit.daily_balance()
 	deficit.advance_day()
-	assert(is_zero_approx(deficit.country.treasury))
-	assert(absf(deficit.country.debt - (-first_flow - 1.0)) < 0.01)
-	assert("borrowing began" in deficit.events[0])
+	assert(is_equal_approx(deficit.country.treasury, 1.0))
+	assert(absf(deficit.country.debt - (-first_flow)) < 0.01)
+	assert(deficit.fiscal.borrowed > 0.0)
 	assert(deficit.debt_interest() > 0.0)
 	var debt_before: float = deficit.country.debt
 	assert(deficit.set_annual_spending(0.0))
@@ -542,7 +542,7 @@ func _initialize() -> void:
 	var cash_before: float = repayment.country.treasury
 	repayment.advance_day()
 	assert(is_zero_approx(repayment.country.debt))
-	assert(absf(repayment.country.treasury - (cash_before + repayment_net - 10.0)) < 0.01)
+	assert(repayment.country.treasury == cash_before and repayment_net > 10.0)
 	var budget = World.new()
 	var budget_before: Dictionary = budget.country.duplicate(true)
 	var category_forecast: Dictionary = budget.preview_category_spending("Health", 400000000.0)
@@ -582,7 +582,7 @@ func _initialize() -> void:
 	for i in range(7305):
 		long_run.advance_day()
 	assert(long_run.date == {"year": 2046, "month": 1, "day": 1})
-	assert(absf(long_run.country.treasury - 3000000000.0) < 10.0)
+	assert(long_run.country.debt == 0.0 and long_run.country.treasury == 1000000000.0)
 	var save_path := "res://tests/test_save.json"
 	assert(injunction_save.save_game(save_path).is_empty())
 	var injunction_reload = World.new()

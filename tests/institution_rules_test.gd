@@ -25,7 +25,7 @@ func _initialize() -> void:
 	for day in range(7):
 		restored.advance_day()
 	assert(restored.institutions.status == "struck_down")
-	assert(is_equal_approx(restored.country.treasury, forecast.cash))
+	assert(is_equal_approx(restored.country.debt, forecast.debt))
 	assert(restored.issue_directive("override"))
 	for day in range(20):
 		restored.advance_day()
@@ -63,7 +63,7 @@ func _initialize() -> void:
 	assert(policy_loaded.politics.procurement_progress == 100)
 	assert(policy_loaded.institutions.status == "implemented")
 	assert(is_equal_approx(policy_loaded.policy_annual_cost(), 57000000.0))
-	assert(is_equal_approx(policy_loaded.country.treasury, policy_forecast.cash))
+	assert(is_equal_approx(policy_loaded.country.debt, policy_forecast.debt))
 	var invalid_policy: Dictionary = policy_loaded.export_snapshot()
 	invalid_policy.policy_rules.procurement_progress_per_day = 0
 	assert(not restored.import_snapshot(invalid_policy).is_empty())

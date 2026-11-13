@@ -104,7 +104,7 @@ func _initialize() -> void:
 	assert(restored.healthcare.progress < before)
 	for day in range(30):
 		restored.advance_day()
-	assert(is_equal_approx(restored.country.treasury, forecast.cash))
+	assert(is_equal_approx(restored.country.debt, forecast.debt))
 	assert(is_equal_approx(restored.country.debt, forecast.debt))
 	assert(restored.repeal_healthcare())
 	assert(not restored.healthcare.active and restored.healthcare.progress == 0.0)
@@ -169,7 +169,7 @@ func _initialize() -> void:
 	for day in range(30):
 		configured_loaded.advance_day()
 	assert(is_equal_approx(configured_loaded.healthcare.progress, 50.0))
-	assert(is_equal_approx(configured_loaded.country.treasury, expected.cash))
+	assert(is_equal_approx(configured_loaded.country.debt, expected.debt))
 	assert(is_equal_approx(configured_loaded.healthcare.health_bonus(), 2.0))
 	var invalid_rules: Dictionary = configured_snapshot.duplicate(true)
 	invalid_rules.healthcare_rules.days_at_normal_capacity = 0

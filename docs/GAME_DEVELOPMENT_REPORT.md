@@ -4,7 +4,7 @@
 **Report started:** 10 November 2026  
 **Development stage:** Early simulation prototype
 **Current milestone:** M1 — Core technical baseline implemented; target-hardware validation deferred, M2/M3 prototyping underway
-**Report status:** Living record; updated through session 115
+**Report status:** Living record; updated through session 116
 **Owner / creative director:** You  
 **Implementation and technical reporting:** Codex, working with your direction
 
@@ -27,6 +27,8 @@
 | Release date and budget | Not set | Establish targets after project inspection and first benchmarks |
 
 **Progress by milestone** — status is based on implemented evidence, not a percentage or schedule forecast. M1's core baseline is implemented; target-hardware and broader quality checks remain open.
+
+**Session 116:** Replaced cash-first budgeting with deficit-led borrowing and surplus debt repayment. New US games use FY2026 fiscal data and show the changing deficit as a percentage of the latest available GDP estimate. [Detailed session record](SESSION_116.md).
 
 **Session 115:** US new games now use Treasury FY2025 federal receipts and outlays, operating cash and public debt alongside the Census population. Five provisional spending groups reconcile to reported totals; tax and service effects remain simplified assumptions. [Detailed session record](SESSION_115.md).
 

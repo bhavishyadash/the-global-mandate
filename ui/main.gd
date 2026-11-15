@@ -20,11 +20,11 @@ const SCENARIOS := [
 ]
 const MAX_DAYS_PER_FRAME := 30
 const DEFAULT_SIMULATION_BUDGET_USEC := 8000
-const BASE_CANVAS_SIZE := Vector2i(1152, 648)
-const MIN_CANVAS_SCALE := 2.0
-const UI_SCALES := [1.5, 2.0, 2.5]
+const BASE_CANVAS_SIZE := Vector2i(1600, 900)
+const MIN_CANVAS_SCALE := 1.0
+const UI_SCALES := [1.0, 1.25, 1.5]
 const UI_PREFERENCES_PATH := "user://ui_preferences.cfg"
-var ui_size_index := 1
+var ui_size_index := 0
 var ui_size_picker: OptionButton
 var world = World.new()
 var running := false
@@ -66,6 +66,8 @@ var dashboard_stage: Control
 var dashboard_panel: PanelContainer
 var dashboard_picker: OptionButton
 var dashboard_toggle: Button
+var department_navigation: HBoxContainer
+var department_buttons: Dictionary = {}
 var compact_menu: MenuButton
 var compact_title: Label
 var next_day_button: Button
@@ -146,6 +148,8 @@ var map_back_button: Button
 var map_tab_scroll: ScrollContainer
 var map_inspector_view := false
 var government_status: Label
+var budget_fiscal_summary: Label
+var budget_chart_layout: BoxContainer
 var budget_chart: Control
 var budget_mode: OptionButton
 var budget_chart_note: Label
@@ -183,9 +187,9 @@ static func _canvas_size_for_window(pixels: Vector2i, minimum_scale: float = MIN
 static func _read_ui_size(path: String) -> int:
 	var settings := ConfigFile.new()
 	if settings.load(path) != OK:
-		return 1
-	var value: Variant = settings.get_value("display", "small_window_size", 1)
-	return value if value is int and value >= 0 and value < UI_SCALES.size() else 1
+		return 0
+	var value: Variant = settings.get_value("display", "small_window_size", 0)
+	return value if value is int and value >= 0 and value < UI_SCALES.size() else 0
 
 static func _write_ui_size(path: String, index: int) -> String:
 	if index < 0 or index >= UI_SCALES.size():
@@ -255,11 +259,13 @@ func _ready() -> void:
 		set_process(false)
 		return
 	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for edge in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
 		margin.add_theme_constant_override(edge, 16)
 	add_child(margin)
 	var layout := VBoxContainer.new()
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation", 8)
@@ -346,6 +352,7 @@ func _ready() -> void:
 	spending_label.text = "Reset total budget ($ millions) "
 	budget_controls.add_child(spending_label)
 	spending = SpinBox.new()
+	spending.custom_minimum_size.x = 145
 	spending.min_value = 0
 	spending.max_value = 10000
 	spending.step = 0.01
@@ -363,23 +370,24 @@ func _ready() -> void:
 		speed_picker.add_item("%d days/sec" % multiplier, multiplier)
 	speed_picker.item_selected.connect(func(index: int): speed = speed_picker.get_item_id(index))
 	budget_controls.add_child(speed_picker)
-	var category_controls := HBoxContainer.new()
+	var category_controls := HFlowContainer.new()
 	layout.add_child(category_controls)
 	var category_label := Label.new()
-	category_label.text = "Category proposal ($ millions)"
+	category_label.text = "Adjust spending · $ millions"
 	category_controls.add_child(category_label)
 	category_picker = OptionButton.new()
 	for category in World.CATEGORY_SHARES:
 		category_picker.add_item(category)
 	category_controls.add_child(category_picker)
 	category_amount = SpinBox.new()
+	category_amount.custom_minimum_size.x = 145
 	category_amount.min_value = 0
 	category_amount.max_value = 10000
 	category_amount.step = 0.01
 	category_amount.value = world.country.spending_categories[category_picker.get_item_text(0)] / 1000000.0
 	category_controls.add_child(category_amount)
 	var category_button := Button.new()
-	category_button.text = "Review category ($ millions)"
+	category_button.text = "Review proposal"
 	category_button.pressed.connect(func(): _request_review("set_category_spending", {"category": category_picker.get_item_text(category_picker.selected), "amount": category_amount.value * 1000000.0}))
 	category_controls.add_child(category_button)
 	var tax_controls := HBoxContainer.new()
@@ -466,6 +474,7 @@ func _ready() -> void:
 	# growing decision panels into independently scrollable sections.
 	dashboard_stage = Control.new()
 	dashboard_stage.name = "MapStage"
+	dashboard_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dashboard_stage.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	dashboard_stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dashboard_stage.clip_contents = true
@@ -521,7 +530,7 @@ func _ready() -> void:
 	controls.add_child(dashboard_toggle)
 	dashboard_picker.item_selected.connect(func(index: int): dashboard_tabs.current_tab = index; _set_dashboard_open(true))
 	dashboard_toggle.pressed.connect(func(): _set_dashboard_open(not dashboard_panel.visible))
-	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index))
+	dashboard_tabs.tab_changed.connect(func(index: int): dashboard_picker.select(index); _update_dashboard_geometry(); _sync_department_navigation(index))
 	compact_menu = MenuButton.new()
 	compact_menu.name = "CompactMenu"
 	compact_menu.text = "More"
@@ -534,6 +543,18 @@ func _ready() -> void:
 	menu.add_item("Load", 101)
 	menu.add_item("Load backup", 102)
 	menu.id_pressed.connect(_compact_menu_selected)
+	department_navigation = HBoxContainer.new()
+	department_navigation.name = "DepartmentNavigation"
+	department_navigation.add_theme_constant_override("separation", 6)
+	layout.add_child(department_navigation)
+	for item in [["Budget", 1], ["Tax", 2], ["Laws", 7], ["Government", 3], ["Population", 4], ["Diplomacy", 5], ["Executive orders", 9]]:
+		var button := Button.new()
+		button.text = item[0]
+		button.toggle_mode = true
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_open_department.bind(int(item[1])))
+		department_navigation.add_child(button)
+		department_buttons[item[1]] = button
 	get_viewport().size_changed.connect(_update_responsive_layout)
 	_build_us_reference(us_reference_tab)
 	world_lab = WorldLab.new()
@@ -583,8 +604,15 @@ func _ready() -> void:
 	world_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	world_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_layout.add_child(world_map)
-	world_map.reparent(dashboard_stage)
-	dashboard_stage.move_child(world_map, 0)
+	world_map.reparent(self)
+	move_child(world_map, 1)
+	var header_backdrop := ColorRect.new()
+	header_backdrop.color = Color(0.015, 0.04, 0.065, 0.88)
+	header_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header_backdrop.anchor_right = 1.0
+	header_backdrop.offset_bottom = 188.0
+	add_child(header_backdrop)
+	move_child(header_backdrop, 2)
 	world_map.custom_minimum_size = Vector2.ZERO
 	world_map.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_set_dashboard_open(false)
@@ -850,11 +878,28 @@ func _ready() -> void:
 	add_child(shared_talk_dialog)
 	for node in [budget_controls, category_controls, spending_preview, category_preview]:
 		node.reparent(finances)
-	var chart_controls := HBoxContainer.new()
+	var budget_title := Label.new()
+	budget_title.text = "TREASURY  /  NATIONAL BUDGET"
+	budget_title.add_theme_font_size_override("font_size", 24)
+	budget_title.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	finances.add_child(budget_title)
+	finances.move_child(budget_title, 0)
+	budget_fiscal_summary = Label.new()
+	budget_fiscal_summary.name = "BudgetFiscalSummary"
+	budget_fiscal_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	finances.add_child(budget_fiscal_summary)
+	finances.move_child(budget_fiscal_summary, 1)
+	var tax_link := Button.new()
+	tax_link.name = "BudgetTaxShortcut"
+	tax_link.text = "Open tax controls"
+	tax_link.pressed.connect(func(): dashboard_tabs.current_tab = 2; _set_dashboard_open(true))
+	finances.add_child(tax_link)
+	finances.move_child(tax_link, 2)
+	var chart_controls := HFlowContainer.new()
 	finances.add_child(chart_controls)
-	finances.move_child(chart_controls, 0)
+	finances.move_child(chart_controls, 3)
 	var chart_heading := Label.new()
-	chart_heading.text = "ANNUAL EXPENDITURE BREAKDOWN"
+	chart_heading.text = "EXPENDITURE BREAKDOWN"
 	chart_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	chart_controls.add_child(chart_heading)
 	budget_mode = OptionButton.new()
@@ -862,11 +907,12 @@ func _ready() -> void:
 	budget_mode.add_item("Proposed category")
 	budget_mode.item_selected.connect(func(_index: int): _refresh_budget_breakdown())
 	chart_controls.add_child(budget_mode)
-	finances.move_child(category_controls, 1)
-	var chart_layout := HBoxContainer.new()
+	finances.move_child(category_controls, 4)
+	var chart_layout := BoxContainer.new()
+	budget_chart_layout = chart_layout
 	chart_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	finances.add_child(chart_layout)
-	finances.move_child(chart_layout, 2)
+	finances.move_child(chart_layout, 5)
 	budget_chart = BudgetChart.new()
 	chart_layout.add_child(budget_chart)
 	var table := GridContainer.new()
@@ -901,7 +947,26 @@ func _ready() -> void:
 	budget_chart_note = Label.new()
 	budget_chart_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	finances.add_child(budget_chart_note)
-	finances.move_child(budget_chart_note, 3)
+	finances.move_child(budget_chart_note, 6)
+	# A two-column department desk keeps context beside the spending actions.
+	var insights := VBoxContainer.new()
+	insights.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	insights.add_theme_constant_override("separation", 8)
+	chart_layout.add_child(insights)
+	var actions := VBoxContainer.new()
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_theme_constant_override("separation", 8)
+	chart_layout.add_child(actions)
+	chart_controls.reparent(insights)
+	budget_chart.reparent(insights)
+	budget_chart_note.reparent(insights)
+	var actions_heading := Label.new()
+	actions_heading.text = "SPENDING  /  REVIEW CHANGES"
+	actions_heading.add_theme_color_override("font_color", GovernmentTheme.ACCENT)
+	actions.add_child(actions_heading)
+	table.reparent(actions)
+	category_controls.reparent(actions)
+	category_preview.reparent(actions)
 	forecast_horizon = OptionButton.new()
 	for days in [30, 90, 180, 365]:
 		forecast_horizon.add_item("Forecast horizon: %d days" % days, days)
@@ -1157,6 +1222,9 @@ func _ready() -> void:
 	review_dialog.confirmed.connect(_confirm_review)
 	review_dialog.canceled.connect(_cancel_review)
 	add_child(review_dialog)
+	_sync_budget_bounds()
+	spending.value = world.country.annual_spending / 1000000.0
+	_category_selected(category_picker.selected)
 	_update_responsive_layout()
 	_refresh()
 
@@ -1252,19 +1320,34 @@ func _update_dashboard_geometry() -> void:
 	if not is_instance_valid(dashboard_panel) or not is_instance_valid(dashboard_stage):
 		return
 	var width := _dashboard_panel_width(dashboard_stage.size.x, responsive_compact)
-	dashboard_panel.anchor_left = 1.0
-	dashboard_panel.anchor_right = 1.0
+	if dashboard_tabs.current_tab == 1 and not responsive_compact:
+		width = minf(1100.0, maxf(1.0, dashboard_stage.size.x * 0.78))
+	if is_instance_valid(budget_chart_layout):
+		budget_chart_layout.vertical = width < 760.0
+	var centered := dashboard_tabs.current_tab == 1 and not responsive_compact
+	dashboard_panel.anchor_left = 0.5 if centered else 1.0
+	dashboard_panel.anchor_right = 0.5 if centered else 1.0
 	dashboard_panel.anchor_top = 0.0
 	dashboard_panel.anchor_bottom = 1.0
-	dashboard_panel.offset_left = -width
-	dashboard_panel.offset_right = 0.0
+	dashboard_panel.offset_left = -width / 2.0 if centered else -width
+	dashboard_panel.offset_right = width / 2.0 if centered else 0.0
 	dashboard_panel.offset_top = 0.0
 	dashboard_panel.offset_bottom = 0.0
 
 func _set_dashboard_open(open: bool) -> void:
 	dashboard_panel.visible = open
+	_sync_department_navigation(dashboard_tabs.current_tab)
 	dashboard_toggle.text = ("Close" if open else "Panel") if responsive_compact else ("Close panel" if open else "Open panel")
 	_update_dashboard_geometry()
+
+func _open_department(index: int) -> void:
+	dashboard_tabs.current_tab = index
+	_sync_department_navigation(index)
+	_set_dashboard_open(true)
+
+func _sync_department_navigation(index: int) -> void:
+	for key in department_buttons:
+		department_buttons[key].set_pressed_no_signal(int(key) == index and dashboard_panel.visible)
 
 func _compact_menu_selected(id: int) -> void:
 	if id >= 0 and id < dashboard_tabs.get_tab_count():
@@ -1295,6 +1378,7 @@ func _apply_responsive_layout(compact: bool) -> void:
 	dashboard_picker.visible = not responsive_compact
 	budget_shortcut.visible = not responsive_compact
 	compact_menu.visible = responsive_compact
+	department_navigation.visible = not responsive_compact
 	if is_instance_valid(law_heading_label):
 		law_heading_label.text = "LAWS" if responsive_compact else "LAW CATALOGUE — US-ORIENTED POLICY TOPICS"
 		law_explanation_label.visible = not responsive_compact
@@ -1912,6 +1996,10 @@ func _show_law_detail(id: String) -> void:
 	_update_law_catalog_note()
 	if law_edit_panel.visible:
 		law_edit_kind = id
+		if world.country.has("tax_calibration") and id == "test_income_tax":
+			law_catalog_note.text = "Simplified income-tax index; 20% is a model assumption, not the US progressive tax system."
+		elif world.country.has("tax_calibration") and id == "test_corporate_tax":
+			law_catalog_note.text = "21% statutory starting rate; revenue response is a fixed-base approximation."
 		law_edit_category.visible = id == "test_budget_category"
 		law_edit_amount.max_value = World.Scenario.spending_limit(world.country) / 1000000.0 if law_edit_category.visible else 60.0
 		law_edit_amount.suffix = "million USD / year" if law_edit_category.visible else "%"
@@ -1969,7 +2057,9 @@ func _review_text(id: String, args: Dictionary) -> String:
 			if preview.is_empty():
 				return ""
 			var field: String = "income_tax_rate" if kind == "income" else world.ADDITIONAL_TAXES[kind].field
-			var lines := PackedStringArray(["%s TAX — fictional fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			var lines := PackedStringArray(["%s TAX — simplified fixed-base model" % kind.to_upper(), "Rate: %.1f%% → %.1f%%" % [float(world.country[field]) * 100.0, rate * 100.0], "Annual revenue: $%.1fM → $%.1fM" % [world.total_annual_revenue() / 1000000.0, preview.annual_revenue / 1000000.0], "National approval: %.1f%% → %.1f%%" % [world.country.approval, preview.approval]])
+			if world.country.has("tax_calibration"):
+				lines.append("US income and corporate responses are rough fixed-base estimates; the income rate is a model index, not actual tax brackets. Consumption uses a fictional test base.")
 			lines.append("Annual deficit: %s → %s (negative means surplus)" % [world.format_deficit(world.annual_deficit()), world.format_deficit(world.annual_deficit() + world.total_annual_revenue() - preview.annual_revenue)])
 			for group in preview.groups:
 				lines.append("%s approval: %.1f%%" % [group.name, group.approval])
@@ -2436,13 +2526,14 @@ func _refresh() -> void:
 	var c: Dictionary = world.country
 	var d: Dictionary = world.date
 	_update_government_status()
+	budget_fiscal_summary.text = "NATIONAL BUDGET  |  Annual deficit: %s\nRevenue: $%.1fB   •   Total expenses: $%.1fB" % [world.format_deficit(world.annual_deficit()), world.total_annual_revenue() / 1000000000.0, (float(c.annual_spending) + world.policy_annual_cost() + world.debt_interest()) / 1000000000.0]
 	summary.text = "%s\nDate: %04d-%02d-%02d\nPopulation: %d\nDebt: $%.0f\nAnnual revenue: $%.0f   |   Category spending: $%.0f\nAnnual policy cost: $%.0f  |  Debt interest: $%.0f\nAnnual deficit: %s (negative means surplus)\nIncome tax: %.1f%%   |   Approval: %.1f%%" % [c.name, d.year, d.month, d.day, c.population, c.debt, world.total_annual_revenue(), c.annual_spending, world.policy_annual_cost(), world.debt_interest(), world.format_deficit(world.annual_deficit()), c.income_tax_rate * 100.0, c.approval]
 	var budget_lines := PackedStringArray(["ANNUAL CATEGORY SPENDING"])
 	if c.has("fiscal_calibration"):
 		budget_lines.append("Starting figures use FY2026 federal receipts, outlays and public debt. GDP is the latest Q3 2026 annualized estimate and remains fixed; this mixed-period ratio differs from CBO fiscal-year GDP. Five categories are a provisional crosswalk; interest is separate. Tax rates, tax responses, service scores and political effects are fictional assumptions. Historical annual totals are not forecasts.")
 	var consumption_revenue: float = world.additional_tax_revenue("consumption")
 	var corporate_revenue: float = world.additional_tax_revenue("corporate")
-	budget_lines.append("Tax revenue (fixed test bases): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
+	budget_lines.append("Tax revenue (simplified fixed-base model): income $%.0f | consumption $%.0f | corporate $%.0f | other revenue $%.0f" % [world.income_tax_revenue(), consumption_revenue, corporate_revenue, c.annual_revenue - world.income_tax_revenue() - consumption_revenue - corporate_revenue])
 	budget_lines.append("Fictional partner contributions: $%.0f/year | cooperation costs: $%.0f/year" % [world.diplomacy.annual_partner_contribution(), world.diplomacy.annual_agreement_cost()])
 	for category in World.CATEGORY_SHARES:
 		budget_lines.append("%s: $%.0f | service %.1f/100 | target %.1f" % [category, c.spending_categories[category], world.services.levels[category], world.service_target(category, c.spending_categories[category])])
@@ -2613,4 +2704,4 @@ func _refresh_budget_breakdown() -> void:
 		cells[0].text = "$%.1fM" % (float(result.current[name]) / 1000000.0)
 		cells[1].text = "$%.1fM" % (float(result.proposed[name]) / 1000000.0) if result.valid else "—"
 		cells[2].text = "%.1f%%" % (100.0 * float(shown[name]) / shown_total) if shown_total > 0.0 and (result.valid or not proposed_view) else "—"
-	budget_chart_note.text = "Share uses %s annual expenses. Proposed changes apply only to the selected category and are not enacted. Policy costs and debt interest are separate from the five category budgets. Figures are fictional." % ("proposed" if proposed_view else "current") if result.valid else "Proposed category amount is unavailable because the total exceeds the budget limit. Current spending remains unchanged."
+	budget_chart_note.text = "Share uses %s annual expenses. Proposed changes apply only to the selected category and are not enacted. Policy costs and debt interest are separate from the five category budgets. Category allocations are approximate model values." % ("proposed" if proposed_view else "current") if result.valid else "Proposed category amount is unavailable because the total exceeds the budget limit. Current spending remains unchanged."

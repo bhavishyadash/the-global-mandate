@@ -66,6 +66,13 @@ func _initialize() -> void:
 	assert(scenario.country.annual_revenue == fy2026.receipts_usd and original.annual_deficit() == fy2026.deficit_usd)
 	assert(original.country.annual_spending + original.debt_interest() == fy2026.outlays_usd)
 	assert(original.format_deficit(original.annual_deficit()) == "6.04% of GDP")
+	assert(original.country.corporate_tax_rate == 0.21)
+	assert(absf(original.income_tax_revenue() - fy2026.individual_income_receipts_usd_rounded_billion) < 1.0)
+	assert(absf(original.additional_tax_revenue("corporate") - fy2026.corporate_income_receipts_usd_rounded_billion) < 1.0)
+	var initial_tax_state: Dictionary = original.export_snapshot()
+	var tax_preview: Dictionary = original.preview_income_tax(0.21)
+	assert(absf(tax_preview.annual_revenue - original.total_annual_revenue() - 142300000000.0) < 1.0)
+	assert(original.export_snapshot() == initial_tax_state)
 	var before_debt: float = original.country.debt
 	var before_cash: float = original.country.treasury
 	var first_deficit: float = original.annual_deficit()
@@ -96,11 +103,19 @@ func _initialize() -> void:
 	bad_calibration = scenario.duplicate(true)
 	bad_calibration.country.nominal_gdp = 0
 	assert(not World.Scenario.validate(bad_calibration).is_empty())
+	bad_calibration = scenario.duplicate(true)
+	bad_calibration.country.tax_calibration.income = -1
+	assert(not World.Scenario.validate(bad_calibration).is_empty())
 	for day in range(120):
 		original.advance_day()
 	var saved: Dictionary = JSON.parse_string(JSON.stringify(original.export_snapshot()))
 	var resumed = World.new()
 	assert(resumed.import_snapshot(saved).is_empty())
+	for kind in ["income", "consumption", "corporate"]:
+		assert(absf(resumed.country.tax_calibration[kind] - original.country.tax_calibration[kind]) < 1.0)
+	var invalid_tax: Dictionary = saved.duplicate(true)
+	invalid_tax.country.tax_calibration.corporate = -1
+	assert(not resumed.import_snapshot(invalid_tax).is_empty())
 	var bad_saved: Dictionary = saved.duplicate(true)
 	bad_saved.country.fiscal_calibration.service_baselines.Health = 0
 	assert(not resumed.import_snapshot(bad_saved).is_empty())

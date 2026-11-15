@@ -10,9 +10,13 @@
   "sources": {
     "annual_totals": "https://www.govinfo.gov/content/pkg/ECONI-2026-10/pdf/ECONI-2026-10.pdf",
     "categories_and_interest": "https://www.cbo.gov/publication/61986",
-    "gdp": "https://www.govinfo.gov/content/pkg/ECONI-2026-10/pdf/ECONI-2026-10.pdf"
+    "gdp": "https://www.govinfo.gov/content/pkg/ECONI-2026-10/pdf/ECONI-2026-10.pdf",
+    "corporate_rate": "https://www.irs.gov/instructions/i1120"
   },
-  "note": "Annual totals rounded to $0.1 billion; CBO categories and interest rounded to $1 billion. Public-debt interest differs from broader net interest outlays. Figures do not establish the FY2027 year-to-date deficit. GDP denominator is Q3 annualized, not CBO FY2026 annual GDP; their published fiscal-year deficit ratio is 6.2%. In-game GDP remains fixed until an economic model exists.",
+  "note": "Annual totals rounded to $0.1 billion; CBO categories and interest rounded to $1 billion. Public-debt interest differs from broader net interest outlays. Figures do not establish the FY2027 year-to-date deficit. GDP denominator is Q3 annualized, not CBO FY2026 annual GDP; their published fiscal-year deficit ratio is 6.2%. In-game GDP remains fixed until an economic model exists. Tax receipts are CBO FY2026 values rounded to billions; 20% income is an invented model index, not a US tax rate. Implied fixed bases are approximations, not observed taxable income or causal estimates.",
   "gdp_usd": 33010000000000,
-  "gdp_period": "2026 Q3 advance estimate, seasonally adjusted annual rate"
+  "gdp_period": "2026 Q3 advance estimate, seasonally adjusted annual rate",
+  "individual_income_receipts_usd_rounded_billion": 2846000000000,
+  "corporate_income_receipts_usd_rounded_billion": 381000000000,
+  "corporate_statutory_rate": 0.21
 }

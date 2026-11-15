@@ -11,8 +11,7 @@ const PolicyRules = preload("res://simulation/policy_rules.gd")
 const Demographics = preload("res://simulation/demographics.gd")
 const DEFAULT_SCENARIO := "res://data/scenarios/test_republic.json"
 const ANNUAL_DEBT_RATE := 0.03
-const TEST_TAXABLE_BASE := 2000000000.0
-const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate", "base": 1500000000.0}, "corporate": {"field": "corporate_tax_rate", "base": 1000000000.0}}
+const ADDITIONAL_TAXES := {"consumption": {"field": "consumption_tax_rate"}, "corporate": {"field": "corporate_tax_rate"}}
 const CATEGORY_SHARES := {"Health": 0.30, "Education": 0.25, "Security": 0.20, "Infrastructure": 0.15, "Administration": 0.10}
 var politics = Politics.new()
 var services = Services.new()
@@ -118,13 +117,13 @@ func debt_interest() -> float:
 	return country.debt * float(country.fiscal_calibration.interest_rate if country.has("fiscal_calibration") else ANNUAL_DEBT_RATE)
 
 func income_tax_revenue() -> float:
-	return country.income_tax_rate * TEST_TAXABLE_BASE
+	return country.income_tax_rate * Scenario.tax_base(country, "income")
 
 func additional_tax_revenue(kind: String) -> float:
 	if not ADDITIONAL_TAXES.has(kind):
 		return 0.0
 	var spec: Dictionary = ADDITIONAL_TAXES[kind]
-	return float(country[spec.field]) * float(spec.base)
+	return float(country[spec.field]) * Scenario.tax_base(country, kind)
 
 func policy_annual_cost() -> float:
 	var procurement: float = policy_rules.procurement_annual_cost if politics.procurement_policy and politics.procurement_progress >= 100 else 0.0
@@ -391,6 +390,8 @@ func import_snapshot(parsed: Variant) -> String:
 			return "Save has invalid financial or approval data."
 	if not Scenario.valid_fiscal_calibration(c.get("fiscal_calibration")):
 		return "Save has invalid fiscal calibration."
+	if not Scenario.valid_tax_calibration(c.get("tax_calibration")):
+		return "Save has invalid tax calibration."
 	if c.has("nominal_gdp") and (not _is_number(c.nominal_gdp) or c.nominal_gdp <= 0):
 		return "Save has invalid GDP."
 	if c.income_tax_rate < 0.0 or c.income_tax_rate > 0.60 or c.approval < 0.0 or c.approval > 100.0 or c.annual_revenue < 0.0 or c.annual_spending < 0.0 or c.annual_spending > Scenario.spending_limit(c) or e.size() > MAX_EVENTS:
@@ -653,7 +654,7 @@ func preview_income_tax(rate: float) -> Dictionary:
 	if not preview_politics.import_state(politics.export_state()):
 		return {}
 	var delta: float = rate - country.income_tax_rate
-	var projected_revenue: float = country.annual_revenue + delta * TEST_TAXABLE_BASE
+	var projected_revenue: float = country.annual_revenue + delta * Scenario.tax_base(country, "income")
 	if not is_finite(projected_revenue) or projected_revenue < 0.0:
 		return {}
 	preview_politics.apply_tax_change(delta)
@@ -669,8 +670,8 @@ func set_income_tax(rate: float) -> bool:
 	var previous: float = country.income_tax_rate
 	if is_equal_approx(rate, previous):
 		return true
-	# Placeholder: $2 billion taxable base, other revenue held constant.
-	country.annual_revenue += (rate - previous) * TEST_TAXABLE_BASE
+	# Fixed-base linear approximation, with other revenue held constant.
+	country.annual_revenue += (rate - previous) * Scenario.tax_base(country, "income")
 	politics.apply_tax_change(rate - previous)
 	country.approval = politics.approval()
 	country.income_tax_rate = rate
@@ -682,7 +683,7 @@ func preview_additional_tax(kind: String, rate: float) -> Dictionary:
 		return {}
 	var spec: Dictionary = ADDITIONAL_TAXES[kind]
 	var delta: float = rate - float(country[spec.field])
-	var projected_revenue: float = country.annual_revenue + delta * float(spec.base)
+	var projected_revenue: float = country.annual_revenue + delta * Scenario.tax_base(country, kind)
 	if not is_finite(projected_revenue) or projected_revenue < 0.0:
 		return {}
 	var preview_politics = Politics.new()
@@ -698,7 +699,7 @@ func set_additional_tax(kind: String, rate: float) -> bool:
 	var previous: float = country[spec.field]
 	if is_equal_approx(previous, rate):
 		return true
-	country.annual_revenue += (rate - previous) * float(spec.base)
+	country.annual_revenue += (rate - previous) * Scenario.tax_base(country, kind)
 	politics.apply_additional_tax_change(kind, rate - previous)
 	country.approval = politics.approval()
 	country[spec.field] = rate

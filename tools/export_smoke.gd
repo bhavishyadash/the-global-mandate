@@ -40,6 +40,10 @@ func _initialize() -> void:
 		push_error("Packaged US federal baseline does not reconcile.")
 		quit(1)
 		return
+	if absf(world.income_tax_revenue() - 2846000000000.0) > 1.0 or absf(world.additional_tax_revenue("corporate") - 381000000000.0) > 1.0:
+		push_error("Packaged US tax calibration does not match its starting receipts.")
+		quit(1)
+		return
 	if not FileAccess.file_exists("res://data/reference/usa_fy2026.json"):
 		push_error("Packaged FY2026 fiscal provenance is missing.")
 		quit(1)

@@ -656,3 +656,31 @@ The director requests a GitHub commit and push after each completed development 
 ### GitHub development backlog
 
 On 2026-11-10, created 53 initial roadmap issues in the private repository: https://github.com/bhavishyadash/the-global-mandate/issues. Issues #1–#53 cover the technical foundation, economy, population, politics, diplomacy, AI, military, data, interface, modding, quality and release. These are broad planning issues, not a complete prediction of future defects or an approved release scope; split and refine them as development reveals the detailed work. No issues are marked complete by this planning step. Sessions 6–15 were subsequently completed as the focused prototype batch described above.
+
+### Session 120 - US tax calibration
+US income and corporate tax sensitivities now use scenario-specific FY 2026 revenue anchors. Full tests and packaged scenario checks passed. The income index and linear response remain approximations; see [Session 120](SESSION_120.md).
+
+
+### Session 121 - Map-first budget workspace
+Expanded the budget workspace, added fiscal context and a tax shortcut, and stacked the chart and table for narrow panels. See [Session 121](SESSION_121.md) for validation and limitations.
+
+
+### Session 122 - Map and budget display fixes
+Fixed resize redraw, UI scaling and starting budget proposals; visually checked the 1600 x 900 budget screen. See [Session 122](SESSION_122.md).
+
+
+### Session 123 - Department navigation
+Added map-first department shortcuts and active-state highlighting; see [Session 123](SESSION_123.md).
+
+
+### Session 124 - Treasury workspace redesign
+Rebuilt the budget panel into a centered, two-column map-backed workspace. See [Session 124](SESSION_124.md).
+
+
+### Session 125 - Satellite terrain map
+Added offline NASA Blue Marble terrain below interactive borders and markers. See [Session 125](SESSION_125.md) for source, validation and limitations.
+
+
+### Session 126 - Full-screen map
+Made the satellite map fill the screen behind the controls and added a readable header. See [Session 126](SESSION_126.md).
+
